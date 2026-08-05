@@ -1,4 +1,3 @@
-/* Placeholder styling. The real visual pass comes with the browse and filter UI. */
 :root {
   color-scheme: light dark;
   --bg: #f5f6f8;
@@ -7,6 +6,9 @@
   --muted: #63676d;
   --line: #dfe1e5;
   --accent: #4453c4;
+  --danger: #b3261e;
+  --warn-bg: #fdf3e3;
+  --warn-line: #e8d3a8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,19 +19,22 @@
     --muted: #9a9ea6;
     --line: #32353b;
     --accent: #8f9bf0;
+    --danger: #f08a80;
+    --warn-bg: #2c2618;
+    --warn-line: #4a3f22;
   }
 }
 
 body {
   margin: 0;
-  padding: 40px 24px;
+  padding: 40px 24px 80px;
   background: var(--bg);
   color: var(--ink);
   font: 15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
 .shell {
-  max-width: 640px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
@@ -40,9 +45,41 @@ body {
 }
 
 .sub {
-  margin: 4px 0 28px;
+  margin: 4px 0 24px;
   color: var(--muted);
 }
+
+/* Step rail --------------------------------------------------------- */
+
+.rail {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.rail li {
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.rail li.done {
+  color: var(--ink);
+}
+
+.rail li.on {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--card);
+  font-weight: 600;
+}
+
+/* Cards ------------------------------------------------------------- */
 
 .card {
   background: var(--card);
@@ -54,7 +91,16 @@ body {
 
 .card h2 {
   margin: 0 0 8px;
-  font-size: 16px;
+  font-size: 17px;
+}
+
+.card h3 {
+  margin: 24px 0 4px;
+  font-size: 14px;
+}
+
+.bar {
+  padding: 12px 22px;
 }
 
 .hint {
@@ -63,21 +109,134 @@ body {
   font-size: 14px;
 }
 
-.primary {
-  background: var(--accent);
-  color: #fff;
-  border: 0;
+.hint.tight {
+  margin: 6px 0 0;
+}
+
+/* Form parts -------------------------------------------------------- */
+
+.field {
+  display: block;
+  margin: 0 0 14px;
+}
+
+.field > span {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+input[type='text'],
+input[type='date'],
+select {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+}
+
+select[multiple] {
+  padding: 4px;
+}
+
+.row {
+  display: flex;
+  gap: 14px;
+}
+
+.row .field {
+  flex: 1;
+}
+
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.choice.tight {
+  margin: -8px 0 16px;
+}
+
+.choice label,
+.check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.check {
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+/* Buttons ----------------------------------------------------------- */
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.actions.left {
+  justify-content: flex-start;
+}
+
+.primary,
+.ghost,
+.danger {
   border-radius: 7px;
   padding: 9px 16px;
   font: inherit;
   font-weight: 500;
   cursor: pointer;
+  border: 1px solid transparent;
 }
 
-.primary:disabled {
-  opacity: 0.55;
+.primary {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+}
+
+.danger {
+  background: var(--danger);
+  color: #fff;
+  border: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .danger {
+    color: #2a0f0c;
+  }
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.small {
+  padding: 5px 11px;
+  font-size: 13px;
+}
+
+button:disabled {
+  opacity: 0.5;
   cursor: default;
 }
+
+/* Status and notices ------------------------------------------------ */
 
 .status {
   margin: 12px 0 0;
@@ -86,14 +245,18 @@ body {
   color: var(--muted);
 }
 
-.status[data-tone='error'] {
-  color: #c0392f;
+.status[data-tone='error'],
+.error {
+  color: var(--danger);
 }
 
-@media (prefers-color-scheme: dark) {
-  .status[data-tone='error'] {
-    color: #f08a80;
-  }
+.notice {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 14px;
 }
 
 .facts {
@@ -103,13 +266,159 @@ body {
   margin: 0;
 }
 
+.facts.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 14px;
+  align-items: baseline;
+}
+
 .facts dt {
   color: var(--muted);
 }
 
 .facts dd {
-  margin: 0;
+  margin: 0 16px 0 0;
   font-variant-numeric: tabular-nums;
+}
+
+/* Results table ----------------------------------------------------- */
+
+.tablewrap {
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.results {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.results th {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.results td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.results tr:last-child td {
+  border-bottom: 0;
+}
+
+.results td:first-child,
+.results td:nth-child(2) {
+  white-space: nowrap;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.msg {
+  overflow-wrap: anywhere;
+  max-width: 0;
+  width: 100%;
+}
+
+.results th.pick,
+.results td.pick {
+  width: 1%;
+  padding-right: 0;
+}
+
+/* A dropped message stays visible, so it is obvious what was spared. */
+.results tr.off td:not(.pick) {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+/* Pre-flight and progress ------------------------------------------- */
+
+.preflight {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 18px 0 0;
+  font-size: 14px;
+}
+
+.preflight p {
+  margin: 0 0 8px;
+}
+
+.preflight p:last-child {
+  margin-bottom: 0;
+  font-weight: 600;
+}
+
+.progress {
+  margin-top: 18px;
+}
+
+.bar {
+  height: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.fill {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 160ms linear;
+}
+
+.counter {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.report {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  font-size: 14px;
+}
+
+.report .headline {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.report details {
+  margin: 8px 0;
+}
+
+.report summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.report ul {
+  margin: 8px 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  max-height: 180px;
+  overflow: auto;
 }
 
 .hidden {

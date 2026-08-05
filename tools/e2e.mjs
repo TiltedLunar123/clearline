@@ -110,12 +110,103 @@ function happyPath() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Mock Discord: the operations path                                   */
+/* ------------------------------------------------------------------ */
+
+const OPS_GUILD = GUILDS[0].id;
+const OPS_CHANNEL = '400000000000000001';
+
+/** Discord's epoch, so the ids below decode to plausible dates. */
+const DISCORD_EPOCH = 1420070400000;
+
+function idFor(millis) {
+  return String(BigInt(millis - DISCORD_EPOCH) << 22n);
+}
+
+/**
+ * Six messages, newest first, one of which is a join notice.
+ *
+ * The join notice is the point: Discord attributes it to the user and returns
+ * it in search results, but refuses to delete it. A tool that counts it in the
+ * total promises more than it can deliver.
+ */
+function opsMessages() {
+  const base = Date.UTC(2024, 2, 1, 12, 0, 0);
+  return [
+    { minute: 50, content: 'newest message', type: 0 },
+    { minute: 40, content: 'has a link https://discord.com/channels/1', type: 0 },
+    { minute: 30, content: 'joined the server', type: 7 },
+    { minute: 20, content: 'ordinary chatter', type: 0 },
+    { minute: 10, content: 'something with "quotes" and, a comma', type: 0 },
+    { minute: 0, content: 'oldest message', type: 0 },
+  ].map((m) => ({
+    id: idFor(base + m.minute * 60000),
+    channel_id: OPS_CHANNEL,
+    author: ACCOUNT,
+    timestamp: new Date(base + m.minute * 60000).toISOString(),
+    content: m.content,
+    attachments: [],
+    embeds: [],
+    pinned: false,
+    type: m.type,
+  }));
+}
+
+function operationsMock(deleted) {
+  const messages = opsMessages();
+  return (method, pathname) => {
+    const path = pathname.split('?')[0];
+    const params = new URLSearchParams(pathname.split('?')[1] || '');
+
+    if (path === `/api/v9/guilds/${OPS_GUILD}/channels`) {
+      return {
+        body: [
+          { id: OPS_CHANNEL, name: 'general', type: 0, position: 0 },
+          { id: '400000000000000002', name: 'voice-room', type: 2, position: 1 },
+        ],
+        headers: OK_HEADERS,
+      };
+    }
+
+    if (path === `/api/v9/guilds/${OPS_GUILD}/messages/search`) {
+      const offset = Number(params.get('offset') || 0);
+      const page = messages.slice(offset, offset + 25);
+      return {
+        body: { total_results: messages.length, messages: page.map((m) => [{ ...m, hit: true }]) },
+        headers: OK_HEADERS,
+      };
+    }
+
+    const del = path.match(/^\/api\/v9\/channels\/(\d+)\/messages\/(\d+)$/);
+    if (del && method === 'DELETE') {
+      deleted.push(del[2]);
+      return { status: 204, body: null, headers: OK_HEADERS };
+    }
+
+    if (path.startsWith('/api/v9/users/@me/guilds')) return { body: GUILDS, headers: OK_HEADERS };
+    if (path.startsWith('/api/v9/users/@me/channels')) return { body: DMS, headers: OK_HEADERS };
+    if (path.startsWith('/api/v9/users/@me')) return { body: ACCOUNT, headers: OK_HEADERS };
+    return { status: 404, body: { message: 'unmocked ' + method + ' ' + path } };
+  };
+}
+
+/* ------------------------------------------------------------------ */
 
 async function openTab(cdp, url) {
   const { targetId } = await cdp.send('Target.createTarget', { url });
   const session = await cdp.attach(targetId);
   await cdp.send('Page.enable', {}, session);
   return { targetId, session };
+}
+
+/**
+ * Only one app tab may hold the queue, so the suite closes each one before
+ * opening the next. Leaving them open would have every later phase testing the
+ * "another tab already owns this" path by accident.
+ */
+async function closeTab(cdp, tab) {
+  await cdp.send('Target.closeTarget', { targetId: tab.targetId }).catch(() => {});
+  await sleep(200);
 }
 
 async function textOf(cdp, session, selector) {
@@ -253,6 +344,48 @@ async function main() {
         `smallest gap was ${minGap}ms, gaps ${JSON.stringify(gaps)}`);
     }
 
+    /* ---------------- group: one tab ---------------- */
+
+    // The pacing floor is enforced by a limiter, and a limiter lives in a page.
+    // Two app tabs would be two queues, each spacing writes only against
+    // itself, which doubles what Discord actually receives and quietly undoes
+    // the single property this extension is built around.
+    const second = await openTab(cdp, appUrl);
+    await mockApi(cdp, second.session, happyPath());
+    await sleep(300);
+    await cdp.evaluate(second.session, "document.getElementById('connect').click()");
+    await sleep(600);
+
+    const blocked = await textOf(cdp, second.session, '#status');
+    check('one tab', 'a second app tab refuses to run alongside the first',
+      /already open in another tab/i.test(blocked || ''), `status said ${JSON.stringify(blocked)}`);
+
+    const takeoverOffered = await cdp.evaluate(
+      second.session,
+      "!document.getElementById('takeover').classList.contains('hidden')"
+    );
+    check('one tab', 'taking over is offered rather than being a dead end', takeoverOffered === true);
+
+    const stillBlank = await textOf(cdp, second.session, '#account');
+    check('one tab', 'the blocked tab never loaded an account', stillBlank === '-',
+      `account showed ${JSON.stringify(stillBlank)}`);
+
+    // Taking over must stop the tab being replaced, or both queues keep running.
+    await cdp.evaluate(second.session, "document.getElementById('takeover').click()");
+    const supersededMsg = await waitFor(
+      'the first tab to stand down',
+      async () => {
+        const value = await textOf(cdp, app.session, '#status');
+        return value && /took over/i.test(value) ? value : null;
+      },
+      { timeout: 8000 }
+    ).catch(() => '<never told>');
+    check('one tab', 'taking over stops the tab it replaced',
+      /took over/i.test(supersededMsg), `first tab said ${JSON.stringify(supersededMsg)}`);
+
+    await closeTab(cdp, second);
+    await closeTab(cdp, app);
+
     /* ---------------- group: failures ---------------- */
 
     // 401: the client must drop the token and say so rather than looping.
@@ -272,6 +405,8 @@ async function main() {
       { timeout: 10000 }
     ).catch(() => '<no message>');
     check('failures', '401 tells the user to reconnect', /reconnect/i.test(status401), `status said ${JSON.stringify(status401)}`);
+
+    await closeTab(cdp, app401);
 
     // 429: the client must back off and then succeed, without the user seeing
     // an error. This is the path that protects the account.
@@ -310,6 +445,192 @@ async function main() {
     const stored = await cdp.evaluate(sw, 'chrome.storage.local.get(null).then(o => JSON.stringify(o))');
     check('failures', 'token is never written to extension storage',
       !String(stored).includes(EXPECTED_TOKEN), `storage contained ${stored}`);
+
+    /* ---------------- group: operations ---------------- */
+
+    // The whole product path in one tab: connect, pick a server, search, look
+    // at what matched, then actually delete it against a mocked Discord. The
+    // point of driving it here rather than in unit tests is that the pacing and
+    // the guards are properties of the assembled thing, not of any one module.
+    await closeTab(cdp, app429);
+
+    const deleted = [];
+    const ops = await openTab(cdp, appUrl);
+    const opsCalls = await mockApi(cdp, ops.session, operationsMock(deleted));
+    await sleep(400);
+
+    await cdp.evaluate(ops.session, "document.getElementById('connect').click()");
+    await waitFor('the where step', async () =>
+      (await cdp.evaluate(ops.session, "!document.getElementById('step-where').classList.contains('hidden')")) === true
+    ).catch(() => null);
+
+    await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const s = document.getElementById('guild-select');
+        s.value = ${JSON.stringify(OPS_GUILD)};
+        s.dispatchEvent(new Event('change'));
+      })()`
+    );
+
+    const channelsLoaded = await waitFor(
+      'channels to load',
+      async () => {
+        const labels = await cdp.evaluate(
+          ops.session,
+          "Array.from(document.getElementById('channel-select').options).map(o => o.textContent).join(',')"
+        );
+        return labels && labels.includes('#general') ? labels : null;
+      },
+      { timeout: 10000 }
+    ).catch(() => '<never loaded>');
+
+    check('operations', 'picking a server loads its text channels', channelsLoaded === '#general',
+      `channel list was ${JSON.stringify(channelsLoaded)}; a voice channel holds no messages and must not be offered`);
+
+    await cdp.evaluate(ops.session, "document.getElementById('where-next').click()");
+    await sleep(200);
+    await cdp.evaluate(ops.session, "document.getElementById('search').click()");
+
+    const heading = await waitFor(
+      'the review step',
+      async () => {
+        const value = await textOf(cdp, ops.session, '#review-heading');
+        return value && /matched/.test(value) ? value : null;
+      },
+      { timeout: 20000 }
+    ).catch(async () => `<never got there: ${await textOf(cdp, ops.session, '#filter-status')}>`);
+
+    check('operations', 'a search reports what it matched', /6 messages matched/.test(heading),
+      `heading said ${JSON.stringify(heading)}`);
+
+    const rows = await cdp.evaluate(ops.session, "document.querySelectorAll('#results-body tr').length");
+    check('operations', 'every match is listed for review before anything is destroyed', rows === 6,
+      `rendered ${rows} rows`);
+
+    // Unticking a message has to take it out of the run, not just grey it out.
+    // A selection that lies is worse than no selection at all.
+    await cdp.evaluate(
+      ops.session,
+      "document.querySelectorAll('#results-body input[type=checkbox]')[0].click()"
+    );
+    await sleep(150);
+    const afterDrop = await textOf(cdp, ops.session, '#review-heading');
+    check('operations', 'unticking a message takes it out of the count',
+      /5 of 6 messages selected/.test(afterDrop || ''), `heading said ${JSON.stringify(afterDrop)}`);
+
+    await cdp.evaluate(ops.session, "document.getElementById('review-next').click()");
+    await sleep(200);
+    const sparedPreflight = await textOf(cdp, ops.session, '#preflight');
+    check('operations', 'a spared message is left out of the pre-flight count',
+      /permanently delete 4 messages/.test(sparedPreflight || ''),
+      `pre-flight said ${JSON.stringify(sparedPreflight)}`);
+
+    // Put it back, so the run below is over the full six again.
+    await cdp.evaluate(ops.session, "document.getElementById('run-back').click()");
+    await sleep(150);
+    await cdp.evaluate(
+      ops.session,
+      "document.querySelectorAll('#results-body input[type=checkbox]')[0].click()"
+    );
+    await sleep(150);
+
+    await cdp.evaluate(ops.session, "document.getElementById('review-next').click()");
+    await sleep(200);
+
+    const preflight = await textOf(cdp, ops.session, '#preflight');
+    check('operations', 'the pre-flight counts only what can actually be deleted',
+      /permanently delete 5 messages/.test(preflight || ''),
+      `pre-flight said ${JSON.stringify(preflight)}`);
+    check('operations', 'the pre-flight says the join notice is left alone',
+      /1 message cannot be deleted/.test(preflight || ''), `pre-flight said ${JSON.stringify(preflight)}`);
+    check('operations', 'the pre-flight says it cannot be undone',
+      /cannot be undone/.test(preflight || ''), `pre-flight said ${JSON.stringify(preflight)}`);
+
+    // A big run must refuse to start until the count is typed back. Driven by
+    // swapping in a fabricated result set rather than mocking 150 real deletes,
+    // with the genuine one stashed so the run below is still the real thing.
+    await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.stashed = cl.state.results;
+        cl.state.results = Array.from({length: 150}, (_, i) => ({
+          id: String(900000000000000000 + i), channelId: ${JSON.stringify(OPS_CHANNEL)},
+          type: 0, content: 'x', attachments: [], timestamp: '2024-03-01T12:00:00.000Z'
+        }));
+        cl.renderPreflight();
+      })()`
+    );
+    const confirmShown = await cdp.evaluate(
+      ops.session,
+      "!document.getElementById('confirm-field').classList.contains('hidden')"
+    );
+    check('operations', 'a large run asks for the count to be typed back', confirmShown === true);
+
+    await cdp.evaluate(ops.session, "document.getElementById('start').click()");
+    await sleep(400);
+    const refused = await textOf(cdp, ops.session, '#run-status');
+    check('operations', 'a large run refuses to start until it is confirmed',
+      /type 150/i.test(refused || '') && deleted.length === 0,
+      `status said ${JSON.stringify(refused)}, ${deleted.length} deletes had already fired`);
+
+    // Back to the real six, and actually run it.
+    await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.results = cl.stashed;
+        cl.renderReview();
+        cl.renderPreflight();
+        return cl.state.results.length;
+      })()`
+    );
+    // The automatic backup would open a save dialog and stall the run.
+    await cdp.evaluate(ops.session, "document.getElementById('backup').checked = false");
+    const startedAt = Date.now();
+    await cdp.evaluate(ops.session, "document.getElementById('start').click()");
+
+    const report = await waitFor(
+      'the run to finish',
+      async () => {
+        const hidden = await cdp.evaluate(
+          ops.session,
+          "document.getElementById('run-report').classList.contains('hidden')"
+        );
+        return hidden === false ? await textOf(cdp, ops.session, '#run-report') : null;
+      },
+      { timeout: 60000 }
+    ).catch(async () => `<never finished: ${await textOf(cdp, ops.session, '#run-counter')}>`);
+
+    check('operations', 'the run deletes exactly the messages it promised', deleted.length === 5,
+      `deleted ${deleted.length}: ${JSON.stringify(deleted)}`);
+    check('operations', 'the join notice was never even attempted',
+      !deleted.includes(idFor(Date.UTC(2024, 2, 1, 12, 30, 0))),
+      'a message Discord refuses to delete was sent to the API anyway');
+    check('operations', 'the run reports finishing', /Finished\. 5 messages handled/.test(report || ''),
+      `report said ${JSON.stringify(report)}`);
+
+    check('operations', 'deletes went oldest first',
+      deleted.length === 5 && BigInt(deleted[0]) < BigInt(deleted[4]),
+      `order was ${JSON.stringify(deleted)}`);
+
+    const writes = opsCalls.filter((c) => c.method === 'DELETE');
+    if (writes.length >= 2) {
+      const gaps = writes.slice(1).map((c, i) => c.at - writes[i].at);
+      const smallest = Math.min(...gaps);
+      // The write floor is 900ms. This is the assertion that matters most in
+      // the whole suite: it is the difference between a tool people keep their
+      // account through and one that gets them rate limited into an IP block.
+      check('operations', 'deletes are spaced by the write floor', smallest >= 850,
+        `smallest gap between deletes was ${smallest}ms, gaps ${JSON.stringify(gaps)}`);
+    } else {
+      check('operations', 'deletes are spaced by the write floor', false, 'not enough deletes to measure');
+    }
+
+    check('operations', 'the run took at least as long as the pacing requires',
+      Date.now() - startedAt >= 4 * 900,
+      `finished in ${Date.now() - startedAt}ms, which is faster than five paced writes can be`);
   } finally {
     server.close();
     await shutdown(session);
