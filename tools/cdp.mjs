@@ -247,7 +247,7 @@ export async function findBrowser() {
   throw new Error('No Chromium-based browser found.');
 }
 
-export async function launchWithExtension({ port, dir, headless = true }) {
+export async function launchWithExtension({ port, dir, headless = true, width = 1200, height = 900 }) {
   const binary = await findBrowser();
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'clearline-e2e-'));
   const args = [
@@ -258,7 +258,7 @@ export async function launchWithExtension({ port, dir, headless = true }) {
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-background-timer-throttling',
-    '--window-size=1200,900',
+    `--window-size=${width},${height}`,
     'about:blank',
   ];
   if (headless) args.unshift('--headless=new');

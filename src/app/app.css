@@ -99,7 +99,9 @@ body {
   font-size: 14px;
 }
 
-.bar {
+/* Named for what it is, not its shape. It used to be .bar, which collided with
+   the progress track further down and squashed this card to eight pixels. */
+.summary {
   padding: 12px 22px;
 }
 

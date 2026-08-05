@@ -155,6 +155,18 @@ test('an empty filter set describes itself in plain words', () => {
   assert.equal(filter.describe({}), 'everything you wrote');
 });
 
+test('an empty filter set is recognisable as empty', () => {
+  // The sentence shown before a delete reads differently with and without a
+  // filter, so the caller has to be able to tell them apart without matching
+  // against whatever describe() happened to return.
+  assert.equal(filter.isEmpty({}), true);
+  assert.equal(filter.isEmpty({ contains: '' }), true, 'an untouched text box is not a filter');
+  assert.equal(filter.isEmpty({ contains: 'sorry' }), false);
+  assert.equal(filter.isEmpty({ excludePinned: true }), false);
+  assert.equal(filter.isEmpty({ after: Date.now() }), false);
+  assert.equal(filter.isEmpty({ hasAttachment: true }), false);
+});
+
 test('the description reads as a sentence rather than a list of labels', () => {
   const text = filter.describe({
     contains: 'sorry',

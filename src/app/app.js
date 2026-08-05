@@ -607,9 +607,11 @@
           : 'overwrite and then permanently delete';
 
     const lines = [];
+    const where = `${count(affected, 'message')} in ${state.scopeLabel}`;
     lines.push(
-      `You are about to ${verb} ${count(affected, 'message')} in ${state.scopeLabel}, ` +
-        `matching ${CL.filter.describe(state.filters)}.`
+      CL.filter.isEmpty(state.filters)
+        ? `You are about to ${verb} ${where}. That is everything you wrote there.`
+        : `You are about to ${verb} ${where}, ${CL.filter.describe(state.filters)}.`
     );
     lines.push(`At the pace Clearline runs, that is ${humanDuration(estimate)}.`);
     if (action !== 'edit' && deletable < total) {

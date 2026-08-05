@@ -10,6 +10,7 @@
     "icons": "node tools/icons.mjs",
     "test": "node --test test/*.test.mjs",
     "e2e": "node tools/e2e.mjs",
+    "shots": "node tools/screenshots.mjs",
     "zip": "node tools/build.mjs --zip",
     "all": "node tools/build.mjs --check && node --test test/*.test.mjs && node tools/e2e.mjs"
   },

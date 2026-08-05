@@ -33,12 +33,20 @@ Then load `dist/chrome` as an unpacked extension, or `dist/firefox` via
 icon.
 
 ```bash
-npm test          # 114 unit tests
+npm test          # 121 unit tests
 npm run check     # build plus the release gate
-npm run e2e       # 33 checks against a real browser and a mocked Discord
+npm run e2e       # 39 checks against a real browser and a mocked Discord
 npm run all       # all three
 npm run zip       # store-ready zips into release/
+npm run shots     # store screenshots into store/screenshots/
 ```
+
+Screenshots are captured by driving the built extension through its five steps
+against the same mocked Discord the tests use, so they are photographs of the
+software rather than promises about it. Nothing in that path touches an account.
+
+Store listing copy, permission justifications and the review answers both stores
+ask for live in [store/LISTING.md](store/LISTING.md).
 
 ## How it handles your token
 

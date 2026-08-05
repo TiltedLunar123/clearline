@@ -146,6 +146,26 @@ CL.filter = (function () {
    * user beside a count they are about to act on, so it has to name the same
    * day they picked in the date box.
    */
+  /**
+   * True when nothing has been narrowed down.
+   *
+   * Exists so callers can build a sentence rather than gluing a clause on to
+   * whatever describe() happened to return. "12 messages, everything you wrote"
+   * and "12 messages, containing sorry" do not want the same connecting words.
+   */
+  function isEmpty(filters) {
+    const f = filters || {};
+    return !(
+      f.contains ||
+      f.hasAttachment ||
+      f.hasLink ||
+      f.hasEmbed ||
+      f.excludePinned ||
+      f.after ||
+      f.before
+    );
+  }
+
   function dayOf(value) {
     const d = value instanceof Date ? value : new Date(Number(value));
     const pad = (n) => String(n).padStart(2, '0');
@@ -184,6 +204,7 @@ CL.filter = (function () {
     compile,
     apply,
     describe,
+    isEmpty,
     toWindow,
     startOfDay,
     endOfDay,
