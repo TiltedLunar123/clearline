@@ -12,6 +12,20 @@
         <p class="sub">Search, export and clear your own Discord messages.</p>
       </header>
 
+      <!--
+        One step visible at a time, in order. The alternative, every control on
+        one dense screen, is what makes the existing tools in this category feel
+        like a cockpit, and it puts a delete button next to a filter box before
+        the user has any idea what the filter matches.
+      -->
+      <ol class="rail" id="rail">
+        <li data-step="connect" class="on">Connect</li>
+        <li data-step="where">Where</li>
+        <li data-step="filter">Narrow</li>
+        <li data-step="review">Review</li>
+        <li data-step="run">Act</li>
+      </ol>
+
       <section class="card" id="connect-card">
         <h2>Connect</h2>
         <p class="hint">
@@ -22,9 +36,8 @@
         <p class="status" id="status" role="status" aria-live="polite"></p>
       </section>
 
-      <section class="card hidden" id="account-card">
-        <h2>Signed in</h2>
-        <dl class="facts">
+      <section class="card bar hidden" id="account-card">
+        <dl class="facts inline">
           <dt>Account</dt>
           <dd id="account">-</dd>
           <dt>Servers</dt>
@@ -33,12 +46,190 @@
           <dd id="dm-count">-</dd>
         </dl>
       </section>
+
+      <!-- Step: where ------------------------------------------------------->
+      <section class="card step hidden" id="step-where">
+        <h2>Where should I look?</h2>
+
+        <div class="choice">
+          <label><input type="radio" name="scope-kind" value="guild" checked /> A server</label>
+          <label><input type="radio" name="scope-kind" value="dm" /> A direct message</label>
+        </div>
+
+        <div id="guild-picker">
+          <label class="field">
+            <span>Server</span>
+            <select id="guild-select"><option value="">Loading...</option></select>
+          </label>
+          <label class="field">
+            <span>Channels</span>
+            <select id="channel-select" multiple size="6" disabled>
+              <option value="">Pick a server first</option>
+            </select>
+          </label>
+          <p class="hint tight">
+            Leave the channel list untouched to search the whole server. Ctrl or Cmd click to pick
+            several.
+          </p>
+        </div>
+
+        <div id="dm-picker" class="hidden">
+          <label class="field">
+            <span>Conversation</span>
+            <select id="dm-select"><option value="">Loading...</option></select>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="where-next" class="primary" type="button">Next</button>
+        </div>
+        <p class="status" id="where-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- Step: filter ------------------------------------------------------>
+      <section class="card step hidden" id="step-filter">
+        <h2>Narrow it down</h2>
+        <p class="hint" id="filter-scope-label"></p>
+
+        <label class="field">
+          <span>Contains</span>
+          <input type="text" id="f-contains" placeholder="Leave empty for everything" />
+        </label>
+
+        <div class="choice tight">
+          <label><input type="checkbox" id="f-regex" /> Treat as a pattern</label>
+          <label><input type="checkbox" id="f-case" /> Match case</label>
+        </div>
+
+        <div class="row">
+          <label class="field">
+            <span>Sent on or after</span>
+            <input type="date" id="f-after" />
+          </label>
+          <label class="field">
+            <span>Sent on or before</span>
+            <input type="date" id="f-before" />
+          </label>
+        </div>
+
+        <div class="choice">
+          <label><input type="checkbox" id="f-attachment" /> Has an attachment</label>
+          <label><input type="checkbox" id="f-link" /> Has a link</label>
+          <label><input type="checkbox" id="f-embed" /> Has an embed</label>
+          <label><input type="checkbox" id="f-pinned" checked /> Leave pinned messages alone</label>
+        </div>
+
+        <div class="actions">
+          <button id="filter-back" class="ghost" type="button">Back</button>
+          <button id="search" class="primary" type="button">Search</button>
+        </div>
+        <p class="status" id="filter-status" role="status" aria-live="polite"></p>
+        <div class="progress hidden" id="search-progress">
+          <p class="counter" id="search-counter">Searching...</p>
+          <button id="search-stop" class="ghost small" type="button">Stop and keep what I have</button>
+        </div>
+      </section>
+
+      <!-- Step: review ------------------------------------------------------>
+      <section class="card step hidden" id="step-review">
+        <h2 id="review-heading">Review</h2>
+        <p class="hint" id="review-summary"></p>
+
+        <div class="notice hidden" id="review-truncated"></div>
+
+        <div class="tablewrap">
+          <table class="results">
+            <thead>
+              <tr>
+                <th scope="col">When</th>
+                <th scope="col">Channel</th>
+                <th scope="col">Message</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+        <p class="hint tight" id="results-note"></p>
+
+        <h3>Save a copy</h3>
+        <p class="hint tight">
+          Deleting cannot be undone. Whatever you keep here is the only record you will have.
+        </p>
+        <div class="actions left">
+          <button class="ghost" type="button" data-export="html">Download HTML</button>
+          <button class="ghost" type="button" data-export="json">Download JSON</button>
+          <button class="ghost" type="button" data-export="csv">Download CSV</button>
+        </div>
+
+        <div class="actions">
+          <button id="review-back" class="ghost" type="button">Back</button>
+          <button id="review-next" class="danger" type="button">Continue</button>
+        </div>
+        <p class="status" id="review-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- Step: run --------------------------------------------------------->
+      <section class="card step hidden" id="step-run">
+        <h2>What should I do with them?</h2>
+
+        <div class="choice" id="action-choice">
+          <label><input type="radio" name="action" value="delete" checked /> Delete them</label>
+          <label>
+            <input type="radio" name="action" value="edit-then-delete" /> Overwrite the text, then
+            delete
+          </label>
+          <label><input type="radio" name="action" value="edit" /> Overwrite the text only</label>
+        </div>
+
+        <label class="field hidden" id="replacement-field">
+          <span>Replacement text</span>
+          <input type="text" id="replacement" value="." maxlength="2000" />
+        </label>
+        <p class="hint tight hidden" id="replacement-hint">
+          Overwriting first means the last version anyone logged is the replacement rather than what
+          you wrote. It doubles the number of requests, so it takes about twice as long.
+        </p>
+
+        <label class="check">
+          <input type="checkbox" id="backup" checked />
+          <span>Download an HTML copy before starting</span>
+        </label>
+
+        <div class="preflight" id="preflight"></div>
+
+        <label class="field hidden" id="confirm-field">
+          <span id="confirm-label">Type the number to confirm</span>
+          <input type="text" id="confirm" autocomplete="off" />
+        </label>
+
+        <div class="actions">
+          <button id="run-back" class="ghost" type="button">Back</button>
+          <button id="start" class="danger" type="button">Start</button>
+        </div>
+        <p class="status" id="run-status" role="status" aria-live="polite"></p>
+
+        <div class="progress hidden" id="run-progress">
+          <div class="bar"><div class="fill" id="run-fill"></div></div>
+          <p class="counter" id="run-counter"></p>
+          <p class="hint tight" id="run-eta"></p>
+          <div class="actions left">
+            <button id="run-pause" class="ghost small" type="button">Pause</button>
+            <button id="run-cancel" class="ghost small" type="button">Stop</button>
+          </div>
+        </div>
+
+        <div class="report hidden" id="run-report"></div>
+      </section>
     </main>
 
     <script src="../lib/browser.js"></script>
     <script src="../lib/snowflake.js"></script>
     <script src="../lib/ratelimit.js"></script>
     <script src="../lib/api.js"></script>
+    <script src="../lib/filter.js"></script>
+    <script src="../lib/search.js"></script>
+    <script src="../lib/export.js"></script>
+    <script src="../lib/job.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
