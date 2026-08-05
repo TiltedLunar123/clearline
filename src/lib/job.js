@@ -73,6 +73,17 @@ CL.job = (function () {
 
     const writesPerMessage = action === 'edit-then-delete' ? 2 : 1;
 
+    /**
+     * The account this run is allowed to touch.
+     *
+     * Belt and braces. Search already asks Discord to filter by author and
+     * checks the answer, so nothing should ever reach here that fails this. It
+     * is checked a third time anyway because this is the last point before an
+     * irreversible call, and because an account with Manage Messages would find
+     * a delete of somebody else's message succeeding rather than erroring.
+     */
+    const authorId = cfg.authorId ? String(cfg.authorId) : null;
+
     // Sorted here rather than trusting the caller, because the ordering is a
     // rate limit decision and not a display preference.
     const queue = (cfg.messages || []).slice().sort((a, b) => CL.snowflake.compare(a.id, b.id));
@@ -179,6 +190,16 @@ CL.job = (function () {
 
         const message = queue[state.index];
         state.current = message;
+
+        if (authorId && message.authorId && String(message.authorId) !== authorId) {
+          state.skipped++;
+          skips.push({ message, reason: 'Not written by this account' });
+          onLog({ level: 'error', message: `${message.id}: refused, not written by this account` });
+          state.index++;
+          recomputeEta();
+          emit();
+          continue;
+        }
 
         // Checked here rather than filtered out earlier so the reason survives
         // into the report. A user who selected 400 messages and saw 380 deleted

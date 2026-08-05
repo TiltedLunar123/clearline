@@ -44,14 +44,29 @@ CL.search = (function () {
   }
 
   /**
-   * Discord returns search hits wrapped in context: each entry is a small array
-   * of neighbouring messages with the match flagged `hit`. Older responses did
-   * not always set the flag, so the middle element is the fallback, and that is
-   * genuinely where the hit sits when context is returned symmetrically.
+   * Pull the user's own message out of a search result group.
+   *
+   * Discord returns hits wrapped in context: each entry is a small array of
+   * neighbouring messages, other people's included, with the match flagged
+   * `hit`. Two things follow, and getting either wrong is how a tool like this
+   * deletes something that was never the user's to delete.
+   *
+   * The flag is not load bearing. It is normally present, but the fallback
+   * cannot be "take the middle one": context is only symmetric away from the
+   * ends of a channel, so for the oldest message in a channel the group is
+   * [hit, after] and the middle is the message after it, written by somebody
+   * else. Author is the check that actually holds.
+   *
+   * So candidates are narrowed to the account's own messages first, and the
+   * flag only chooses between them. If none of the group belongs to the
+   * account, the answer is nothing rather than a guess.
    */
-  function hitOf(group) {
-    if (!Array.isArray(group)) return group || null;
-    return group.find((m) => m && m.hit) || group[Math.floor(group.length / 2)] || group[0] || null;
+  function hitOf(group, authorId) {
+    const list = Array.isArray(group) ? group : group ? [group] : [];
+    const mine = authorId
+      ? list.filter((m) => m && String((m.author || {}).id) === String(authorId))
+      : list.filter(Boolean);
+    return mine.find((m) => m.hit) || mine[0] || null;
   }
 
   /**
@@ -167,12 +182,16 @@ CL.search = (function () {
         if (total === null && typeof body.total_results === 'number') total = body.total_results;
 
         const groups = Array.isArray(body.messages) ? body.messages : [];
-        const page = groups.map(hitOf).filter(Boolean);
+        const page = groups.map((group) => hitOf(group, authorId)).filter(Boolean);
         if (page.length === 0) break;
 
         for (const raw of page) {
           const id = String(raw.id);
           if (seen.has(id)) continue;
+          // Checked again rather than trusted from author_id in the request.
+          // The result of this loop becomes a delete queue, and the cost of the
+          // check is nothing next to the cost of being wrong once.
+          if (String((raw.author || {}).id) !== String(authorId)) continue;
           seen.add(id);
           out.push(normalise(raw, scope));
         }

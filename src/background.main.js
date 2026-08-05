@@ -63,6 +63,54 @@
   });
 
   /**
+   * Let exactly one app tab consider itself in charge.
+   *
+   * The pacing guarantee is per limiter, and a limiter lives in a page. Two app
+   * tabs means two queues, each honouring the write floor only against itself,
+   * which doubles the real rate at Discord and quietly undoes the one property
+   * this extension is built around. The toolbar reuses its tab, but nothing
+   * stops a duplicated tab or a pasted URL, so ownership is claimed explicitly
+   * rather than assumed.
+   *
+   * Held in storage.session, so it is forgotten when the browser closes and a
+   * stale id can never lock out a later session.
+   */
+  async function claimApp(senderTabId, force) {
+    if (typeof senderTabId !== 'number') return { ok: true, tabId: senderTabId };
+
+    const stored = await CL.api.storage.session.get('appTabId');
+    const owner = stored.appTabId;
+
+    if (typeof owner === 'number' && owner !== senderTabId) {
+      let alive = true;
+      try {
+        await CL.api.tabs.get(owner);
+      } catch {
+        alive = false;
+      }
+
+      // A tab the user forgot about in another window should not lock them out
+      // forever, so taking over is offered rather than refused outright. It has
+      // to be a deliberate click, because the tab being replaced may be halfway
+      // through a run.
+      if (alive && !force) return { ok: false, owner };
+    }
+
+    await CL.api.storage.session.set({ appTabId: senderTabId });
+
+    // Tell whoever held it to stand down. Broadcast rather than addressed:
+    // tabs.sendMessage reaches content scripts, not extension pages, so the app
+    // tab would never hear it.
+    try {
+      await CL.api.runtime.sendMessage({ type: 'clearline:superseded', owner: senderTabId });
+    } catch {
+      // Nothing listening, which is the ordinary single tab case.
+    }
+
+    return { ok: true, tabId: senderTabId };
+  }
+
+  /**
    * Ask a logged in Discord tab for the session token.
    *
    * The app page cannot read discord.com localStorage itself, and the content
@@ -88,15 +136,23 @@
 
   CL.api.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || sender.id !== CL.api.runtime.id) return;
-    if (message.type !== 'clearline:get-token') return;
 
-    fetchToken().then(sendResponse);
-    // Keeps the channel open for the async reply. Without it the app page sees
-    // undefined and reports "not logged in" on a perfectly good session.
-    return true;
+    if (message.type === 'clearline:get-token') {
+      fetchToken().then(sendResponse);
+      // Keeps the channel open for the async reply. Without it the app page
+      // sees undefined and reports "not logged in" on a perfectly good session.
+      return true;
+    }
+
+    if (message.type === 'clearline:claim-app') {
+      claimApp(sender.tab && sender.tab.id, !!message.force).then(sendResponse);
+      return true;
+    }
+
+    return undefined;
   });
 
   // Exposed so the end to end suite drives the real handoff rather than a
   // reimplementation of it. Nothing else reads this.
-  CL.background = { fetchToken, openApp, DISCORD_MATCHES };
+  CL.background = { fetchToken, openApp, claimApp, DISCORD_MATCHES };
 })();

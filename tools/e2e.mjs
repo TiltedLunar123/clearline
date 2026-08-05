@@ -199,6 +199,16 @@ async function openTab(cdp, url) {
   return { targetId, session };
 }
 
+/**
+ * Only one app tab may hold the queue, so the suite closes each one before
+ * opening the next. Leaving them open would have every later phase testing the
+ * "another tab already owns this" path by accident.
+ */
+async function closeTab(cdp, tab) {
+  await cdp.send('Target.closeTarget', { targetId: tab.targetId }).catch(() => {});
+  await sleep(200);
+}
+
 async function textOf(cdp, session, selector) {
   return cdp.evaluate(
     session,
@@ -334,6 +344,48 @@ async function main() {
         `smallest gap was ${minGap}ms, gaps ${JSON.stringify(gaps)}`);
     }
 
+    /* ---------------- group: one tab ---------------- */
+
+    // The pacing floor is enforced by a limiter, and a limiter lives in a page.
+    // Two app tabs would be two queues, each spacing writes only against
+    // itself, which doubles what Discord actually receives and quietly undoes
+    // the single property this extension is built around.
+    const second = await openTab(cdp, appUrl);
+    await mockApi(cdp, second.session, happyPath());
+    await sleep(300);
+    await cdp.evaluate(second.session, "document.getElementById('connect').click()");
+    await sleep(600);
+
+    const blocked = await textOf(cdp, second.session, '#status');
+    check('one tab', 'a second app tab refuses to run alongside the first',
+      /already open in another tab/i.test(blocked || ''), `status said ${JSON.stringify(blocked)}`);
+
+    const takeoverOffered = await cdp.evaluate(
+      second.session,
+      "!document.getElementById('takeover').classList.contains('hidden')"
+    );
+    check('one tab', 'taking over is offered rather than being a dead end', takeoverOffered === true);
+
+    const stillBlank = await textOf(cdp, second.session, '#account');
+    check('one tab', 'the blocked tab never loaded an account', stillBlank === '-',
+      `account showed ${JSON.stringify(stillBlank)}`);
+
+    // Taking over must stop the tab being replaced, or both queues keep running.
+    await cdp.evaluate(second.session, "document.getElementById('takeover').click()");
+    const supersededMsg = await waitFor(
+      'the first tab to stand down',
+      async () => {
+        const value = await textOf(cdp, app.session, '#status');
+        return value && /took over/i.test(value) ? value : null;
+      },
+      { timeout: 8000 }
+    ).catch(() => '<never told>');
+    check('one tab', 'taking over stops the tab it replaced',
+      /took over/i.test(supersededMsg), `first tab said ${JSON.stringify(supersededMsg)}`);
+
+    await closeTab(cdp, second);
+    await closeTab(cdp, app);
+
     /* ---------------- group: failures ---------------- */
 
     // 401: the client must drop the token and say so rather than looping.
@@ -353,6 +405,8 @@ async function main() {
       { timeout: 10000 }
     ).catch(() => '<no message>');
     check('failures', '401 tells the user to reconnect', /reconnect/i.test(status401), `status said ${JSON.stringify(status401)}`);
+
+    await closeTab(cdp, app401);
 
     // 429: the client must back off and then succeed, without the user seeing
     // an error. This is the path that protects the account.
@@ -398,6 +452,8 @@ async function main() {
     // at what matched, then actually delete it against a mocked Discord. The
     // point of driving it here rather than in unit tests is that the pacing and
     // the guards are properties of the assembled thing, not of any one module.
+    await closeTab(cdp, app429);
+
     const deleted = [];
     const ops = await openTab(cdp, appUrl);
     const opsCalls = await mockApi(cdp, ops.session, operationsMock(deleted));

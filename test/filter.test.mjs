@@ -83,18 +83,35 @@ test('only deletable message types survive the deletable filter', () => {
   assert.equal(matches(msg({ type: 6 })), false, 'a pin notice');
 });
 
-test('a before date includes the whole of that day', () => {
-  // Someone picking "before 5 March" means the 5th counts. Treating it as
-  // midnight would quietly spare a day of messages with no way to notice.
-  const window = filter.toWindow({ before: Date.UTC(2024, 2, 5) });
-  const endOfDay = snowflake.toMillis(window.maxId);
-  assert.equal(new Date(endOfDay).toISOString().slice(0, 10), '2024-03-05');
-  assert.ok(endOfDay >= Date.UTC(2024, 2, 5, 23, 59, 59));
+test('a date range is turned into exact instants, not reinterpreted as days', () => {
+  // The library takes instants. Widening a calendar day is the caller's job,
+  // because a day only means anything in a timezone and doing it here in UTC
+  // shifts the range under everyone who is not on it.
+  const from = Date.UTC(2024, 2, 5, 6, 30);
+  const to = Date.UTC(2024, 2, 9, 18, 45);
+  const window = filter.toWindow({ after: from, before: to });
+
+  assert.equal(snowflake.toMillis(window.minId), from);
+  assert.equal(snowflake.toMillis(window.maxId), to);
 });
 
-test('an after date becomes the lowest id that could exist on that day', () => {
-  const window = filter.toWindow({ after: Date.UTC(2024, 2, 5) });
-  assert.equal(snowflake.toMillis(window.minId), Date.UTC(2024, 2, 5));
+test('a day is widened in local time, so it means the day the user picked', () => {
+  // Someone picking "before 5 March" means the 5th counts, in their own
+  // calendar. Doing this in UTC hands a user in Tokyo the morning of the 6th.
+  const picked = new Date(2024, 2, 5);
+  const start = filter.startOfDay(picked);
+  const end = filter.endOfDay(picked);
+
+  assert.equal(new Date(start).getDate(), 5);
+  assert.equal(new Date(start).getHours(), 0);
+  assert.equal(new Date(end).getDate(), 5);
+  assert.equal(new Date(end).getHours(), 23);
+  assert.equal(end - start, 86400000 - 1);
+});
+
+test('the description names the local day, matching the box it came from', () => {
+  const local = new Date(2024, 2, 5).getTime();
+  assert.equal(filter.describe({ after: local }), 'sent on or after 2024-03-05');
 });
 
 test('a date range is enforced locally as well as in the request', () => {
@@ -102,7 +119,7 @@ test('a date range is enforced locally as well as in the request', () => {
   // hands back messages from outside the range the user chose.
   const matches = filter.compile({
     after: Date.UTC(2024, 1, 1),
-    before: Date.UTC(2024, 1, 29),
+    before: Date.UTC(2024, 1, 29, 23, 59, 59, 999),
   });
   assert.equal(matches(msg({ id: snowflake.fromMillis(Date.UTC(2024, 1, 15)) })), true);
   assert.equal(matches(msg({ id: snowflake.fromMillis(Date.UTC(2023, 1, 15)) })), false);
@@ -148,7 +165,10 @@ test('the description reads as a sentence rather than a list of labels', () => {
 });
 
 test('the description names both ends of a date range', () => {
-  const text = filter.describe({ after: Date.UTC(2024, 0, 1), before: Date.UTC(2024, 11, 31) });
+  const text = filter.describe({
+    after: new Date(2024, 0, 1).getTime(),
+    before: new Date(2024, 11, 31).getTime(),
+  });
   assert.equal(text, 'sent between 2024-01-01 and 2024-12-31');
 });
 

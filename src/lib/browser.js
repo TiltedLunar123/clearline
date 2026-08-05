@@ -8,6 +8,9 @@
 var CL = (function () {
   'use strict';
   const api = typeof browser !== 'undefined' ? browser : chrome;
-  const isFirefox = typeof browser !== 'undefined' && typeof chrome === 'undefined';
-  return { api, isFirefox };
+  // Deliberately no isFirefox flag. Both `browser` and `chrome` exist in
+  // Firefox, and `browser` exists on Chromium too, so every cheap sniff of that
+  // shape is wrong somewhere. Nothing here needs to know which browser it is:
+  // the two real differences are in the manifest, and the build writes those.
+  return { api };
 })();

@@ -40,24 +40,38 @@ CL.filter = (function () {
   /**
    * Turn a date range into the ids Discord wants.
    *
-   * `before` is exclusive at the end of the chosen day rather than its start,
-   * because a person picking "before 5 March" means the 5th is included. Getting
-   * this off by a day silently spares or destroys a day of messages, and the
-   * user has no way to tell which from the count.
+   * `after` and `before` are exact instants, not days. Widening a date to cover
+   * its whole day is the caller's job, and deliberately so: a day only means
+   * anything in a timezone, and this file has no business deciding which one.
+   * Doing the arithmetic here in UTC, while the date box the user typed into
+   * shows their local calendar, shifts the range by the offset and quietly
+   * spares or destroys several hours of messages at each end. The user cannot
+   * tell which from the count, which is what makes it worth being strict about.
    */
   function toWindow(filters) {
     const f = filters || {};
     const window = { minId: null, maxId: null };
 
-    if (f.after) {
+    if (f.after !== null && f.after !== undefined && f.after !== '') {
       const t = f.after instanceof Date ? f.after.getTime() : Number(f.after);
       if (Number.isFinite(t)) window.minId = CL.snowflake.fromMillis(t);
     }
-    if (f.before) {
+    if (f.before !== null && f.before !== undefined && f.before !== '') {
       const t = f.before instanceof Date ? f.before.getTime() : Number(f.before);
-      if (Number.isFinite(t)) window.maxId = CL.snowflake.fromMillis(t + 86400000 - 1);
+      if (Number.isFinite(t)) window.maxId = CL.snowflake.fromMillis(t);
     }
     return window;
+  }
+
+  /** Start and end of the local calendar day a date input names. */
+  function startOfDay(value) {
+    const d = value instanceof Date ? value : new Date(Number(value));
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0).getTime();
+  }
+
+  function endOfDay(value) {
+    const d = value instanceof Date ? value : new Date(Number(value));
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime();
   }
 
   /**
@@ -127,9 +141,15 @@ CL.filter = (function () {
     return (messages || []).filter(matches);
   }
 
+  /**
+   * The local calendar day, not the UTC one. This string is shown back to the
+   * user beside a count they are about to act on, so it has to name the same
+   * day they picked in the date box.
+   */
   function dayOf(value) {
     const d = value instanceof Date ? value : new Date(Number(value));
-    return d.toISOString().slice(0, 10);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
   /**
@@ -165,6 +185,8 @@ CL.filter = (function () {
     apply,
     describe,
     toWindow,
+    startOfDay,
+    endOfDay,
     isDeletable,
     hasLink,
     DELETABLE_TYPES,

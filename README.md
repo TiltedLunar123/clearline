@@ -95,6 +95,15 @@ A few decisions that are deliberate rather than accidental:
   failure you can retry from the report.
 - **Estimates are honest** because the pacing is deterministic. The floor is known
   and the queue is serial, so the time given before you start is the time it takes.
+- **Only one Clearline tab works at a time.** The queue that paces requests lives in
+  the page, so a second tab would be a second queue and Discord would see twice the
+  rate. A second tab says so and offers to take over, and taking over stops the tab
+  it replaced.
+- **Every message is checked as yours three times** before anything touches it: the
+  search asks Discord to filter by author, the answer is checked rather than
+  trusted, and the run checks again immediately before the call. Search results
+  arrive wrapped in other people's messages as context, and on an account with
+  Manage Messages a delete aimed at the wrong one would succeed rather than error.
 
 ## Exports
 

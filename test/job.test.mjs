@@ -292,6 +292,35 @@ test('an empty queue finishes immediately rather than hanging', async () => {
   assert.equal(result.total, 0);
 });
 
+test('a message written by somebody else is refused, not deleted', async () => {
+  // The last of three checks on authorship, and the only one that sits directly
+  // in front of an irreversible call. On an account with Manage Messages the
+  // delete would otherwise succeed against someone else's message.
+  const client = fakeClient();
+  const result = await job
+    .createJob({
+      client,
+      authorId: '111111111111111111',
+      messages: [
+        { ...msg(1), authorId: '111111111111111111' },
+        { ...msg(2), authorId: '222222222222222222' },
+        { ...msg(3), authorId: '111111111111111111' },
+      ],
+    })
+    .start();
+
+  assert.equal(result.done, 2);
+  assert.equal(result.skipped, 1);
+  assert.equal(client.calls.length, 2, 'the other account\'s message never reached the API');
+  assert.match(result.skips[0].reason, /not written by this account/i);
+});
+
+test('the author check does not get in the way when it is not configured', async () => {
+  const client = fakeClient();
+  const result = await job.createJob({ client, messages: [msg(1), msg(2)] }).start();
+  assert.equal(result.done, 2);
+});
+
 test('failures carry the message so they can be retried', async () => {
   const client = fakeClient((id) => (id === idAt(2) ? fail('HTTP_ERROR', 'gateway blew up') : null));
   const result = await job.createJob({ client, messages: [msg(1), msg(2)] }).start();

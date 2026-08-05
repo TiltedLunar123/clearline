@@ -67,16 +67,39 @@ function clientWith(parts) {
 
 const noSleep = { sleep: async () => {} };
 
+const OTHER = { id: '222222222222222222', username: 'someone-else' };
+
 test('the flagged message is the hit, not its context', () => {
   const group = [raw(1), { ...raw(2), hit: true }, raw(3)];
-  assert.equal(search.hitOf(group).content, 'message 2');
+  assert.equal(search.hitOf(group, ME).content, 'message 2');
 });
 
-test('without a flag the middle of the context block is the hit', () => {
-  // Older responses did not always set the flag, and when context comes back
-  // symmetrically the match is genuinely the middle one.
-  const group = [raw(1), raw(2), raw(3)];
-  assert.equal(search.hitOf(group).content, 'message 2');
+test('only the account\'s own messages are candidates for the hit', () => {
+  // Search returns hits wrapped in other people's messages as context. Picking
+  // out of that block without checking who wrote it is how a tool like this
+  // ends up queueing somebody else's message for deletion.
+  const group = [
+    { ...raw(1), author: OTHER },
+    { ...raw(2), hit: true },
+    { ...raw(3), author: OTHER },
+  ];
+  assert.equal(search.hitOf(group, ME).content, 'message 2');
+});
+
+test('a context block with none of the account\'s messages yields nothing', () => {
+  const group = [
+    { ...raw(1), author: OTHER },
+    { ...raw(2), author: OTHER, hit: true },
+  ];
+  assert.equal(search.hitOf(group, ME), null, 'a guess here is a deleted message');
+});
+
+test('the last message in a channel is not mistaken for the one after it', () => {
+  // Context is only symmetric away from the ends of a channel. For the oldest
+  // message the block is [hit, after], so a "take the middle one" fallback
+  // picks the message after it, which somebody else wrote.
+  const group = [raw(1), { ...raw(2), author: OTHER }];
+  assert.equal(search.hitOf(group, ME).content, 'message 1');
 });
 
 test('a message is flattened into one shape whatever endpoint it came from', () => {
@@ -395,4 +418,29 @@ test('the author filter is always sent, so Discord never returns other people', 
   const finder = search.createFinder(clientWith({ search: server.handler }), noSleep);
   await finder.find({ scope: { guildId: '888' }, authorId: ME });
   assert.ok(server.requests.every((r) => r.author_id === ME));
+});
+
+test('a message by somebody else never reaches the result set', async () => {
+  // The request already asks Discord to filter by author. The answer is checked
+  // anyway, because this list becomes a delete queue and an account with Manage
+  // Messages would find the wrong delete succeeding rather than erroring.
+  const mine = corpus(4);
+  const theirs = corpus(4).map((m) => ({
+    ...m,
+    id: String(BigInt(m.id) + 1n),
+    author: OTHER,
+  }));
+  const handler = () => ({
+    status: 200,
+    body: {
+      total_results: 8,
+      messages: [...mine, ...theirs].map((m) => [{ ...m, hit: true }]),
+    },
+  });
+
+  const finder = search.createFinder(clientWith({ search: handler }), noSleep);
+  const result = await finder.find({ scope: { guildId: '888' }, authorId: ME });
+
+  assert.equal(result.messages.length, 4);
+  assert.ok(result.messages.every((m) => m.authorId === ME));
 });

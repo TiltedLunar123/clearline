@@ -25,6 +25,8 @@
     channels: [],
     scope: null,
     scopeLabel: '',
+    tabId: null,
+    superseded: false,
     filters: {},
     results: [],
     /**
@@ -175,8 +177,59 @@
     }
   }
 
-  async function connect() {
+  /**
+   * Refuse to be the second copy.
+   *
+   * Two app tabs means two limiters, each pacing only against itself, so the
+   * write floor stops describing what Discord actually receives. Rather than
+   * try to share a queue across tabs, the second one steps aside.
+   */
+  async function claimOwnership(force) {
+    try {
+      const reply = await CL.api.runtime.sendMessage({
+        type: 'clearline:claim-app',
+        force: !!force,
+      });
+      if (reply && reply.ok === false) {
+        say(
+          $('status'),
+          'Clearline is already open in another tab. Running two copies at once would send ' +
+            'Discord requests twice as fast as is safe, so only one is allowed to work at a time.',
+          'error'
+        );
+        show($('takeover'));
+        return false;
+      }
+      if (reply && typeof reply.tabId === 'number') state.tabId = reply.tabId;
+      hide($('takeover'));
+    } catch {
+      // No background to answer, which happens while the worker restarts. One
+      // tab is the normal case, so carrying on is the right call.
+    }
+    return true;
+  }
+
+  /**
+   * Another tab has taken over. Stop, rather than carry on running a second
+   * queue that the pacing floor knows nothing about.
+   */
+  CL.api.runtime.onMessage.addListener((message) => {
+    if (!message || message.type !== 'clearline:superseded') return;
+    if (state.tabId === null || message.owner === state.tabId) return;
+
+    if (state.job) state.job.cancel();
+    state.superseded = true;
+    $('connect').disabled = true;
+    $('search').disabled = true;
+    $('start').disabled = true;
+    say($('status'), 'Another Clearline tab took over, so this one has stopped.', 'error');
+    say($('run-status'), 'Another Clearline tab took over, so this run was stopped.', 'error');
+  });
+
+  async function connect(force) {
     const button = $('connect');
+    if (!(await claimOwnership(force))) return;
+
     button.disabled = true;
     say($('status'), 'Looking for a signed in Discord tab...');
 
@@ -324,11 +377,19 @@
   /* Step 3: filters and the search itself                             */
   /* ---------------------------------------------------------------- */
 
-  function dateValue(id) {
+  /**
+   * A date box holds a calendar day with no timezone, and the user means their
+   * own. Parsing it as UTC is the classic mistake here: everything shifts by
+   * the offset, and someone in Tokyo asking for "before 5 March" gets the
+   * morning of the 6th thrown in.
+   */
+  function dateValue(id, edge) {
     const raw = $(id).value;
     if (!raw) return null;
-    const parsed = Date.parse(`${raw}T00:00:00Z`);
-    return Number.isFinite(parsed) ? parsed : null;
+    const parts = raw.split('-').map(Number);
+    if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
+    const local = new Date(parts[0], parts[1] - 1, parts[2]);
+    return edge === 'end' ? CL.filter.endOfDay(local) : CL.filter.startOfDay(local);
   }
 
   function readFilters() {
@@ -336,8 +397,8 @@
       contains: $('f-contains').value.trim(),
       useRegex: $('f-regex').checked,
       caseSensitive: $('f-case').checked,
-      after: dateValue('f-after'),
-      before: dateValue('f-before'),
+      after: dateValue('f-after', 'start'),
+      before: dateValue('f-before', 'end'),
       hasAttachment: $('f-attachment').checked,
       hasLink: $('f-link').checked,
       hasEmbed: $('f-embed').checked,
@@ -668,6 +729,7 @@
       runner = CL.job.createJob({
         client,
         messages: selected(),
+        authorId: state.me ? state.me.id : null,
         action,
         editContent: $('replacement').value,
         onProgress: renderProgress,
@@ -712,7 +774,8 @@
   /* Wiring                                                            */
   /* ---------------------------------------------------------------- */
 
-  $('connect').addEventListener('click', connect);
+  $('connect').addEventListener('click', () => connect(false));
+  $('takeover').addEventListener('click', () => connect(true));
 
   for (const radio of document.querySelectorAll('input[name="scope-kind"]')) {
     radio.addEventListener('change', syncScopeKind);
