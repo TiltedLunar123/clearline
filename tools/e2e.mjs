@@ -452,6 +452,33 @@ async function main() {
     check('operations', 'every match is listed for review before anything is destroyed', rows === 6,
       `rendered ${rows} rows`);
 
+    // Unticking a message has to take it out of the run, not just grey it out.
+    // A selection that lies is worse than no selection at all.
+    await cdp.evaluate(
+      ops.session,
+      "document.querySelectorAll('#results-body input[type=checkbox]')[0].click()"
+    );
+    await sleep(150);
+    const afterDrop = await textOf(cdp, ops.session, '#review-heading');
+    check('operations', 'unticking a message takes it out of the count',
+      /5 of 6 messages selected/.test(afterDrop || ''), `heading said ${JSON.stringify(afterDrop)}`);
+
+    await cdp.evaluate(ops.session, "document.getElementById('review-next').click()");
+    await sleep(200);
+    const sparedPreflight = await textOf(cdp, ops.session, '#preflight');
+    check('operations', 'a spared message is left out of the pre-flight count',
+      /permanently delete 4 messages/.test(sparedPreflight || ''),
+      `pre-flight said ${JSON.stringify(sparedPreflight)}`);
+
+    // Put it back, so the run below is over the full six again.
+    await cdp.evaluate(ops.session, "document.getElementById('run-back').click()");
+    await sleep(150);
+    await cdp.evaluate(
+      ops.session,
+      "document.querySelectorAll('#results-body input[type=checkbox]')[0].click()"
+    );
+    await sleep(150);
+
     await cdp.evaluate(ops.session, "document.getElementById('review-next').click()");
     await sleep(200);
 

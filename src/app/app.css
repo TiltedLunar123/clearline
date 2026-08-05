@@ -332,6 +332,18 @@ button:disabled {
   width: 100%;
 }
 
+.results th.pick,
+.results td.pick {
+  width: 1%;
+  padding-right: 0;
+}
+
+/* A dropped message stays visible, so it is obvious what was spared. */
+.results tr.off td:not(.pick) {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
 /* Pre-flight and progress ------------------------------------------- */
 
 .preflight {

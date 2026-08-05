@@ -27,7 +27,16 @@
     scopeLabel: '',
     filters: {},
     results: [],
+    /**
+     * Ids the user has ticked off the list.
+     *
+     * Stored as exclusions rather than as a selection so the default is "all of
+     * what you searched for", and so the set stays empty in the ordinary case
+     * where somebody trusts their own filter.
+     */
+    excluded: new Set(),
     truncated: false,
+    ran: false,
     job: null,
     stopSearch: false,
   };
@@ -104,20 +113,26 @@
     setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
 
+  /** What a run or an export would actually touch. */
+  function selected() {
+    if (state.excluded.size === 0) return state.results;
+    return state.results.filter((m) => !state.excluded.has(m.id));
+  }
+
   function metaFor() {
     return {
       account: state.me ? state.me.username : '',
       scope: state.scopeLabel,
       generatedAt: Date.now(),
       filterSummary: CL.filter.describe(state.filters),
-      total: state.results.length,
+      total: selected().length,
     };
   }
 
   const FORMATS = {
-    html: { mime: 'text/html', build: (m) => CL.exporter.toHTML(state.results, m) },
-    json: { mime: 'application/json', build: (m) => CL.exporter.toJSON(state.results, m) },
-    csv: { mime: 'text/csv', build: (m) => CL.exporter.toCSV(state.results) },
+    html: { mime: 'text/html', build: (m) => CL.exporter.toHTML(selected(), m) },
+    json: { mime: 'application/json', build: (m) => CL.exporter.toJSON(selected(), m) },
+    csv: { mime: 'text/csv', build: () => CL.exporter.toCSV(selected()) },
   };
 
   function exportAs(kind) {
@@ -376,6 +391,8 @@
       });
 
       state.results = CL.filter.apply(found.messages, filters);
+      state.excluded = new Set();
+      state.ran = false;
       state.truncated = !!found.truncated;
       renderReview();
       goTo('review');
@@ -396,8 +413,12 @@
 
   function renderReview() {
     const total = state.results.length;
+    const picked = selected().length;
+
     $('review-heading').textContent = total
-      ? `${count(total, 'message')} matched`
+      ? picked === total
+        ? `${count(total, 'message')} matched`
+        : `${picked.toLocaleString()} of ${count(total, 'message')} selected`
       : 'Nothing matched';
     $('review-summary').textContent = total
       ? `${CL.filter.describe(state.filters)}, in ${state.scopeLabel}.`
@@ -418,6 +439,21 @@
     for (const message of rows) {
       const tr = document.createElement('tr');
 
+      const pick = document.createElement('td');
+      pick.className = 'pick';
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = !state.excluded.has(message.id);
+      box.setAttribute('aria-label', 'Include this message');
+      box.addEventListener('change', () => {
+        if (box.checked) state.excluded.delete(message.id);
+        else state.excluded.add(message.id);
+        tr.classList.toggle('off', !box.checked);
+        refreshSelectionCounts();
+      });
+      pick.appendChild(box);
+      tr.classList.toggle('off', state.excluded.has(message.id));
+
       const when = document.createElement('td');
       when.textContent = message.timestamp ? message.timestamp.slice(0, 16).replace('T', ' ') : '';
 
@@ -430,17 +466,38 @@
       // privileged extension page, and there is no version of this worth risking.
       what.textContent = message.content || (message.attachments.length ? '(attachment only)' : '(no text)');
 
-      tr.append(when, where, what);
+      tr.append(pick, when, where, what);
       body.appendChild(tr);
     }
 
     $('results-note').textContent =
       total > MAX_ROWS
-        ? `Showing the first ${MAX_ROWS.toLocaleString()}. All ${total.toLocaleString()} are included in an export or a run.`
+        ? `Showing the first ${MAX_ROWS.toLocaleString()}. The other ${(total - MAX_ROWS).toLocaleString()} ` +
+          'are still included in an export or a run, and stay selected.'
         : '';
 
-    $('review-next').disabled = total === 0;
-    for (const button of document.querySelectorAll('[data-export]')) button.disabled = total === 0;
+    refreshSelectionCounts();
+  }
+
+  /**
+   * Update everything that depends on the selection without rebuilding the
+   * table, which would lose scroll position on every tick of a checkbox.
+   */
+  function refreshSelectionCounts() {
+    const total = state.results.length;
+    const picked = selected().length;
+
+    $('review-heading').textContent = total
+      ? picked === total
+        ? `${count(total, 'message')} matched`
+        : `${picked.toLocaleString()} of ${count(total, 'message')} selected`
+      : 'Nothing matched';
+
+    $('pick-all').checked = picked > 0;
+    $('pick-all').indeterminate = picked > 0 && picked < total;
+
+    $('review-next').disabled = picked === 0;
+    for (const button of document.querySelectorAll('[data-export]')) button.disabled = picked === 0;
   }
 
   /* ---------------------------------------------------------------- */
@@ -455,7 +512,7 @@
   }
 
   function deletableCount() {
-    return state.results.filter(CL.filter.isDeletable).length;
+    return selected().filter(CL.filter.isDeletable).length;
   }
 
   function syncRunForm() {
@@ -475,7 +532,7 @@
    */
   function renderPreflight() {
     const action = chosenAction();
-    const total = state.results.length;
+    const total = selected().length;
     const deletable = deletableCount();
     const affected = action === 'edit' ? total : deletable;
     const writes = action === 'edit-then-delete' ? 2 : 1;
@@ -514,7 +571,16 @@
     $('confirm-field').classList.toggle('hidden', !needsTyping);
     $('confirm-label').textContent = `Type ${affected} to confirm`;
     $('confirm').value = '';
-    $('start').disabled = affected === 0;
+
+    // A finished run leaves the result set describing messages that mostly no
+    // longer exist. Running it again would report every one of them as "already
+    // gone, counts as done", which looks like success and means nothing.
+    if (state.ran) {
+      const stale = document.createElement('p');
+      stale.textContent = 'These results are from a run that already happened. Search again to act on anything else.';
+      box.appendChild(stale);
+    }
+    $('start').disabled = affected === 0 || state.ran;
   }
 
   function renderProgress(p) {
@@ -576,6 +642,8 @@
       retry.textContent = `Try the ${summary.failures.length} failures again`;
       retry.addEventListener('click', () => {
         state.results = summary.failures.map((f) => f.message);
+        state.excluded = new Set();
+        state.ran = false;
         renderReview();
         hide(box);
         renderPreflight();
@@ -599,7 +667,7 @@
     try {
       runner = CL.job.createJob({
         client,
-        messages: state.results,
+        messages: selected(),
         action,
         editContent: $('replacement').value,
         onProgress: renderProgress,
@@ -633,9 +701,10 @@
     const summary = await runner.start();
 
     hide($('run-progress'));
-    $('start').disabled = false;
     $('run-back').disabled = false;
     state.job = null;
+    state.ran = true;
+    $('start').disabled = true;
     renderReport(summary);
   }
 
@@ -660,6 +729,12 @@
   $('search-stop').addEventListener('click', () => {
     state.stopSearch = true;
     $('search-counter').textContent = 'Stopping after the request in flight...';
+  });
+
+  $('pick-all').addEventListener('change', () => {
+    if ($('pick-all').checked) state.excluded = new Set();
+    else state.excluded = new Set(state.results.map((m) => m.id));
+    renderReview();
   });
 
   $('review-back').addEventListener('click', () => goTo('filter'));

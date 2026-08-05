@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clearline - Message Manager for Discord",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Search, export and bulk delete your own Discord messages. Your token never leaves the browser.",
   "permissions": ["storage"],
   "host_permissions": ["*://discord.com/*"],
