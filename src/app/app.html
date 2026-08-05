@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Clearline</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="head">
+        <h1>Clearline</h1>
+        <p class="sub">Search, export and clear your own Discord messages.</p>
+      </header>
+
+      <section class="card" id="connect-card">
+        <h2>Connect</h2>
+        <p class="hint">
+          Clearline reads your session from an open Discord tab. The token stays in this tab, is
+          never saved, and is forgotten when you close it.
+        </p>
+        <button id="connect" class="primary" type="button">Connect to Discord</button>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="card hidden" id="account-card">
+        <h2>Signed in</h2>
+        <dl class="facts">
+          <dt>Account</dt>
+          <dd id="account">-</dd>
+          <dt>Servers</dt>
+          <dd id="guild-count">-</dd>
+          <dt>Direct messages</dt>
+          <dd id="dm-count">-</dd>
+        </dl>
+      </section>
+    </main>
+
+    <script src="../lib/browser.js"></script>
+    <script src="../lib/snowflake.js"></script>
+    <script src="../lib/ratelimit.js"></script>
+    <script src="../lib/api.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

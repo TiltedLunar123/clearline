@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fixture: a page that hides localStorage the way Discord does</title>
+  </head>
+  <body>
+    <h1>Token handoff fixture</h1>
+    <p id="state">setting up</p>
+
+    <!--
+      Stands in for discord.com so the suite never touches a real account.
+
+      The whole architecture rests on one claim: a content script in the
+      extension's isolated world can still read localStorage after the page has
+      removed it from its own window. Discord does that removal to defeat the
+      "paste this in your console" token scam, and if the claim is wrong the
+      extension needs a completely different approach, so it gets tested against
+      a page that is at least as hostile as the real one.
+
+      Both removal styles are applied, because they fail differently:
+        - `delete window.localStorage` is what most write-ups describe.
+        - redefining the property to throw is stricter, and is what actually
+          breaks naive `try { localStorage } catch {}` probes.
+    -->
+    <script src="fake-discord.js"></script>
+  </body>
+</html>

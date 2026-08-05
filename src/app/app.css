@@ -1,0 +1,117 @@
+/* Placeholder styling. The real visual pass comes with the browse and filter UI. */
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --ink: #1c1e21;
+  --muted: #63676d;
+  --line: #dfe1e5;
+  --accent: #4453c4;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181b;
+    --card: #202226;
+    --ink: #e9eaec;
+    --muted: #9a9ea6;
+    --line: #32353b;
+    --accent: #8f9bf0;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 40px 24px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.shell {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  margin: 4px 0 28px;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.hint {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.primary {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 16px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.status {
+  margin: 12px 0 0;
+  min-height: 1.4em;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.status[data-tone='error'] {
+  color: #c0392f;
+}
+
+@media (prefers-color-scheme: dark) {
+  .status[data-tone='error'] {
+    color: #f08a80;
+  }
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 20px;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.hidden {
+  display: none;
+}

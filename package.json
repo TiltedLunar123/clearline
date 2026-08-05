@@ -1,0 +1,17 @@
+{
+  "name": "clearline",
+  "version": "0.1.0",
+  "description": "Search, export and bulk delete your own Discord messages. Chrome and Firefox, MV3.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "check": "node tools/build.mjs --check",
+    "icons": "node tools/icons.mjs",
+    "test": "node --test test/*.test.mjs",
+    "e2e": "node tools/e2e.mjs",
+    "zip": "node tools/build.mjs --zip",
+    "all": "node tools/build.mjs --check && node --test test/*.test.mjs && node tools/e2e.mjs"
+  },
+  "license": "MIT"
+}

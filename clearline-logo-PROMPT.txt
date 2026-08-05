@@ -1,0 +1,30 @@
+Image-gen prompt for the Clearline extension icon.
+Render at 1024x1024, then downscale to 128/96/48/32/16 for src/icons/.
+
+PROMPT
+------
+A flat vector app icon on a solid rounded-square background, no gradient mesh,
+no photorealism. The mark is a short vertical stack of three horizontal bars of
+unequal length, like lines of chat text. The top bar is solid and fully opaque.
+The middle bar is half faded. The bottom bar has dissolved into four or five
+small squares drifting rightward and downward, as if being swept away. Generous
+negative space around the mark. Two colours only plus the background. Crisp
+geometric edges that survive being scaled to 16 pixels: no thin strokes below
+about 6% of the canvas width, no text, no letterforms, no drop shadows, no
+Discord logo or any element resembling it.
+
+Background: deep indigo. Mark: near-white, with the dissolving squares stepping
+down in opacity.
+
+CONSTRAINTS
+-----------
+- Must not resemble the Discord wordmark, the Discord face, or Discord's blurple
+  closely enough to read as official. Store review and trademark both care.
+- Must stay legible as a 16px favicon, which is what kills most detailed marks.
+- No text in the image.
+
+WHY THIS MARK
+-------------
+The product is bulk clearing of your own messages. Bars dissolving left to right
+reads as "messages going away under control" rather than "delete", which is the
+tone the whole extension aims for: deliberate, paced, reversible in intent.

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!--
+    The 16 and 32 px drawing.
+
+    Downscaling the full mark merges the five fragments into a single smear and
+    the icon reads as a grey blob in the toolbar. This variant drops to two bars
+    and two fragments, and fattens everything, so the idea survives at 16px.
+  -->
+  <rect width="256" height="256" rx="56" fill="#1E2140"/>
+
+  <g fill="#F2F4FF">
+    <rect x="46" y="86" width="164" height="34" rx="17"/>
+    <rect x="46" y="140" width="72" height="34" rx="17" opacity="0.55"/>
+    <rect x="132" y="140" width="34" height="34" rx="10" opacity="0.34"/>
+    <rect x="180" y="146" width="22" height="22" rx="7" opacity="0.18"/>
+  </g>
+</svg>
