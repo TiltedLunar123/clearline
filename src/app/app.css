@@ -423,6 +423,26 @@ button:disabled {
   overflow: auto;
 }
 
+.foot {
+  margin-top: 28px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.foot p {
+  margin: 0 0 4px;
+}
+
+.foot a {
+  color: var(--accent);
+}
+
+.foot .fine {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
 .hidden {
   display: none;
 }

@@ -485,6 +485,23 @@ async function main() {
       { timeout: 10000 }
     ).catch(() => '<never loaded>');
 
+    // The one outbound link. The build gate checks the source; this checks what
+    // the browser actually resolved, which is what a user would click.
+    const link = await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const a = document.querySelector('.foot a');
+        if (!a) return null;
+        return JSON.stringify({ href: a.href, target: a.target, rel: a.rel });
+      })()`
+    );
+    const parsed = link ? JSON.parse(link) : null;
+    check('operations', 'the support link is isolated from the extension page',
+      !!parsed && parsed.target === '_blank' && /noopener/.test(parsed.rel) && /noreferrer/.test(parsed.rel),
+      `link resolved to ${link}`);
+    check('operations', 'the support link points where it should',
+      !!parsed && parsed.href.indexOf('buymeacoffee.com/judeh1l') !== -1, `link resolved to ${link}`);
+
     check('operations', 'picking a server loads its text channels', channelsLoaded === '#general',
       `channel list was ${JSON.stringify(channelsLoaded)}; a voice channel holds no messages and must not be offered`);
 

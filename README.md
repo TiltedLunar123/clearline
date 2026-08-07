@@ -66,6 +66,11 @@ That is a real trade and worth being plain about:
   so the list stays that short.
 - No analytics, no telemetry, no server. There is nothing on the other end because
   there is no other end.
+- There is one outbound link, to a Buy Me a Coffee page at the bottom of the app.
+  It is a link and nothing more: nothing is requested from that host in the
+  background, it opens in a new tab with `rel="noopener noreferrer"`, and the build
+  gate keeps link hosts and connectable hosts as separate lists so it can never
+  become a request.
 
 ## Rate limiting
 

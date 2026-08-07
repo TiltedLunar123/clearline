@@ -56,6 +56,20 @@ const ALLOWED_HOSTS = ['*://discord.com/*'];
 const NETWORK_ALLOWED_FILES = ['lib/api.js'];
 const ALLOWED_FETCH_HOSTS = ['discord.com', 'cdn.discordapp.com', 'media.discordapp.net'];
 
+/**
+ * Hosts allowed to appear as a link the user can click, and nothing more.
+ *
+ * Separate from the fetch list on purpose. An anchor the user chooses to follow
+ * and a connection the extension opens by itself are different risks, and
+ * collapsing them into one list would mean either refusing to ever link
+ * anywhere, or quietly granting a support page the same standing as the API.
+ *
+ * The separation is enforced below: a host in this list is still rejected
+ * inside the one file permitted to open a connection, so a link host can never
+ * become a fetch target.
+ */
+const ALLOWED_LINK_HOSTS = ['buymeacoffee.com'];
+
 const MAX_DESCRIPTION = 132;
 const MAX_NAME = 75;
 
@@ -261,11 +275,32 @@ async function check(base) {
     }
 
     // Hosts are read from the original text, since blanking removed the strings.
+    // The file that may open a connection is held to the fetch list alone, so a
+    // host approved only for linking cannot turn into a request from there.
+    const permitted = NETWORK_ALLOWED_FILES.includes(rel)
+      ? ALLOWED_FETCH_HOSTS
+      : ALLOWED_FETCH_HOSTS.concat(ALLOWED_LINK_HOSTS);
+
     for (const m of text.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)) {
       const host = m[1].toLowerCase();
-      if (!ALLOWED_FETCH_HOSTS.includes(host)) {
+      if (!permitted.includes(host)) {
         const line = text.slice(0, m.index).split('\n').length;
-        problems.push(`non-Discord host in shipped source -> ${rel}:${line} ${host}`);
+        problems.push(`host not allowed in shipped source -> ${rel}:${line} ${host}`);
+      }
+    }
+
+    // A link host is only ever a link. If one shows up in an anchor without the
+    // tab isolation, or as anything other than an href, that is worth failing.
+    for (const host of ALLOWED_LINK_HOSTS) {
+      if (!text.includes(host)) continue;
+      const anchors = text.match(new RegExp(`<a[^>]*${host.replace('.', '\\.')}[^>]*>`, 'gi')) || [];
+      for (const anchor of anchors) {
+        if (!/rel=("|')[^"']*noopener/i.test(anchor) || !/rel=("|')[^"']*noreferrer/i.test(anchor)) {
+          problems.push(`link to ${host} in ${rel} must carry rel="noopener noreferrer"`);
+        }
+        if (!/target=("|')_blank\1/i.test(anchor)) {
+          problems.push(`link to ${host} in ${rel} must open in a new tab`);
+        }
       }
     }
   });

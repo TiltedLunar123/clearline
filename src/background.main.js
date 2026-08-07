@@ -75,7 +75,27 @@
    * Held in storage.session, so it is forgotten when the browser closes and a
    * stale id can never lock out a later session.
    */
-  async function claimApp(senderTabId, force) {
+  /**
+   * Claims are serialised through here, one at a time.
+   *
+   * Reading the current owner and writing the new one are two awaits with a gap
+   * between them, so two tabs claiming at once can both read "nobody owns this"
+   * and both write. They then each broadcast, each sees the other's broadcast
+   * naming a different owner, and both stand down. Nothing is destroyed, but
+   * the user is left with two dead tabs and no explanation.
+   */
+  let claims = Promise.resolve();
+
+  function claimApp(senderTabId, force) {
+    const result = claims.then(() => resolveClaim(senderTabId, force));
+    claims = result.then(
+      () => {},
+      () => {}
+    );
+    return result;
+  }
+
+  async function resolveClaim(senderTabId, force) {
     if (typeof senderTabId !== 'number') return { ok: true, tabId: senderTabId };
 
     const stored = await CL.api.storage.session.get('appTabId');

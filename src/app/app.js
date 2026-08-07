@@ -747,9 +747,17 @@
     if ($('backup').checked) {
       try {
         say($('run-status'), 'Saving a copy first...');
-        exportAs('html');
+        const meta = metaFor();
+        const text = CL.exporter.toHTML(selected(), meta);
+        // Built and checked before it is handed over, rather than trusting that
+        // producing it worked. An empty file that looks like a backup is worse
+        // than no backup, because it is the thing the user will reach for.
+        if (!text || text.indexOf('</html>') === -1) {
+          throw new Error('The copy came out incomplete.');
+        }
+        download(text, CL.exporter.filenameFor(meta, 'html'), 'text/html');
       } catch (err) {
-        say($('run-status'), `Could not save the copy, so nothing was deleted. ${err.message}`, 'error');
+        say($('run-status'), `Could not save the copy, so nothing was touched. ${err.message}`, 'error');
         return;
       }
     }

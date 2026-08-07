@@ -50,6 +50,23 @@ discards it when you close the browser.
 
 That is the whole list. Clearline cannot read any other website.
 
+## The support link
+
+The bottom of the Clearline page has a link to a Buy Me a Coffee page. It is an
+ordinary link and nothing happens unless you click it.
+
+- It is not loaded, contacted, or pinged in the background. Nothing is requested from
+  that site unless you choose to go there.
+- It opens in a new tab and carries `rel="noopener noreferrer"`, so the page you land
+  on is not told which page sent you and cannot reach back into the Clearline tab.
+- Nothing about you, your account, or your messages is attached to it. It is the same
+  static address for everyone.
+
+If you do follow it, Buy Me a Coffee handles that visit under its own privacy policy.
+The extension's build refuses to let that address be used for anything other than a
+link, and refuses to let it appear at all in the one file permitted to open a network
+connection.
+
 ## Data Discord receives
 
 Using Clearline causes your browser to make requests to Discord's API as your

@@ -115,6 +115,10 @@ actioned for it. Clearline paces itself far more carefully than the alternatives
 which lowers the odds without removing them. If losing the account would be a serious
 problem, export first and decide whether the deletion is worth it.
 
+There is one link in the extension, to a Buy Me a Coffee page, at the bottom of the
+window. It is optional, it is a link and nothing more, and nothing is requested from
+that site unless you click it.
+
 Clearline is free and open source under the MIT licence. It is not affiliated with,
 endorsed by, or connected to Discord Inc.
 ```
