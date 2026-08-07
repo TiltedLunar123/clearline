@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Same mark as the extension icon, without the rounded plate behind it, so
+       it can sit directly on a tile background. -->
+  <g fill="#F2F4FF">
+    <rect x="52" y="74" width="152" height="26" rx="13"/>
+    <rect x="52" y="116" width="116" height="26" rx="13" opacity="0.62"/>
+    <rect x="52" y="158" width="46" height="26" rx="13" opacity="0.44"/>
+    <rect x="110" y="158" width="26" height="26" rx="8" opacity="0.32"/>
+    <rect x="148" y="161" width="20" height="20" rx="6" opacity="0.22"/>
+    <rect x="178" y="164" width="14" height="14" rx="4" opacity="0.15"/>
+    <rect x="202" y="166" width="10" height="10" rx="3" opacity="0.09"/>
+  </g>
+</svg>

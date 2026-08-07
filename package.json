@@ -11,6 +11,7 @@
     "test": "node --test test/*.test.mjs",
     "e2e": "node tools/e2e.mjs",
     "shots": "node tools/screenshots.mjs",
+    "promo": "node tools/promo.mjs",
     "zip": "node tools/build.mjs --zip",
     "all": "node tools/build.mjs --check && node --test test/*.test.mjs && node tools/e2e.mjs"
   },

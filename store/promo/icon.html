@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Clearline store icon</title>
+    <style>
+      /*
+        The store icon, which follows different rules to the promo tiles.
+        Chrome wants 96x96 of artwork centred in a 128x128 canvas with 16px of
+        genuinely transparent padding on each side. Filling the whole canvas
+        makes the icon look oversized beside every other extension in a list,
+        and filling the padding with a colour breaks in whichever of light or
+        dark mode you did not design for.
+
+        So this page renders transparent, and tools/promo.mjs turns the
+        browser's background off for it alone.
+      */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 128px;
+        height: 128px;
+        overflow: hidden;
+        background: transparent;
+      }
+      svg {
+        display: block;
+        width: 96px;
+        height: 96px;
+        margin: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+      <rect width="256" height="256" rx="56" fill="#1E2140" />
+      <!--
+        The plate is dark, so on a dark store background its edge disappears and
+        the mark looks like it is floating. A faint inner ring holds the shape
+        without reading as a border in light mode, which is what Chrome's own
+        advice suggests for mostly dark icons.
+      -->
+      <rect
+        x="3"
+        y="3"
+        width="250"
+        height="250"
+        rx="53"
+        fill="none"
+        stroke="#F2F4FF"
+        stroke-opacity="0.2"
+        stroke-width="6"
+      />
+      <g fill="#F2F4FF">
+        <rect x="52" y="74" width="152" height="26" rx="13" />
+        <rect x="52" y="116" width="116" height="26" rx="13" opacity="0.62" />
+        <rect x="52" y="158" width="46" height="26" rx="13" opacity="0.44" />
+        <rect x="110" y="158" width="26" height="26" rx="8" opacity="0.32" />
+        <rect x="148" y="161" width="20" height="20" rx="6" opacity="0.22" />
+        <rect x="178" y="164" width="14" height="14" rx="4" opacity="0.15" />
+        <rect x="202" y="166" width="10" height="10" rx="3" opacity="0.09" />
+      </g>
+    </svg>
+  </body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Clearline marquee promo tile</title>
+    <style>
+      /*
+        1400x560. This one gets real space, so it shows the thing that actually
+        distinguishes the product: the sentence you get immediately before a
+        delete, spelling out the number and that it cannot be undone. A picture
+        of the promise beats another list of features.
+      */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 1400px;
+        height: 560px;
+        overflow: hidden;
+      }
+      body {
+        background: #1e2140;
+        background-image: radial-gradient(90% 120% at 96% 6%, #2f3468 0%, #1e2140 58%);
+        color: #f2f4ff;
+        font: 400 17px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        display: grid;
+        grid-template-columns: 1fr 620px;
+        align-items: center;
+        gap: 56px;
+        padding: 0 72px;
+        box-sizing: border-box;
+      }
+
+      /* Cropped to the artwork's own bounds. The icon's viewBox is the full 256
+         square because it has a plate behind it; standing on its own, that
+         square is mostly empty and the mark reads as small and badly placed. */
+      .mark {
+        width: 132px;
+        height: 95px;
+        margin-bottom: 26px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 62px;
+        font-weight: 650;
+        letter-spacing: -0.025em;
+        line-height: 1;
+      }
+      .tag {
+        margin: 14px 0 0;
+        font-size: 23px;
+        color: #c3c9ee;
+        max-width: 500px;
+      }
+      ul {
+        margin: 26px 0 0;
+        padding: 0;
+        list-style: none;
+        font-size: 16px;
+        color: #9aa2d0;
+      }
+      li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      li::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #8f9bf0;
+        flex: none;
+      }
+
+      /* A restatement of the real pre-flight panel, not a screenshot of it. */
+      .card {
+        background: #23264a;
+        border: 1px solid #383d76;
+        border-radius: 16px;
+        padding: 30px 32px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+      }
+      .card h2 {
+        margin: 0 0 20px;
+        font-size: 19px;
+        font-weight: 600;
+        color: #eef0ff;
+      }
+      .warn {
+        background: #35301c;
+        border: 1px solid #5b512a;
+        border-radius: 11px;
+        padding: 20px 22px;
+        font-size: 17px;
+        line-height: 1.55;
+        color: #f3e9cf;
+      }
+      .warn p {
+        margin: 0 0 10px;
+      }
+      .warn p:last-child {
+        margin: 0;
+        font-weight: 650;
+        color: #ffeec2;
+      }
+      .row {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 22px;
+      }
+      .btn {
+        border-radius: 9px;
+        padding: 11px 22px;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .ghost {
+        border: 1px solid #454a86;
+        color: #c3c9ee;
+      }
+      .danger {
+        background: #b3261e;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <svg class="mark" viewBox="44 66 176 126" xmlns="http://www.w3.org/2000/svg">
+        <g fill="#F2F4FF">
+          <rect x="52" y="74" width="152" height="26" rx="13" />
+          <rect x="52" y="116" width="116" height="26" rx="13" opacity="0.62" />
+          <rect x="52" y="158" width="46" height="26" rx="13" opacity="0.44" />
+          <rect x="110" y="158" width="26" height="26" rx="8" opacity="0.32" />
+          <rect x="148" y="161" width="20" height="20" rx="6" opacity="0.22" />
+          <rect x="178" y="164" width="14" height="14" rx="4" opacity="0.15" />
+          <rect x="202" y="166" width="10" height="10" rx="3" opacity="0.09" />
+        </g>
+      </svg>
+      <h1>Clearline</h1>
+      <p class="tag">Search, export and bulk delete your own Discord messages.</p>
+      <ul>
+        <li>See every message before anything is deleted</li>
+        <li>Paced so Discord does not rate limit your account</li>
+        <li>Saves a copy first, in HTML, JSON or CSV</li>
+        <li>Your token never leaves the browser</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>What should I do with them?</h2>
+      <div class="warn">
+        <p>
+          You are about to permanently delete 1,204 messages in Study Group, containing
+          &quot;sorry&quot;, sent on or before 2025&#8209;06&#8209;30.
+        </p>
+        <p>At the pace Clearline runs, that is about 18 minutes.</p>
+        <p>This cannot be undone.</p>
+      </div>
+      <div class="row">
+        <div class="btn ghost">Back</div>
+        <div class="btn danger">Start</div>
+      </div>
+    </div>
+  </body>
+</html>

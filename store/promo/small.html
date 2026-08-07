@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Clearline small promo tile</title>
+    <style>
+      /*
+        440x280. Shown small in a grid next to a dozen others, so it carries the
+        mark, the name and one claim, and nothing else. Anything more turns to
+        texture at the size this is actually viewed.
+      */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 440px;
+        height: 280px;
+        overflow: hidden;
+      }
+      body {
+        background: #1e2140;
+        background-image: radial-gradient(120% 100% at 100% 0%, #2b2f5c 0%, #1e2140 62%);
+        color: #f2f4ff;
+        font: 400 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0 34px;
+        box-sizing: border-box;
+      }
+      /* Cropped to the artwork's own bounds, since there is no plate behind it
+         here to justify the empty square the icon's viewBox carries. */
+      .mark {
+        width: 96px;
+        height: 69px;
+        margin-bottom: 20px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 40px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 8px 0 0;
+        font-size: 16px;
+        color: #b9bfe6;
+        max-width: 330px;
+      }
+      .rule {
+        width: 44px;
+        height: 4px;
+        border-radius: 2px;
+        background: #8f9bf0;
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg class="mark" viewBox="44 66 176 126" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#F2F4FF">
+        <rect x="52" y="74" width="152" height="26" rx="13" />
+        <rect x="52" y="116" width="116" height="26" rx="13" opacity="0.62" />
+        <rect x="52" y="158" width="46" height="26" rx="13" opacity="0.44" />
+        <rect x="110" y="158" width="26" height="26" rx="8" opacity="0.32" />
+        <rect x="148" y="161" width="20" height="20" rx="6" opacity="0.22" />
+        <rect x="178" y="164" width="14" height="14" rx="4" opacity="0.15" />
+        <rect x="202" y="166" width="10" height="10" rx="3" opacity="0.09" />
+      </g>
+    </svg>
+    <h1>Clearline</h1>
+    <p>Bulk delete and export your own Discord messages, at a pace that keeps your account.</p>
+    <div class="rule"></div>
+  </body>
+</html>
