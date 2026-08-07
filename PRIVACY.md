@@ -27,6 +27,18 @@ they can be shown to you, exported if you ask, and acted on if you choose.
 - If you export them, the file is written by your browser to wherever you save it.
   Clearline does not keep a copy and does not see where it went.
 
+**Your Discord account name and id.** To find the messages you wrote, Clearline has to
+know which account you are, so it asks Discord who you are signed in as.
+
+- Discord's answer includes fields Clearline has no use for, including the email
+  address on the account. Clearline keeps three of them, the account id, the username
+  and the discriminator, and discards the rest rather than holding on to data it never
+  reads.
+- The id is used to ask Discord for only your own messages. The name is shown at the
+  top of the window and written into the header of an export you asked for.
+- They live in the tab's memory, are never written to storage, and go when you close
+  the tab.
+
 **One number in extension storage.** Clearline stores the tab id of the open
 Clearline tab, using `storage.session`, so a second tab knows another one is already
 running. It is a small integer, it identifies nothing about you, and the browser

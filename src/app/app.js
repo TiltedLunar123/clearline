@@ -274,7 +274,12 @@
       const guilds = await client.guilds();
       const dms = await client.directMessages();
 
-      state.me = me;
+      // Narrowed rather than kept whole. Discord's /users/@me answers with the
+      // account's email address, among other things this has no use for, and
+      // holding data you never read is how it ends up somewhere by accident.
+      // Three fields are needed: the id to filter messages by author, and the
+      // name to show and to put in an export header.
+      state.me = { id: me.id, username: me.username, discriminator: me.discriminator };
       state.guilds = guilds;
       state.dms = dms;
 
