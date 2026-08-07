@@ -27,6 +27,8 @@
     scopeLabel: '',
     tabId: null,
     superseded: false,
+    /** Identifies this page's own claim, so it can tell its own from another's. */
+    claimToken: (self.crypto && self.crypto.randomUUID && self.crypto.randomUUID()) || String(Date.now()),
     filters: {},
     results: [],
     /**
@@ -189,6 +191,7 @@
       const reply = await CL.api.runtime.sendMessage({
         type: 'clearline:claim-app',
         force: !!force,
+        token: state.claimToken,
       });
       if (reply && reply.ok === false) {
         say(
@@ -210,20 +213,41 @@
   }
 
   /**
-   * Another tab has taken over. Stop, rather than carry on running a second
-   * queue that the pacing floor knows nothing about.
+   * Another tab has taken over. Stop everything that talks to Discord.
+   *
+   * Disabling the buttons is not enough on its own, because the code that runs
+   * afterwards turns them back on: a search re-enables its own button when it
+   * finishes, and the pre-flight recomputes whether Start should be available.
+   * So this sets a flag, and every path that reaches the network checks it.
    */
-  CL.api.runtime.onMessage.addListener((message) => {
-    if (!message || message.type !== 'clearline:superseded') return;
-    if (state.tabId === null || message.owner === state.tabId) return;
-
-    if (state.job) state.job.cancel();
+  function standDown() {
+    if (state.superseded) return;
     state.superseded = true;
+
+    // Both of these matter. Cancelling the job stops a run; setting stopSearch
+    // stops a search that is partway through paging, which would otherwise keep
+    // going on a limiter the new owner knows nothing about.
+    state.stopSearch = true;
+    if (state.job) state.job.cancel();
+
     $('connect').disabled = true;
     $('search').disabled = true;
     $('start').disabled = true;
+    hide($('takeover'));
     say($('status'), 'Another Clearline tab took over, so this one has stopped.', 'error');
-    say($('run-status'), 'Another Clearline tab took over, so this run was stopped.', 'error');
+    if (state.job || state.ran) {
+      say($('run-status'), 'Another Clearline tab took over, so this run was stopped.', 'error');
+    }
+  }
+
+  CL.api.runtime.onMessage.addListener((message) => {
+    if (!message || message.type !== 'clearline:superseded') return;
+    // Matched on the token this page generated before it ever asked, not on a
+    // tab id learned from the reply. The background broadcasts before that reply
+    // arrives, so a tab comparing ids can be told to stand down by its own
+    // successful claim.
+    if (message.token && message.token === state.claimToken) return;
+    standDown();
   });
 
   async function connect(force) {
@@ -300,6 +324,7 @@
   }
 
   async function loadChannels() {
+    if (state.superseded) return;
     const guildId = $('guild-select').value;
     const select = $('channel-select');
     if (!guildId) {
@@ -411,6 +436,7 @@
   }
 
   async function runSearch() {
+    if (state.superseded) return;
     const button = $('search');
     let filters;
     try {
@@ -460,7 +486,10 @@
     } catch (err) {
       say($('filter-status'), (err && err.message) || 'The search failed.', 'error');
     } finally {
-      button.disabled = false;
+      // Not unconditionally false. A tab that was superseded while searching
+      // would otherwise hand its Search button back at exactly the moment it
+      // was supposed to have stopped.
+      button.disabled = state.superseded;
       hide($('search-progress'));
     }
   }
@@ -531,12 +560,6 @@
       body.appendChild(tr);
     }
 
-    $('results-note').textContent =
-      total > MAX_ROWS
-        ? `Showing the first ${MAX_ROWS.toLocaleString()}. The other ${(total - MAX_ROWS).toLocaleString()} ` +
-          'are still included in an export or a run, and stay selected.'
-        : '';
-
     refreshSelectionCounts();
   }
 
@@ -556,6 +579,18 @@
 
     $('pick-all').checked = picked > 0;
     $('pick-all').indeterminate = picked > 0 && picked < total;
+
+    // Counted rather than asserted. The note used to say the rows past the
+    // render limit "stay selected", which stopped being true the moment anyone
+    // used the select-none box, and a note about a delete set has to be right.
+    const beyond = Math.max(0, total - MAX_ROWS);
+    const beyondPicked = beyond
+      ? state.results.slice(MAX_ROWS).reduce((n, m) => n + (state.excluded.has(m.id) ? 0 : 1), 0)
+      : 0;
+    $('results-note').textContent = beyond
+      ? `Showing the first ${MAX_ROWS.toLocaleString()}. Of the other ${beyond.toLocaleString()}, ` +
+        `${beyondPicked.toLocaleString()} ${beyondPicked === 1 ? 'is' : 'are'} selected and counted above.`
+      : '';
 
     $('review-next').disabled = picked === 0;
     for (const button of document.querySelectorAll('[data-export]')) button.disabled = picked === 0;
@@ -643,7 +678,7 @@
       stale.textContent = 'These results are from a run that already happened. Search again to act on anything else.';
       box.appendChild(stale);
     }
-    $('start').disabled = affected === 0 || state.ran;
+    $('start').disabled = affected === 0 || state.ran || state.superseded;
   }
 
   function renderProgress(p) {
@@ -718,8 +753,13 @@
   }
 
   async function start() {
+    // Both guards are belt and braces. Nothing yields between here and the
+    // point the button is disabled, so neither should be reachable, but this is
+    // the one function in the app that cannot be allowed to run twice.
+    if (state.superseded || state.job) return;
+
     const action = chosenAction();
-    const affected = action === 'edit' ? state.results.length : deletableCount();
+    const affected = action === 'edit' ? selected().length : deletableCount();
 
     if (affected > CONFIRM_ABOVE && action !== 'edit' && $('confirm').value.trim() !== String(affected)) {
       say($('run-status'), `Type ${affected} in the box to confirm.`, 'error');

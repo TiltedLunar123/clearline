@@ -86,8 +86,8 @@
    */
   let claims = Promise.resolve();
 
-  function claimApp(senderTabId, force) {
-    const result = claims.then(() => resolveClaim(senderTabId, force));
+  function claimApp(senderTabId, force, token) {
+    const result = claims.then(() => resolveClaim(senderTabId, force, token));
     claims = result.then(
       () => {},
       () => {}
@@ -95,7 +95,7 @@
     return result;
   }
 
-  async function resolveClaim(senderTabId, force) {
+  async function resolveClaim(senderTabId, force, token) {
     if (typeof senderTabId !== 'number') return { ok: true, tabId: senderTabId };
 
     const stored = await CL.api.storage.session.get('appTabId');
@@ -121,8 +121,15 @@
     // Tell whoever held it to stand down. Broadcast rather than addressed:
     // tabs.sendMessage reaches content scripts, not extension pages, so the app
     // tab would never hear it.
+    // The token identifies the claimer so it can ignore its own broadcast. A
+    // tab id will not do: this goes out before the reply carrying that id
+    // arrives, so the claimer would not yet know which id was its own.
     try {
-      await CL.api.runtime.sendMessage({ type: 'clearline:superseded', owner: senderTabId });
+      await CL.api.runtime.sendMessage({
+        type: 'clearline:superseded',
+        owner: senderTabId,
+        token: token || null,
+      });
     } catch {
       // Nothing listening, which is the ordinary single tab case.
     }
@@ -165,7 +172,7 @@
     }
 
     if (message.type === 'clearline:claim-app') {
-      claimApp(sender.tab && sender.tab.id, !!message.force).then(sendResponse);
+      claimApp(sender.tab && sender.tab.id, !!message.force, message.token).then(sendResponse);
       return true;
     }
 

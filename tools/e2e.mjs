@@ -383,6 +383,30 @@ async function main() {
     check('one tab', 'taking over stops the tab it replaced',
       /took over/i.test(supersededMsg), `first tab said ${JSON.stringify(supersededMsg)}`);
 
+    // Disabling the buttons is not the same as stopping. The code that runs
+    // afterwards used to turn them straight back on, so this drives the two
+    // paths that did it and checks they no longer can.
+    const stayedOff = await cdp.evaluate(
+      app.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.results = [{ id: '900000000000000001', channelId: '999999999999999999',
+          type: 0, content: 'x', attachments: [], timestamp: '2024-03-01T12:00:00.000Z' }];
+        cl.renderPreflight();
+        return JSON.stringify({
+          start: document.getElementById('start').disabled,
+          search: document.getElementById('search').disabled,
+          stopSearch: cl.state.stopSearch,
+          superseded: cl.state.superseded,
+        });
+      })()`
+    );
+    const flags = stayedOff ? JSON.parse(stayedOff) : {};
+    check('one tab', 'a superseded tab cannot be re-armed by redrawing the pre-flight',
+      flags.start === true, `flags were ${stayedOff}`);
+    check('one tab', 'a superseded tab stops a search that was already paging',
+      flags.stopSearch === true && flags.superseded === true, `flags were ${stayedOff}`);
+
     await closeTab(cdp, second);
     await closeTab(cdp, app);
 

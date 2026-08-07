@@ -97,8 +97,11 @@ A few decisions that are deliberate rather than accidental:
   messages, where, matching what, roughly how long it will take, and that it cannot
   be undone.
 - **Anything over a hundred asks you to type the number back.**
-- **A copy is saved before the first destructive call**, not alongside it. If the
-  export is going to fail, it has to fail while the messages still exist.
+- **A copy is written and handed to the browser before the first destructive call**,
+  not alongside it, and it is checked for a complete document first. If building the
+  export is going to fail, it fails while the messages still exist. Where the browser
+  puts the file after that is between you and the browser: Clearline does not take
+  the downloads permission, so it cannot watch the save itself.
 - **The count only includes what can actually be deleted.** Join notices and similar
   system messages are attributed to you and come back in search results, but Discord
   refuses to delete them. Counting them would promise more than the run can deliver,
