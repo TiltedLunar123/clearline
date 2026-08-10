@@ -216,14 +216,6 @@
     return true;
   }
 
-  /**
-   * Another tab has taken over. Stop everything that talks to Discord.
-   *
-   * Disabling the buttons is not enough on its own, because the code that runs
-   * afterwards turns them back on: a search re-enables its own button when it
-   * finishes, and the pre-flight recomputes whether Start should be available.
-   * So this sets a flag, and every path that reaches the network checks it.
-   */
   const STOOD_DOWN = 'Another Clearline tab took over, so this one has stopped.';
 
   /**
@@ -246,6 +238,14 @@
     if ($('run-status').textContent.indexOf('took over') !== -1) say($('run-status'), '');
   }
 
+  /**
+   * Another tab has taken over. Stop everything that talks to Discord.
+   *
+   * Disabling the buttons is not enough on its own, because the code that runs
+   * afterwards turns them back on: a search re-enables its own button when it
+   * finishes, and the pre-flight recomputes whether Start should be available.
+   * So this sets a flag, and every path that reaches the network checks it.
+   */
   function standDown() {
     if (state.superseded) return;
     state.superseded = true;
