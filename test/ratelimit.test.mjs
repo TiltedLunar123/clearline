@@ -228,3 +228,35 @@ test('caps a single wait so a bogus header cannot hang a job for a day', () => {
   const headers = { get: (k) => (k === 'retry-after' ? '999999' : null) };
   assert.ok(rl.retryAfterMs(headers, null) <= 5 * 60 * 1000);
 });
+
+test('a 429 carrying no retry hint at all still backs off', () => {
+  // The shape this fallback exists for. A 429 from Cloudflare rather than the
+  // API is HTML, so there is no body to read, and it does not always carry a
+  // Retry-After either. Number(null) is 0 and 0 is finite, so "use the header
+  // if it parses" quietly accepted a header that was not there and waited no
+  // time at all, on the one path in this file that must never hurry.
+  const headers = { get: () => null };
+  assert.equal(rl.retryAfterMs(headers, null), 1000);
+});
+
+test('a garbage retry header still backs off rather than reading as zero', () => {
+  const headers = { get: (k) => (k === 'retry-after' ? 'soon' : null) };
+  assert.equal(rl.retryAfterMs(headers, null), 1000);
+});
+
+test('a reset with no remaining count does not close a lane that was never full', async () => {
+  // Same trap, other end. A missing x-ratelimit-remaining read as 0, which is
+  // "this lane is spent", so a response carrying only a reset stalled the next
+  // request for the whole window instead of the read floor.
+  const clock = fakeClock();
+  const limiter = rl.createLimiter({ now: clock.now, sleep: clock.sleep });
+
+  const partial = { 'x-ratelimit-bucket': 'b', 'x-ratelimit-reset-after': 60 };
+  await limiter.run('GET /a', async () => fakeResponse(200, partial));
+  const before = clock.now();
+  await limiter.run('GET /a', async () => fakeResponse(200, partial));
+
+  const waited = clock.now() - before;
+  assert.ok(waited >= rl.MIN_READ_DELAY_MS, `should still owe the read floor, waited ${waited}`);
+  assert.ok(waited < 1000, `should not have stalled for the window, waited ${waited}`);
+});
