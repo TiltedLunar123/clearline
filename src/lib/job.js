@@ -191,10 +191,15 @@ CL.job = (function () {
         const message = queue[state.index];
         state.current = message;
 
-        if (authorId && message.authorId && String(message.authorId) !== authorId) {
+        // Fails closed. Requiring the message to carry an author before
+        // comparing turned "I cannot tell whose this is" into "go ahead",
+        // which is the wrong way round for the last check in front of an
+        // irreversible call: the case a backstop exists for is the one where
+        // the data reaching it is already wrong.
+        if (authorId && String(message.authorId || '') !== authorId) {
           state.skipped++;
-          skips.push({ message, reason: 'Not written by this account' });
-          onLog({ level: 'error', message: `${message.id}: refused, not written by this account` });
+          skips.push({ message, reason: 'Not confirmed as written by this account' });
+          onLog({ level: 'error', message: `${message.id}: refused, not confirmed as written by this account` });
           state.index++;
           recomputeEta();
           emit();
