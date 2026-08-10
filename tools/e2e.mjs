@@ -410,6 +410,100 @@ async function main() {
     await closeTab(cdp, second);
     await closeTab(cdp, app);
 
+    // Standing down has to reach a connect that is already in flight, not just
+    // one that has not started. Connect is the only path to the network that
+    // runs before there is anything on screen to disable, so if it finishes
+    // after the takeover it walks the tab forward: it blanks the notice saying
+    // another tab took over, hands the button back, and shows the account as
+    // though nothing happened. What the user gets is a tab that looks connected
+    // and then silently ignores every click, because the flag is still set.
+    const slow = await openTab(cdp, appUrl);
+    await mockApi(cdp, slow.session, (method, pathname) => {
+      // The third and last call of connect. Holding it open puts the takeover
+      // squarely inside the window where connect is waiting on Discord.
+      if (pathname.startsWith('/api/v9/users/@me/channels')) {
+        return { body: DMS, headers: OK_HEADERS, delayMs: 3000 };
+      }
+      if (pathname.startsWith('/api/v9/users/@me/guilds')) return { body: GUILDS, headers: OK_HEADERS };
+      if (pathname.startsWith('/api/v9/users/@me')) return { body: ACCOUNT, headers: OK_HEADERS };
+      return { status: 404, body: { message: 'unmocked ' + method + ' ' + pathname } };
+    });
+    await sleep(300);
+    await cdp.evaluate(slow.session, "document.getElementById('connect').click()");
+    // Long enough to be past the account and guild calls and sitting in the
+    // held-open one, short enough that it has not returned.
+    await sleep(1200);
+
+    const usurper = await openTab(cdp, appUrl);
+    await mockApi(cdp, usurper.session, happyPath());
+    await sleep(300);
+    await cdp.evaluate(usurper.session, "document.getElementById('connect').click()");
+    await sleep(600);
+    await cdp.evaluate(usurper.session, "document.getElementById('takeover').click()");
+
+    // Past the held response, so the in-flight connect has finished its tail.
+    await sleep(3200);
+
+    const afterRace = await cdp.evaluate(
+      slow.session,
+      `JSON.stringify({
+        status: document.getElementById('status').textContent,
+        connectEnabled: document.getElementById('connect').disabled === false,
+        onWhere: !document.getElementById('step-where').classList.contains('hidden'),
+        superseded: window.__clearline.state.superseded,
+      })`
+    );
+    const race = afterRace ? JSON.parse(afterRace) : {};
+
+    check('one tab', 'a takeover during connect still stops the tab',
+      /took over/i.test(race.status || ''), `status said ${JSON.stringify(race.status)}`);
+    check('one tab', 'a connect finishing after a takeover does not re-arm the button',
+      race.connectEnabled === false, `state was ${afterRace}`);
+    check('one tab', 'a connect finishing after a takeover does not walk the tab forward',
+      race.onWhere === false, `state was ${afterRace}`);
+
+    await closeTab(cdp, usurper);
+    await closeTab(cdp, slow);
+
+    // Taking the queue back has to un-stand-down the tab, or reclaiming leaves
+    // it owning the queue while every action still refuses to run. The flag was
+    // write-once, so this was a tab that reconnected, showed the account, and
+    // then sat on "Loading channels..." for ever.
+    const reclaimer = await openTab(cdp, appUrl);
+    await mockApi(cdp, reclaimer.session, happyPath());
+    await sleep(300);
+    await cdp.evaluate(reclaimer.session, "document.getElementById('connect').click()");
+    await sleep(1500);
+
+    const rival = await openTab(cdp, appUrl);
+    await mockApi(cdp, rival.session, happyPath());
+    await sleep(300);
+    await cdp.evaluate(rival.session, "document.getElementById('connect').click()");
+    await sleep(600);
+    await cdp.evaluate(rival.session, "document.getElementById('takeover').click()");
+    await sleep(800);
+    await closeTab(cdp, rival);
+
+    // The first tab takes the queue back, which is a deliberate click and the
+    // documented way out of "another tab has it".
+    await cdp.evaluate(reclaimer.session, "document.getElementById('takeover').click()");
+    await sleep(2000);
+
+    const reclaimed = await cdp.evaluate(
+      reclaimer.session,
+      `JSON.stringify({
+        superseded: window.__clearline.state.superseded,
+        searchEnabled: document.getElementById('search').disabled === false,
+      })`
+    );
+    const back = reclaimed ? JSON.parse(reclaimed) : {};
+    check('one tab', 'taking the queue back brings the tab fully out of stand-down',
+      back.superseded === false, `state was ${reclaimed}`);
+    check('one tab', 'a reclaimed tab can search again', back.searchEnabled === true,
+      `state was ${reclaimed}`);
+
+    await closeTab(cdp, reclaimer);
+
     /* ---------------- group: failures ---------------- */
 
     // 401: the client must drop the token and say so rather than looping.

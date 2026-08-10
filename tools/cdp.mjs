@@ -170,6 +170,13 @@ export class CDP {
  * to the real network. Every intercepted call is recorded so a test can assert
  * on ordering and timing, which is how the pacing gets proved against the real
  * client rather than against the limiter in isolation.
+ *
+ * A reply may also carry `delayMs`, which holds the response open for that long
+ * before answering. That is the only way to land an event on the page while a
+ * request is genuinely still in flight, which several of the stand-down checks
+ * depend on: without it the race can only be approximated with sleeps, and a
+ * test that races the code it is testing fails for the wrong reason often
+ * enough to be worse than no test.
  */
 export async function mockApi(cdp, sessionId, resolve) {
   const calls = [];
@@ -193,6 +200,8 @@ export async function mockApi(cdp, sessionId, resolve) {
     }
 
     calls.push({ method: request.method, path: url.pathname + url.search, at });
+
+    if (reply.delayMs) await sleep(reply.delayMs);
 
     const status = reply.status || 200;
     const headers = Object.entries(reply.headers || {}).map(([name, value]) => ({

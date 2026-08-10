@@ -204,6 +204,10 @@
         return false;
       }
       if (reply && typeof reply.tabId === 'number') state.tabId = reply.tabId;
+      // An affirmative claim means this tab now holds the queue, so a tab that
+      // had stood down has to come back up. Only on a real answer: the catch
+      // below is a missing background, which says nothing about who owns what.
+      if (reply) standUp();
       hide($('takeover'));
     } catch {
       // No background to answer, which happens while the worker restarts. One
@@ -220,6 +224,28 @@
    * finishes, and the pre-flight recomputes whether Start should be available.
    * So this sets a flag, and every path that reaches the network checks it.
    */
+  const STOOD_DOWN = 'Another Clearline tab took over, so this one has stopped.';
+
+  /**
+   * Come back up after a takeover, having won the queue back.
+   *
+   * Standing down used to be permanent, which looked safe and was not. Taking
+   * the queue back is a deliberate click and the tab that wins it is the owner,
+   * so leaving the flag set handed that tab the queue while every action still
+   * refused to run: it reconnected, showed the account, and then sat on
+   * "Loading channels..." for ever with nothing on screen to explain why. A tab
+   * that has stopped should say so, and a tab that has restarted should work.
+   */
+  function standUp() {
+    if (!state.superseded) return;
+    state.superseded = false;
+    state.stopSearch = false;
+    $('connect').disabled = false;
+    $('search').disabled = false;
+    if ($('status').textContent === STOOD_DOWN) say($('status'), '');
+    if ($('run-status').textContent.indexOf('took over') !== -1) say($('run-status'), '');
+  }
+
   function standDown() {
     if (state.superseded) return;
     state.superseded = true;
@@ -234,7 +260,7 @@
     $('search').disabled = true;
     $('start').disabled = true;
     hide($('takeover'));
-    say($('status'), 'Another Clearline tab took over, so this one has stopped.', 'error');
+    say($('status'), STOOD_DOWN, 'error');
     if (state.job || state.ran) {
       say($('run-status'), 'Another Clearline tab took over, so this run was stopped.', 'error');
     }
@@ -259,6 +285,7 @@
 
     try {
       const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
+      if (state.superseded) return;
       if (!reply || !reply.ok) {
         say($('status'), TOKEN_PROBLEMS[reply && reply.reason] || 'Could not read the Discord session.', 'error');
         return;
@@ -267,12 +294,20 @@
       client.setToken(reply.token);
       say($('status'), 'Connected. Loading your account...');
 
+      // Checked between every call, not once at the top. Connect is the only
+      // path to the network that starts before there is anything on screen to
+      // disable, so a takeover landing here has nothing else to stop it: the
+      // remaining calls go out on a limiter the new owner knows nothing about,
+      // and the tail then blanks the notice explaining that this tab stopped.
       const me = await client.me();
+      if (state.superseded) return;
       // Sequential on purpose. Firing these together would be the first burst
       // the account ever sees from this extension, which is the opposite of the
       // pacing everything else here is built around.
       const guilds = await client.guilds();
+      if (state.superseded) return;
       const dms = await client.directMessages();
+      if (state.superseded) return;
 
       // Narrowed rather than kept whole. Discord's /users/@me answers with the
       // account's email address, among other things this has no use for, and
@@ -304,9 +339,12 @@
       say($('status'), '');
       goTo('where');
     } catch (err) {
-      say($('status'), (err && err.message) || 'Something went wrong.', 'error');
+      if (!state.superseded) say($('status'), (err && err.message) || 'Something went wrong.', 'error');
     } finally {
-      button.disabled = false;
+      // Not unconditionally false, for the same reason the Search button is
+      // not: a tab superseded while connecting would otherwise hand its own
+      // button back at exactly the moment it was supposed to have stopped.
+      button.disabled = state.superseded;
     }
   }
 
@@ -329,7 +367,12 @@
   }
 
   async function loadChannels() {
-    if (state.superseded) return;
+    // Said rather than swallowed. Returning quietly left the channel list
+    // sitting on "Loading channels..." with nothing to explain it.
+    if (state.superseded) {
+      say($('where-status'), STOOD_DOWN, 'error');
+      return;
+    }
     const guildId = $('guild-select').value;
     const select = $('channel-select');
     if (!guildId) {
@@ -441,7 +484,10 @@
   }
 
   async function runSearch() {
-    if (state.superseded) return;
+    if (state.superseded) {
+      say($('filter-status'), STOOD_DOWN, 'error');
+      return;
+    }
     const button = $('search');
     let filters;
     try {
