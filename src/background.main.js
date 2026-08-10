@@ -46,8 +46,21 @@
     const stored = await CL.api.storage.session.get('appTabId');
     if (typeof stored.appTabId === 'number') {
       try {
-        await CL.api.tabs.get(stored.appTabId);
+        const tab = await CL.api.tabs.get(stored.appTabId);
         await CL.api.tabs.update(stored.appTabId, { active: true });
+        // Activating a tab only raises it within its own window. If that window
+        // is behind another or minimised, clicking the toolbar looks like it did
+        // nothing, and the obvious next move is to open a second copy, which is
+        // the one thing reusing the tab is meant to avoid. windows.update needs
+        // no permission of its own, and windowId is not among the fields tabs.get
+        // withholds without the "tabs" permission.
+        if (CL.api.windows && typeof tab.windowId === 'number') {
+          try {
+            await CL.api.windows.update(tab.windowId, { focused: true });
+          } catch {
+            // Raising the window is a nicety. Never let it lose the tab.
+          }
+        }
         return stored.appTabId;
       } catch {
         // Closed since we last looked. Fall through and open a new one.
