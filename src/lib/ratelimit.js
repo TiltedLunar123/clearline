@@ -64,16 +64,37 @@ CL.ratelimit = (function () {
   }
 
   /**
+   * A header that is absent is not a zero.
+   *
+   * `Number(headers.get(name))` is the trap, and it is worth naming because it
+   * reads as correct: a missing header comes back null, `Number(null)` is 0,
+   * and 0 is finite, so every "use it if it parses" check treats a header that
+   * was never sent as a real value of zero. Both readings below were wrong in
+   * the same way and in opposite directions, one hurrying and one stalling.
+   */
+  function headerNumber(headers, name) {
+    const raw = headers.get(name);
+    if (raw === null || raw === undefined || raw === '') return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  /**
    * Discord sends seconds, sometimes fractional, in two places that disagree:
    * the JSON body's `retry_after` and the `Retry-After` header. The body is
    * more precise when present. Both are seconds despite the header's HTTP
    * convention being different, which has bitten enough clients to be worth
    * stating.
+   *
+   * The one second fallback is for the case with neither: a 429 from
+   * Cloudflare rather than the API is HTML, so there is no body, and it does
+   * not reliably carry a Retry-After either. That is the shape this whole file
+   * is most careful about, and it was the shape that waited no time at all.
    */
   function retryAfterMs(headers, body) {
     const fromBody = body && typeof body.retry_after === 'number' ? body.retry_after : null;
-    const fromHeader = Number(headers.get('retry-after'));
-    const seconds = fromBody !== null ? fromBody : Number.isFinite(fromHeader) ? fromHeader : 1;
+    const fromHeader = headerNumber(headers, 'retry-after');
+    const seconds = fromBody !== null ? fromBody : fromHeader !== null ? fromHeader : 1;
     return Math.min(Math.max(seconds * 1000, 0), MAX_WAIT_MS);
   }
 
@@ -151,11 +172,11 @@ CL.ratelimit = (function () {
       }
 
       const lane = laneFor(routeKey);
-      const remaining = Number(headers.get('x-ratelimit-remaining'));
-      const resetAfter = Number(headers.get('x-ratelimit-reset-after'));
+      const remaining = headerNumber(headers, 'x-ratelimit-remaining');
+      const resetAfter = headerNumber(headers, 'x-ratelimit-reset-after');
 
-      if (Number.isFinite(remaining)) lane.remaining = remaining;
-      if (Number.isFinite(resetAfter)) lane.resetAt = now() + resetAfter * 1000;
+      if (remaining !== null) lane.remaining = remaining;
+      if (resetAfter !== null) lane.resetAt = now() + resetAfter * 1000;
     }
 
     /**
