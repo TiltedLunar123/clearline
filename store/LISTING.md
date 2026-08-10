@@ -60,21 +60,17 @@ Homepage URL   https://github.com/TiltedLunar123/clearline
 Support URL    https://github.com/TiltedLunar123/clearline/issues
 ```
 
-Both depend on the repository being pushed, which has not happened yet. The privacy
-policy URL depends on it too:
+The repository is public, and the privacy policy is served from it:
 
 ```
 Privacy policy URL   https://github.com/TiltedLunar123/clearline/blob/main/PRIVACY.md
 ```
 
-Chrome will not accept the submission without that last one, so the repository is on
-the critical path rather than a nice to have.
+All three answer 200. Chrome will not accept a submission without that last one.
 
-If the code is going to stay private, the fallbacks are a personal site for the
-homepage and a support email set in the developer account rather than a URL. That is
-worse on both counts: an open source listing that links to its own source is the
-easiest possible answer to a reviewer asking what the extension does with a session
-token.
+Keeping the source public is worth more than it costs here. An open listing that
+links to its own source is the easiest possible answer to a reviewer asking what an
+extension does with a session token.
 
 ## Images
 
@@ -218,12 +214,39 @@ and importScripts.
 
 **Data usage disclosures**
 
-Tick nothing. Then certify all three statements, each of which is true:
+Tick three:
+
+- **Personally identifiable information.** The account id, username and discriminator,
+  read from `/users/@me` so the search can ask Discord for this account's messages
+  only.
+- **Authentication information.** The Discord session token, read from an open
+  discord.com tab.
+- **Personal communications.** The user's own Discord messages, which are what the
+  extension exists to find, show, export and delete.
+
+None of it leaves the browser and none of it is written to storage, and that is worth
+saying in the review notes, but it is not the question the form asks. Chrome defines
+handling as collect, transmit, use or share, and using data locally still counts. The
+two mistakes here are not symmetrical: under-disclosing is a takedown risk once a
+reviewer reads the code, while over-disclosing costs a badge on the listing and
+nothing else.
+
+It also has to agree with PRIVACY.md, which openly describes handling all three.
+A disclosure that ticks nothing beside a privacy policy that describes reading a
+session token and a person's messages is a contradiction a reviewer will find.
+
+Then certify all three statements, each of which is true:
 
 - Not being sold to third parties, outside of the approved use cases
 - Not being used or transferred for purposes that are unrelated to the item's single
   purpose
 - Not being used or transferred to determine creditworthiness or for lending purposes
+
+Firefox asks a different question and gets a different answer. The manifest declares
+`data_collection_permissions: { required: ["none"] }`, because AMO is asking what the
+add-on collects and transmits, and nothing here is sent to the developer or to any
+third party. There is no server on the other end. The divergence between the two
+stores is deliberate rather than an oversight in one of them.
 
 A note worth adding in the review notes field:
 
@@ -240,6 +263,11 @@ network connection, which tools/build.mjs enforces at build time.
 
 ## Still needed before submitting
 
-- A public URL for PRIVACY.md. Chrome will not accept a submission without one.
-- Screenshots from `store/screenshots/`, at most five.
 - A developer account on each store, and the one-off registration fee on Chrome.
+- Firefox wants the source as well, because `background.js` is concatenated by
+  `tools/build.mjs` and concatenating counts as a build step. `npm run zip` writes
+  that archive alongside the two packages.
+
+Everything else is ready: the repository is public, all three URLs answer 200, and
+the five screenshots in `store/screenshots/` are captured from the built extension
+rather than mocked up.

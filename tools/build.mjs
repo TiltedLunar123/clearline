@@ -12,6 +12,7 @@
  *   node tools/build.mjs --check   build, then run the release gate
  */
 
+import { execFile as execFileCb } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +21,7 @@ import { deflateRaw } from 'node:zlib';
 import { promisify } from 'node:util';
 
 const deflate = promisify(deflateRaw);
+const execFile = promisify(execFileCb);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
@@ -570,6 +572,37 @@ async function writeZip(sourceDir, zipPath) {
   return files.length;
 }
 
+/**
+ * The source archive Firefox asks for.
+ *
+ * AMO requires source whenever the uploaded package is not what the developer
+ * wrote, and concatenating the background script counts. It was a hand run
+ * command living in a note, which is the kind of step that gets forgotten on
+ * the one release nobody is paying attention to, and forgetting it does not
+ * fail loudly: the upload succeeds and review stalls.
+ *
+ * git archive rather than zipping the working tree, so what a reviewer builds
+ * from is exactly what is committed. That matters more than it sounds: this
+ * machine checks out CRLF while git stores LF, so a zip of the working tree
+ * would differ from a fresh clone by invisible bytes and the reviewer's build
+ * would not match the upload.
+ */
+async function writeSourceZip(version) {
+  const out = path.join(ROOT, 'release', `clearline-source-v${version}.zip`);
+  try {
+    await execFile(
+      'git',
+      ['archive', '--format=zip', `--prefix=clearline-${version}/`, '-o', out, 'HEAD'],
+      { cwd: ROOT }
+    );
+    console.log(`zipped source -> ${path.relative(ROOT, out)}`);
+  } catch (err) {
+    // Building from an extracted archive has no repository to read, which is a
+    // reviewer doing exactly the right thing. Say so rather than failing.
+    console.log(`skipped the source zip, no git repository here (${err.code || 'failed'})`);
+  }
+}
+
 /* ------------------------------------------------------------------ */
 
 async function main() {
@@ -588,6 +621,7 @@ async function main() {
       const n = await writeZip(path.join(DIST, target), zip);
       console.log(`zipped ${target} (${n} files) -> ${path.relative(ROOT, zip)}`);
     }
+    await writeSourceZip(base.version);
   }
 
   if (args.has('--check')) await check(base);
