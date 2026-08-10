@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.1.0
+
+### Fixed
+
+- A second tab taking over now stops the first one even if it was in the middle of
+  connecting. Connecting was the one path to Discord that did not check whether the
+  tab had been replaced, so its remaining requests went out anyway and it then
+  cleared the notice explaining that it had stopped.
+- Taking the queue back brings a stopped tab fully back to life. The tab that wins a
+  takeover is the owner, but the stopped flag was never cleared, so a tab that
+  reclaimed the queue would reconnect, show the account and then sit on
+  "Loading channels..." for ever.
+- A tab that has stopped now says so when it refuses a search or a channel list,
+  instead of quietly doing nothing.
+- The last check on who wrote a message now refuses a message with no author on it
+  rather than letting it through. Nothing reaches that check without an author
+  today, which is the argument for the check being cheap rather than for it being
+  right.
+- A rate limit response carrying no retry hint waits a second rather than no time at
+  all, and a response carrying a reset with no remaining count no longer looks like
+  an exhausted lane and stalls the next request for the whole window.
+- Time remaining ignores time spent paused. A run paused for half an hour used to
+  come back claiming it had eighteen minutes left for five messages.
+- Clicking the toolbar icon raises the window the Clearline tab is in. With that tab
+  in a background or minimised window it used to look as though nothing happened.
+
+### Changed
+
+- The release gate caught two things it was only claiming to catch. It read a regular
+  expression containing a quote as the start of a string, which hid everything after
+  it on that line, and it checked shipped scripts for control characters while saying
+  it checked that they parse. Both are fixed, and a network call planted in the app
+  page now fails the build the way it always should have.
+- `npm run zip` writes the source archive Firefox asks for alongside the two
+  packages, rather than leaving it as a command in a note.
+
 ## 1.0.0
 
 First release.

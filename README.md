@@ -33,9 +33,9 @@ Then load `dist/chrome` as an unpacked extension, or `dist/firefox` via
 icon.
 
 ```bash
-npm test          # 121 unit tests
+npm test          # 126 unit tests
 npm run check     # build plus the release gate
-npm run e2e       # 39 checks against a real browser and a mocked Discord
+npm run e2e       # 48 checks against a real browser and a mocked Discord
 npm run all       # all three
 npm run zip       # store-ready zips into release/
 npm run shots     # store screenshots into store/screenshots/

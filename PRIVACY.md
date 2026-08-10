@@ -1,6 +1,6 @@
 # Privacy policy
 
-Last updated 5 August 2026. Applies to the Clearline browser extension, version 1.0.0.
+Last updated 5 August 2026. Applies to the Clearline browser extension, version 1.1.0.
 
 ## The short version
 
