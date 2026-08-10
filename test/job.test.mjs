@@ -312,7 +312,31 @@ test('a message written by somebody else is refused, not deleted', async () => {
   assert.equal(result.done, 2);
   assert.equal(result.skipped, 1);
   assert.equal(client.calls.length, 2, 'the other account\'s message never reached the API');
-  assert.match(result.skips[0].reason, /not written by this account/i);
+  assert.match(result.skips[0].reason, /written by this account/i);
+});
+
+test('a message with no author on it is refused rather than assumed to be mine', async () => {
+  // The guard used to require the message to carry an author before it would
+  // compare, so a blank one skipped the check entirely and went through. That
+  // is the wrong way round for the last check in front of an irreversible
+  // call: not knowing whose a message is has to fail closed, or the one case
+  // the check exists for is the one case it does not cover.
+  const client = fakeClient();
+  const result = await job
+    .createJob({
+      client,
+      authorId: '111111111111111111',
+      messages: [
+        { ...msg(1), authorId: '111111111111111111' },
+        { ...msg(2), authorId: '' },
+        { ...msg(3) },
+      ],
+    })
+    .start();
+
+  assert.equal(client.calls.length, 1, 'only the message known to be mine was touched');
+  assert.equal(result.done, 1);
+  assert.equal(result.skipped, 2);
 });
 
 test('the author check does not get in the way when it is not configured', async () => {
