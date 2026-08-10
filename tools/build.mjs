@@ -15,6 +15,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import { deflateRaw } from 'node:zlib';
 import { promisify } from 'node:util';
 
@@ -306,14 +307,27 @@ async function check(base) {
   });
 
   // Every shipped script must parse. A syntax error in a content script is
-  // invisible until a user hits the flow it was supposed to serve.
+  // invisible until a user hits the flow it was supposed to serve, and the
+  // background is concatenated from several files, so a stray brace in one of
+  // them takes out the whole worker rather than the file it came from.
+  //
+  // Compiled, not just scanned. This used to check for control characters and
+  // say it checked syntax, which is a comment that reads as a guarantee and is
+  // not one. vm.Script compiles without running, which is exactly the question
+  // being asked, and it parses classic scripts, which is what ships.
   for (const target of TARGETS) {
     await walk(path.join(DIST, target), async (file) => {
       if (!file.endsWith('.js')) return;
       const source = await fs.readFile(file, 'utf8');
+      const where = path.relative(ROOT, file);
       // eslint-disable-next-line no-control-regex
       if (/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(source)) {
-        problems.push(`[${target}] control characters in ${path.relative(ROOT, file)}`);
+        problems.push(`[${target}] control characters in ${where}`);
+      }
+      try {
+        new vm.Script(source, { filename: file });
+      } catch (err) {
+        problems.push(`[${target}] ${where} does not parse: ${err.message}`);
       }
     });
   }
@@ -329,12 +343,51 @@ async function check(base) {
 }
 
 /**
- * Replace comments and string/template literals with spaces, preserving byte
- * offsets and newlines so reported line numbers stay accurate.
+ * Words after which a `/` opens a regular expression rather than dividing.
+ *
+ * Everything else that can precede a slash is either a value, in which case the
+ * slash is division, or punctuation, in which case it opens a regex.
+ */
+const REGEX_KEYWORDS = new Set([
+  'return', 'typeof', 'instanceof', 'in', 'of', 'new', 'delete', 'void',
+  'case', 'do', 'else', 'yield', 'await', 'throw',
+]);
+
+/**
+ * Decide whether the slash at `at` starts a regex literal or is a division.
+ *
+ * Only the previous significant character can tell them apart. After a closing
+ * bracket or a plain value the slash divides; after punctuation or one of the
+ * keywords above it opens a literal.
+ */
+function opensRegex(source, at) {
+  let k = at - 1;
+  while (k >= 0 && /\s/.test(source[k])) k--;
+  if (k < 0) return true;
+  const c = source[k];
+  if (c === ')' || c === ']') return false;
+  if (/[A-Za-z0-9_$]/.test(c)) {
+    const end = k + 1;
+    while (k >= 0 && /[A-Za-z0-9_$]/.test(source[k])) k--;
+    return REGEX_KEYWORDS.has(source.slice(k + 1, end));
+  }
+  return true;
+}
+
+/**
+ * Replace comments, string/template literals and regex literals with spaces,
+ * preserving byte offsets and newlines so reported line numbers stay accurate.
  *
  * A scanner rather than a regex, because a regex cannot tell a comment from a
  * `//` inside a URL string, and getting that wrong either hides a real call or
  * blocks a clean build.
+ *
+ * Regex literals have to be recognised, not walked past. A pattern like
+ * /["']/ is ordinary code, and skipping it leaves the scanner staring at a
+ * quote with no pair on the line, so it blanks everything after it and any
+ * call on the rest of that line vanishes from the gate. That is not a
+ * hypothetical: a fetch() planted in the app page, in a file the gate exists to
+ * keep away from the network, passed a full release check that way.
  */
 function blankCommentsAndStrings(source) {
   const out = source.split('');
@@ -364,6 +417,34 @@ function blankCommentsAndStrings(source) {
     }
 
     const ch = source[i];
+
+    if (ch === '/' && opensRegex(source, i)) {
+      let j = i + 1;
+      let inClass = false;
+      while (j < source.length) {
+        const c = source[j];
+        if (c === '\\') {
+          j += 2;
+          continue;
+        }
+        // An unterminated literal is a misread, not a regex spanning lines.
+        // Stopping at the newline keeps the damage to one line either way.
+        if (c === '\n') break;
+        if (inClass) {
+          if (c === ']') inClass = false;
+        } else if (c === '[') {
+          // A slash inside a character class is a literal slash, not the end.
+          inClass = true;
+        } else if (c === '/') {
+          break;
+        }
+        j++;
+      }
+      blank(i + 1, j);
+      i = j + 1;
+      continue;
+    }
+
     if (ch === '"' || ch === "'" || ch === '`') {
       let j = i + 1;
       while (j < source.length) {
