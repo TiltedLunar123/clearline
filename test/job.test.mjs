@@ -234,6 +234,45 @@ test('a paused run holds until it is resumed', async () => {
   assert.equal(result.done, 4);
 });
 
+test('time spent paused does not count against the estimate', async () => {
+  // The estimate switches to the measured rate once a few writes are in, and
+  // it measured wall clock. A run left paused over a coffee came back saying
+  // it had hours to go, because every minute of standing still was folded in
+  // as though it had been spent working.
+  let clock = 1000;
+  let runner;
+  const reported = [];
+  const client = fakeClient((id, op, callCount) => {
+    clock += 900;
+    if (callCount === 3) runner.pause();
+    return null;
+  });
+
+  runner = job.createJob({
+    client,
+    now: () => clock,
+    messages: [msg(1), msg(2), msg(3), msg(4), msg(5), msg(6), msg(7), msg(8)],
+    onProgress: (p) => reported.push(p.etaMs),
+  });
+
+  const running = runner.start();
+  await new Promise((r) => setTimeout(r, 25));
+  assert.equal(runner.status, 'paused');
+
+  const beforeResume = reported.length;
+  clock += 30 * 60 * 1000; // half an hour of doing nothing
+  runner.resume();
+  await running;
+
+  const after = reported.slice(beforeResume).filter((ms) => ms > 0);
+  assert.ok(after.length > 0, 'the run reported an estimate after resuming');
+  const worst = Math.max(...after);
+  assert.ok(
+    worst < 60 * 1000,
+    `a handful of messages at about a second each is a minute at most, got ${worst}`
+  );
+});
+
 test('cancelling a paused run releases it rather than leaving it stuck', async () => {
   let runner;
   const client = fakeClient((id, op, callCount) => {

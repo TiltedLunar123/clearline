@@ -109,6 +109,17 @@ CL.job = (function () {
     let paused = false;
     let resumeGate = null;
 
+    /**
+     * Time the run spent standing still, kept out of the measured rate.
+     *
+     * The estimate takes over from the floor once a few writes are in, and it
+     * divides elapsed time by writes. Counting a pause as elapsed makes every
+     * minute of not working look like a minute of very slow working, so a run
+     * paused over a coffee comes back claiming hours are left.
+     */
+    let pausedAt = 0;
+    let pausedMs = 0;
+
     function emit() {
       onProgress({
         status: state.status,
@@ -123,9 +134,15 @@ CL.job = (function () {
       });
     }
 
+    /** Wall clock since the run began, less anything spent paused. */
+    function workingMs() {
+      const standingStill = pausedAt ? now() - pausedAt : 0;
+      return Math.max(0, now() - state.startedAt - pausedMs - standingStill);
+    }
+
     function measuredPerWrite() {
       if (state.writes < 3) return null;
-      return (now() - state.startedAt) / state.writes;
+      return workingMs() / state.writes;
     }
 
     function recomputeEta() {
@@ -271,6 +288,7 @@ CL.job = (function () {
     function pause() {
       if (state.status !== 'running') return;
       paused = true;
+      pausedAt = now();
       state.status = 'paused';
       emit();
     }
@@ -278,6 +296,10 @@ CL.job = (function () {
     function resume() {
       if (!paused) return;
       paused = false;
+      if (pausedAt) {
+        pausedMs += now() - pausedAt;
+        pausedAt = 0;
+      }
       state.status = 'running';
       if (resumeGate && resumeGate.resolve) resumeGate.resolve();
       resumeGate = null;
@@ -291,6 +313,10 @@ CL.job = (function () {
       if (resumeGate && resumeGate.resolve) resumeGate.resolve();
       resumeGate = null;
       paused = false;
+      if (pausedAt) {
+        pausedMs += now() - pausedAt;
+        pausedAt = 0;
+      }
     }
 
     function summary() {
