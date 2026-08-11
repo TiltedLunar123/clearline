@@ -2,6 +2,16 @@
 
 ## 1.2.0
 
+### Added
+
+- Clearline speaks Spanish, Brazilian Portuguese, French, German, Italian, Polish,
+  Turkish, Russian, Japanese and Korean. Your browser's language decides, and English
+  stays the default for anything else, so nothing changes if your language is not on
+  that list. Counted things are written the way each language writes them rather than
+  with an English plural rule bolted on, numbers use your locale's separators, and the
+  box that asks you to type a count back accepts the number exactly as the sentence
+  above it prints it.
+
 ### Fixed
 
 - A tab that another tab stopped now says so where you can read it, and keeps the

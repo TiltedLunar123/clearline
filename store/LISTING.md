@@ -11,6 +11,10 @@ documented reason extensions in this category get pulled.
 
 ---
 
+Translated name, summary and description for all ten other languages are in
+[LISTING-TRANSLATIONS.md](LISTING-TRANSLATIONS.md), ready to paste into each
+store's per-language listing fields.
+
 ## Name
 
 ```

@@ -39,6 +39,7 @@ npm run e2e       # 52 checks against a real browser and a mocked Discord
 npm run all       # all three
 npm run zip       # release gate, then store-ready zips into release/
 npm run shots     # store screenshots into store/screenshots/
+npm run shots -- de   # and the same screens in any shipped locale
 ```
 
 Screenshots are captured by driving the built extension through its five steps
@@ -46,7 +47,22 @@ against the same mocked Discord the tests use, so they are photographs of the
 software rather than promises about it. Nothing in that path touches an account.
 
 Store listing copy, permission justifications and the review answers both stores
-ask for live in [store/LISTING.md](store/LISTING.md).
+ask for live in [store/LISTING.md](store/LISTING.md), with the translated listing
+text in [store/LISTING-TRANSLATIONS.md](store/LISTING-TRANSLATIONS.md).
+
+## Languages
+
+English, plus Spanish, Brazilian Portuguese, French, German, Italian, Polish,
+Turkish, Russian, Japanese and Korean. The browser picks from `src/_locales` and
+falls back to English, so an unlisted language loses nothing.
+
+Adding one means adding `src/_locales/<code>/messages.json` and nothing else. The
+release gate will refuse the build until that file has every key `en` has, no key
+it does not, an `_other` form for every plural family it uses, the same
+placeholders in every message that takes one, and a name and description inside
+each store's length limit. Those limits are per language, and German runs about a
+third longer than English, so it is worth checking the rendered screens with
+`npm run shots -- <code>` rather than only reading the JSON.
 
 ## How it handles your token
 
