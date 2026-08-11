@@ -23,10 +23,13 @@
     guilds: [],
     dms: [],
     channels: [],
+    /** Which guild `channels` actually belongs to, or null if the load failed. */
+    channelsFor: null,
     scope: null,
     scopeLabel: '',
     tabId: null,
     superseded: false,
+    connecting: false,
     /** Identifies this page's own claim, so it can tell its own from another's. */
     claimToken: (self.crypto && self.crypto.randomUUID && self.crypto.randomUUID()) || String(Date.now()),
     filters: {},
@@ -39,6 +42,8 @@
      * where somebody trusts their own filter.
      */
     excluded: new Set(),
+    /** How many result rows are currently rendered. Raised by "Show more". */
+    shown: 0,
     truncated: false,
     ran: false,
     job: null,
@@ -65,12 +70,46 @@
     el.classList.add('hidden');
   }
 
+  /**
+   * Keep the tab-state strip from leaving a gap when it has nothing to offer.
+   *
+   * The two buttons in it are shown and hidden independently, so the row around
+   * them has to follow whether either survived.
+   */
+  function syncTabActions() {
+    const any = ['takeover', 'reconnect'].some((id) => !$(id).classList.contains('hidden'));
+    $('tabstate-actions').classList.toggle('hidden', !any);
+  }
+
+  /**
+   * Let a deliberate restart clear a rate limit halt.
+   *
+   * The limiter latches `halted` and every request checks it before reaching the
+   * network, which is right while the mistake is still in progress and wrong for
+   * the rest of the page's life. Nothing cleared it, so the message it throws,
+   * "wait a few minutes and start again", named a recovery that could not
+   * happen: Connect, the channel list, every later search and every later run
+   * all failed instantly with that same sentence until the tab was reloaded, and
+   * reloading is what loses the search results.
+   *
+   * Clearing it here rather than on a timer keeps the decision with the user: a
+   * click on Connect, Search or Start is the "start again" the message asked
+   * for. The write floor is deliberately preserved across a reset, so the first
+   * request after one still owes its full delay.
+   */
+  function clearHalt() {
+    if (client.status().halted) client.reset();
+  }
+
   const STEPS = ['connect', 'where', 'filter', 'review', 'run'];
 
   function goTo(step) {
+    let opened = null;
     for (const name of STEPS) {
       const section = $(`step-${name}`);
-      if (section) section.classList.toggle('hidden', name !== step);
+      if (!section) continue;
+      section.classList.toggle('hidden', name !== step);
+      if (name === step) opened = section;
     }
     for (const item of document.querySelectorAll('#rail li')) {
       const index = STEPS.indexOf(item.dataset.step);
@@ -78,6 +117,16 @@
       item.classList.toggle('done', index < STEPS.indexOf(step));
     }
     window.scrollTo(0, 0);
+
+    // Focus follows the step. Hiding a section blurs whatever was inside it, so
+    // without this the button that was just clicked drops focus to <body> and
+    // the next Tab restarts from the page heading. Moving it to the heading also
+    // announces the new step to a screen reader.
+    const heading = opened && opened.querySelector('h2');
+    if (heading) {
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
   }
 
   /** "about 18 minutes", because a millisecond count is not an answer. */
@@ -94,6 +143,15 @@
 
   function count(n, one, many) {
     return `${n.toLocaleString()} ${n === 1 ? one : many || one + 's'}`;
+  }
+
+  /** "2m 40s". Exact rather than rounded, because it is counting up. */
+  function humanElapsed(ms) {
+    const seconds = Math.max(0, Math.round(ms / 1000));
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+    return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
   }
 
   /**
@@ -152,6 +210,11 @@
   const TOKEN_PROBLEMS = {
     'no-tab': 'Open discord.com in another tab, sign in, then try again.',
     'not-logged-in': 'That Discord tab is not signed in yet. Sign in and try again.',
+    // Neither browser injects a content script into tabs that were already open
+    // when the extension was installed or updated, so the very first thing a new
+    // user does lands here while they are perfectly well signed in. Telling them
+    // to sign in is advice that cannot work; reloading the tab is the fix.
+    'needs-reload': 'Reload your Discord tab, then try again. Clearline cannot reach a tab that was already open when it was installed.',
   };
 
   /** A DM has no name of its own, so it is named after who is in it. */
@@ -201,6 +264,7 @@
           'error'
         );
         show($('takeover'));
+        syncTabActions();
         return false;
       }
       if (reply && typeof reply.tabId === 'number') state.tabId = reply.tabId;
@@ -209,6 +273,7 @@
       // below is a missing background, which says nothing about who owns what.
       if (reply) standUp();
       hide($('takeover'));
+      syncTabActions();
     } catch {
       // No background to answer, which happens while the worker restarts. One
       // tab is the normal case, so carrying on is the right call.
@@ -236,6 +301,8 @@
     $('search').disabled = false;
     if ($('status').textContent === STOOD_DOWN) say($('status'), '');
     if ($('run-status').textContent.indexOf('took over') !== -1) say($('run-status'), '');
+    hide($('takeover'));
+    syncTabActions();
   }
 
   /**
@@ -259,8 +326,17 @@
     $('connect').disabled = true;
     $('search').disabled = true;
     $('start').disabled = true;
-    hide($('takeover'));
     say($('status'), STOOD_DOWN, 'error');
+
+    // Offered, not hidden. This is the only control wired to a path that can
+    // call standUp(), so hiding it here is what made standing back up
+    // unreachable: Connect is disabled on the line above, and both controls used
+    // to sit inside the card connect() hides for good on its way out. A stopped
+    // tab was left looking healthy, with a greyed Search button and the
+    // explanation written into a subtree with display:none.
+    show($('takeover'));
+    syncTabActions();
+
     if (state.job || state.ran) {
       say($('run-status'), 'Another Clearline tab took over, so this run was stopped.', 'error');
     }
@@ -278,12 +354,24 @@
 
   async function connect(force) {
     const button = $('connect');
-    if (!(await claimOwnership(force))) return;
-
+    // Guarded and disabled before the first await, not after it. Claiming
+    // ownership is a round trip to the background, and a second click landing
+    // inside it used to start a whole second connect chain on the same client.
+    if (state.connecting) return;
+    state.connecting = true;
     button.disabled = true;
-    say($('status'), 'Looking for a signed in Discord tab...');
+    $('takeover').disabled = true;
 
     try {
+      if (!(await claimOwnership(force))) return;
+      if (state.superseded) return;
+
+      // A halt latched by an earlier run would otherwise fail this connect
+      // before it reached the network, with a message about waiting a few
+      // minutes that no amount of waiting could make true.
+      clearHalt();
+      say($('status'), 'Looking for a signed in Discord tab...');
+
       const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
       if (state.superseded) return;
       if (!reply || !reply.ok) {
@@ -337,15 +425,62 @@
       hide($('connect-card'));
       show($('account-card'));
       say($('status'), '');
+      hide($('reconnect'));
+      syncTabActions();
       goTo('where');
     } catch (err) {
-      if (!state.superseded) say($('status'), (err && err.message) || 'Something went wrong.', 'error');
+      if (!state.superseded) {
+        say($('status'), (err && err.message) || 'Something went wrong.', 'error');
+        offerReconnect();
+      }
     } finally {
+      state.connecting = false;
+      $('takeover').disabled = false;
       // Not unconditionally false, for the same reason the Search button is
       // not: a tab superseded while connecting would otherwise hand its own
       // button back at exactly the moment it was supposed to have stopped.
       button.disabled = state.superseded;
     }
+  }
+
+  /**
+   * Read the session again without disturbing anything else.
+   *
+   * Discord rotates a session token often enough that a run measured in hours
+   * meets one, and api.js drops the token on any 401 and says "reconnect". The
+   * only control that could do that was the Connect button, which by then has
+   * been hidden for the rest of the page's life, and running the full connect
+   * again would walk the user back to the first step and throw away the result
+   * set they are halfway through acting on. This is the token half alone.
+   */
+  async function reconnect() {
+    if (state.superseded || state.connecting) return;
+    const button = $('reconnect');
+    button.disabled = true;
+    clearHalt();
+    say($('status'), 'Reading the Discord session again...');
+    try {
+      const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
+      if (!reply || !reply.ok) {
+        say($('status'), TOKEN_PROBLEMS[reply && reply.reason] || 'Could not read the Discord session.', 'error');
+        return;
+      }
+      client.setToken(reply.token);
+      say($('status'), 'Reconnected. Everything you had found is still here.');
+      hide(button);
+      syncTabActions();
+    } catch (err) {
+      say($('status'), (err && err.message) || 'Something went wrong.', 'error');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  /** Put the way back on screen, but only when the session is the thing missing. */
+  function offerReconnect() {
+    if (state.superseded || client.hasToken()) return;
+    show($('reconnect'));
+    syncTabActions();
   }
 
   /* ---------------------------------------------------------------- */
@@ -383,11 +518,13 @@
 
     select.disabled = true;
     fillSelect(select, [], 'Loading channels...');
+    clearHalt();
     try {
       const channels = await client.guildChannels(guildId);
       state.channels = channels
         .filter((c) => TEXTY.indexOf(Number(c.type)) !== -1)
         .sort((a, b) => (a.position || 0) - (b.position || 0));
+      state.channelsFor = guildId;
       fillSelect(
         select,
         state.channels.map((c) => ({ value: c.id, label: `#${c.name}` })),
@@ -396,8 +533,15 @@
       select.disabled = false;
       say($('where-status'), '');
     } catch (err) {
+      // Dropped rather than left standing. A failed load used to leave the
+      // previous server's channels in state, and commitScope closes
+      // channelNameFor over that list, so every row in the review table and
+      // every row of an export got a blank or a wrong channel name.
+      state.channels = [];
+      state.channelsFor = null;
       fillSelect(select, [], 'Could not load channels');
       say($('where-status'), (err && err.message) || 'Could not load channels.', 'error');
+      offerReconnect();
     }
   }
 
@@ -412,6 +556,14 @@
       const guildId = $('guild-select').value;
       if (!guildId) {
         say($('where-status'), 'Choose a server first.', 'error');
+        return false;
+      }
+      // Refused rather than carried on with. Without the channel list there is
+      // no way to name a channel, so a scope committed here would search fine
+      // and then label every result with an empty channel, in the table the
+      // user reads immediately before deleting them.
+      if (state.channelsFor !== guildId) {
+        say($('where-status'), 'The channel list for that server has not loaded. Wait a moment, or pick it again.', 'error');
         return false;
       }
       const guild = state.guilds.find((g) => g.id === guildId);
@@ -510,8 +662,14 @@
     button.disabled = true;
     say($('filter-status'), '');
     show($('search-progress'));
+    // The message a halt throws tells the user to start again. This is them
+    // starting again, so it has to mean something.
+    clearHalt();
 
     const bounds = CL.filter.toWindow(filters);
+    const startedAt = Date.now();
+    $('search-fill').style.width = '0%';
+    $('search-elapsed').textContent = '';
 
     try {
       const found = await finder.find({
@@ -521,21 +679,43 @@
         maxId: bounds.maxId,
         shouldStop: () => state.stopSearch,
         onProgress: (p) => {
-          $('search-counter').textContent =
-            p.phase === 'indexing'
-              ? 'Discord is building the search index for this server. Waiting...'
-              : `Found ${count(p.found, 'message')}${p.total ? ` of about ${p.total.toLocaleString()}` : ''}...`;
+          if (p.phase === 'indexing') {
+            $('search-counter').textContent =
+              'Discord is building the search index for this server. Waiting...';
+          } else if (p.strategy === 'history') {
+            // The history path knows how much it has read but not how much
+            // there is, so it reports work done. It was reporting neither, and
+            // a big DM sat on one unchanging line for minutes looking wedged.
+            $('search-counter').textContent =
+              `Checked ${(p.scanned || 0).toLocaleString()} messages, found ${p.found.toLocaleString()} of yours...`;
+          } else {
+            $('search-counter').textContent =
+              `Found ${count(p.found, 'message')}${p.total ? ` of about ${p.total.toLocaleString()}` : ''}...`;
+          }
+          if (p.total) {
+            $('search-fill').style.width = `${Math.min(100, Math.round((p.found / p.total) * 100))}%`;
+          }
+          // Something on screen has to move even when neither denominator is
+          // known, or a slow search is indistinguishable from a stuck one.
+          $('search-elapsed').textContent = `${humanElapsed(Date.now() - startedAt)} so far.`;
         },
       });
 
+      // Checked after the await as well as before it. A takeover landing while
+      // the search was in flight used to walk the stopped tab forward to the
+      // review screen anyway, with a partial result set and a Continue button.
+      if (state.superseded) return;
+
       state.results = CL.filter.apply(found.messages, filters);
       state.excluded = new Set();
+      state.shown = MAX_ROWS;
       state.ran = false;
       state.truncated = !!found.truncated;
       renderReview();
       goTo('review');
     } catch (err) {
       say($('filter-status'), (err && err.message) || 'The search failed.', 'error');
+      offerReconnect();
     } finally {
       // Not unconditionally false. A tab that was superseded while searching
       // would otherwise hand its Search button back at exactly the moment it
@@ -551,6 +731,48 @@
 
   /** Rendering every row of a 50,000 message result set locks the tab. */
   const MAX_ROWS = 300;
+
+  /**
+   * Anchor for a shift-click range, as an index into `state.results`.
+   *
+   * Sparing a stretch of an evening used to be one click per message, and one
+   * misclick in forty is not recoverable once the run starts.
+   */
+  let lastPicked = null;
+
+  /**
+   * Discord's timestamp, in the reader's own timezone.
+   *
+   * It arrives as an ISO instant with an offset, and slicing the first sixteen
+   * characters off it prints UTC while calling it nothing. The date boxes two
+   * screens back are local calendar days, so a row could sit under a summary
+   * reading "sent on or before 5 March" while showing the 6th, immediately
+   * before an irreversible action. Same instant either way; only the label was
+   * lying.
+   */
+  function localStamp(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso).slice(0, 16).replace('T', ' ');
+    const pad = (n) => String(n).padStart(2, '0');
+    return (
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+      `${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
+  }
+
+  /**
+   * Where this message lives in Discord.
+   *
+   * A link and nothing more. Deciding whether to spare something usually needs
+   * the conversation around it, and the alternative is scrolling Discord by hand
+   * to find one message, which nobody does: people spare too much or delete
+   * blind. The build gate keeps link hosts and connectable hosts apart, and this
+   * adds no host to either list.
+   */
+  function discordUrl(message) {
+    return `https://discord.com/channels/${message.guildId || '@me'}/${message.channelId}/${message.id}`;
+  }
 
   function renderReview() {
     const total = state.results.length;
@@ -574,10 +796,20 @@
       hide(truncated);
     }
 
+    if (!state.shown) state.shown = MAX_ROWS;
+    lastPicked = null;
     const body = $('results-body');
     body.textContent = '';
-    const rows = state.results.slice(0, MAX_ROWS);
-    for (const message of rows) {
+    body.appendChild(rowsFor(0, Math.min(state.shown, state.results.length)));
+
+    refreshSelectionCounts();
+  }
+
+  /** Build rows [from, to) as a fragment, so appending never rebuilds the table. */
+  function rowsFor(from, to) {
+    const frag = document.createDocumentFragment();
+    for (let index = from; index < to; index++) {
+      const message = state.results[index];
       const tr = document.createElement('tr');
 
       const pick = document.createElement('td');
@@ -586,17 +818,30 @@
       box.type = 'checkbox';
       box.checked = !state.excluded.has(message.id);
       box.setAttribute('aria-label', 'Include this message');
-      box.addEventListener('change', () => {
-        if (box.checked) state.excluded.delete(message.id);
-        else state.excluded.add(message.id);
-        tr.classList.toggle('off', !box.checked);
+      // Bound on click rather than change, because only click carries shiftKey.
+      box.addEventListener('click', (event) => {
+        const on = box.checked;
+        if (event.shiftKey && lastPicked !== null && lastPicked !== index) {
+          const lo = Math.min(lastPicked, index);
+          const hi = Math.max(lastPicked, index);
+          for (let k = lo; k <= hi; k++) setPicked(k, on);
+        } else {
+          setPicked(index, on);
+        }
+        lastPicked = index;
         refreshSelectionCounts();
       });
       pick.appendChild(box);
       tr.classList.toggle('off', state.excluded.has(message.id));
 
       const when = document.createElement('td');
-      when.textContent = message.timestamp ? message.timestamp.slice(0, 16).replace('T', ' ') : '';
+      const link = document.createElement('a');
+      link.href = discordUrl(message);
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = localStamp(message.timestamp);
+      link.title = 'Open this message in Discord';
+      when.appendChild(link);
 
       const where = document.createElement('td');
       where.textContent = message.channelName ? `#${message.channelName}` : '';
@@ -608,10 +853,23 @@
       what.textContent = message.content || (message.attachments.length ? '(attachment only)' : '(no text)');
 
       tr.append(pick, when, where, what);
-      body.appendChild(tr);
+      tr.dataset.index = String(index);
+      frag.appendChild(tr);
     }
+    return frag;
+  }
 
-    refreshSelectionCounts();
+  /** Set one row's state in both the model and, if it is rendered, the table. */
+  function setPicked(index, on) {
+    const message = state.results[index];
+    if (!message) return;
+    if (on) state.excluded.delete(message.id);
+    else state.excluded.add(message.id);
+    const row = $('results-body').querySelector(`tr[data-index="${index}"]`);
+    if (!row) return;
+    const box = row.querySelector('input[type="checkbox"]');
+    if (box) box.checked = on;
+    row.classList.toggle('off', !on);
   }
 
   /**
@@ -634,14 +892,22 @@
     // Counted rather than asserted. The note used to say the rows past the
     // render limit "stay selected", which stopped being true the moment anyone
     // used the select-none box, and a note about a delete set has to be right.
-    const beyond = Math.max(0, total - MAX_ROWS);
+    const rendered = Math.min(state.shown, total);
+    const beyond = Math.max(0, total - rendered);
     const beyondPicked = beyond
-      ? state.results.slice(MAX_ROWS).reduce((n, m) => n + (state.excluded.has(m.id) ? 0 : 1), 0)
+      ? state.results.slice(rendered).reduce((n, m) => n + (state.excluded.has(m.id) ? 0 : 1), 0)
       : 0;
     $('results-note').textContent = beyond
-      ? `Showing the first ${MAX_ROWS.toLocaleString()}. Of the other ${beyond.toLocaleString()}, ` +
-        `${beyondPicked.toLocaleString()} ${beyondPicked === 1 ? 'is' : 'are'} selected and counted above.`
-      : '';
+      ? `Showing ${rendered.toLocaleString()} of ${total.toLocaleString()}. Of the other ` +
+        `${beyond.toLocaleString()}, ${beyondPicked.toLocaleString()} ` +
+        `${beyondPicked === 1 ? 'is' : 'are'} selected and counted above. Shift-click to pick a range.`
+      : total > 1
+        ? 'Shift-click to pick a range.'
+        : '';
+
+    const more = $('show-more');
+    more.classList.toggle('hidden', beyond === 0);
+    more.textContent = `Show ${Math.min(MAX_ROWS, beyond).toLocaleString()} more`;
 
     $('review-next').disabled = picked === 0;
     for (const button of document.querySelectorAll('[data-export]')) button.disabled = picked === 0;
@@ -700,6 +966,12 @@
         : `You are about to ${verb} ${where}, ${CL.filter.describe(state.filters)}.`
     );
     lines.push(`At the pace Clearline runs, that is ${humanDuration(estimate)}.`);
+    // The job loop lives in this page on purpose, so the tab is the run. Nothing
+    // said so, and "about 3 hours" is exactly the sentence that makes somebody
+    // shut the laptop.
+    if (estimate > 5 * 60 * 1000) {
+      lines.push('Leave this tab open while it runs. Closing or reloading it stops the run where it is.');
+    }
     if (action !== 'edit' && deletable < total) {
       lines.push(
         `${count(total - deletable, 'message')} cannot be deleted by anyone, ` +
@@ -718,7 +990,11 @@
 
     const needsTyping = affected > CONFIRM_ABOVE && action !== 'edit';
     $('confirm-field').classList.toggle('hidden', !needsTyping);
-    $('confirm-label').textContent = `Type ${affected} to confirm`;
+    // Grouped, like the sentence above it. The sentence has always said "1,234"
+    // and the box wanted "1234", so a user who typed what they had just read was
+    // told they had got it wrong, on the last screen before something
+    // irreversible. The separators are stripped again on the way back in.
+    $('confirm-label').textContent = `Type ${affected.toLocaleString()} to confirm`;
     $('confirm').value = '';
 
     // A finished run leaves the result set describing messages that mostly no
@@ -736,12 +1012,17 @@
     const done = p.processed;
     const pct = p.total ? Math.round((done / p.total) * 100) : 0;
     $('run-fill').style.width = `${pct}%`;
+    $('run-bar').setAttribute('aria-valuenow', String(pct));
     $('run-counter').textContent =
       `${done.toLocaleString()} of ${p.total.toLocaleString()} done` +
       (p.failed ? `, ${p.failed} failed` : '') +
       (p.skipped ? `, ${p.skipped} left alone` : '');
     $('run-eta').textContent =
       p.status === 'paused' ? 'Paused.' : p.etaMs ? `${humanDuration(p.etaMs)} to go.` : '';
+    // The whole design asks the user to leave the run alone, then gave them no
+    // way to check on it without switching to the tab. The title is the one
+    // surface a background tab still has.
+    document.title = p.status === 'paused' ? `Paused ${pct}% - Clearline` : `${pct}% - Clearline`;
   }
 
   function renderReport(summary) {
@@ -765,6 +1046,18 @@
       box.appendChild(why);
     }
 
+    // The job has always counted this and the report has never shown it. A run
+    // halted at message three of five thousand said "Stopped early. 3 messages
+    // handled." and left the reader to work out for themselves that the other
+    // 4,997 were never attempted.
+    if (summary.remaining > 0) {
+      const left = document.createElement('p');
+      left.textContent =
+        `${count(summary.remaining, 'message')} ${summary.remaining === 1 ? 'was' : 'were'} never attempted. ` +
+        'Search again to pick them up.';
+      box.appendChild(left);
+    }
+
     for (const [label, list] of [
       ['left alone', summary.skips],
       ['failed', summary.failures],
@@ -777,12 +1070,27 @@
       const ul = document.createElement('ul');
       for (const entry of list.slice(0, 50)) {
         const li = document.createElement('li');
-        li.textContent = `${entry.message.id}: ${entry.reason}`;
+        // A raw snowflake tells the reader nothing about which message this
+        // was. The id stays, on the title, for anyone who wants it.
+        const m = entry.message || {};
+        const where = m.channelName ? ` #${m.channelName}` : '';
+        const what = m.content ? ` "${m.content.slice(0, 60)}"` : '';
+        li.textContent = `${localStamp(m.timestamp)}${where}${what}: ${entry.reason}`;
+        li.title = m.id || '';
         ul.appendChild(li);
+      }
+      // Truncating without saying so made the report understate itself.
+      if (list.length > 50) {
+        const rest = document.createElement('li');
+        rest.textContent = `and ${(list.length - 50).toLocaleString()} more`;
+        ul.appendChild(rest);
       }
       details.appendChild(ul);
       box.appendChild(details);
     }
+
+    const buttons = document.createElement('div');
+    buttons.className = 'actions left';
 
     if (summary.failures.length) {
       const retry = document.createElement('button');
@@ -792,15 +1100,37 @@
       retry.addEventListener('click', () => {
         state.results = summary.failures.map((f) => f.message);
         state.excluded = new Set();
+        state.shown = MAX_ROWS;
         state.ran = false;
         renderReview();
         hide(box);
         renderPreflight();
       });
-      box.appendChild(retry);
+      buttons.appendChild(retry);
     }
 
+    // The preflight tells the user to search again and then offers nothing that
+    // does it, so the route was Back, Back, Search. Several passes over one
+    // server is the ordinary way this gets used.
+    const again = document.createElement('button');
+    again.className = 'ghost';
+    again.type = 'button';
+    again.textContent = 'Search again';
+    again.addEventListener('click', () => {
+      state.results = [];
+      state.excluded = new Set();
+      state.shown = MAX_ROWS;
+      state.ran = false;
+      hide(box);
+      goTo('filter');
+    });
+    buttons.appendChild(again);
+    box.appendChild(buttons);
+
     show(box);
+    // The run can take hours, so the report often lands on an unattended tab.
+    // Taking focus is what tells a screen reader it arrived at all.
+    box.focus({ preventScroll: true });
   }
 
   async function start() {
@@ -812,10 +1142,15 @@
     const action = chosenAction();
     const affected = action === 'edit' ? selected().length : deletableCount();
 
-    if (affected > CONFIRM_ABOVE && action !== 'edit' && $('confirm').value.trim() !== String(affected)) {
-      say($('run-status'), `Type ${affected} in the box to confirm.`, 'error');
+    const typed = $('confirm').value.replace(/[\s,._]/g, '');
+    if (affected > CONFIRM_ABOVE && action !== 'edit' && typed !== String(affected)) {
+      say($('run-status'), `Type ${affected.toLocaleString()} in the box to confirm.`, 'error');
       return;
     }
+
+    // Same reasoning as the search path: this click is the "start again" that a
+    // halt told the user to do, so it has to actually clear the halt.
+    clearHalt();
 
     let runner;
     try {
@@ -864,11 +1199,15 @@
     const summary = await runner.start();
 
     hide($('run-progress'));
+    document.title = 'Clearline';
     $('run-back').disabled = false;
     state.job = null;
     state.ran = true;
     $('start').disabled = true;
     renderReport(summary);
+    // A session that expired partway through is the most likely reason a long
+    // run stopped early, and the retry button is useless until it is fixed.
+    offerReconnect();
   }
 
   /* ---------------------------------------------------------------- */
@@ -877,6 +1216,7 @@
 
   $('connect').addEventListener('click', () => connect(false));
   $('takeover').addEventListener('click', () => connect(true));
+  $('reconnect').addEventListener('click', reconnect);
 
   for (const radio of document.querySelectorAll('input[name="scope-kind"]')) {
     radio.addEventListener('change', syncScopeKind);
@@ -895,10 +1235,31 @@
     $('search-counter').textContent = 'Stopping after the request in flight...';
   });
 
+  // There is no form here, so there is no implicit submit and Enter did nothing
+  // in the boxes people type into most. Deliberately not bound on #confirm: the
+  // destructive step should still take a separate, aimed click.
+  for (const id of ['f-contains', 'f-after', 'f-before']) {
+    $(id).addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || $('search').disabled) return;
+      event.preventDefault();
+      runSearch();
+    });
+  }
+
   $('pick-all').addEventListener('change', () => {
     if ($('pick-all').checked) state.excluded = new Set();
     else state.excluded = new Set(state.results.map((m) => m.id));
     renderReview();
+  });
+
+  $('show-more').addEventListener('click', () => {
+    const from = Math.min(state.shown, state.results.length);
+    state.shown = Math.min(state.shown + MAX_ROWS, state.results.length);
+    // Appended, not re-rendered. Rebuilding the table would throw away the
+    // scroll position on every click, which on the fourth click is the whole
+    // reason somebody pressed the button.
+    $('results-body').appendChild(rowsFor(from, state.shown));
+    refreshSelectionCounts();
   });
 
   $('review-back').addEventListener('click', () => goTo('filter'));
@@ -936,9 +1297,25 @@
     if (state.job) state.job.cancel();
   });
 
+  /**
+   * The tab is the run, so closing it is destroying work in progress.
+   *
+   * The job loop lives here rather than in the service worker on purpose, and
+   * nothing said so anywhere: a run reported as "about 3 hours" invites exactly
+   * the shut-the-laptop that kills it, with no report and no record of how far
+   * it got. `state.job` is nulled when start() resolves, so the guard takes
+   * itself off again the moment there is nothing to lose.
+   */
+  window.addEventListener('beforeunload', (event) => {
+    if (!state.job) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
   syncScopeKind();
+  syncTabActions();
 
   // Exposed for the end to end suite, which drives the real screens rather than
   // a reimplementation of them. Nothing in the app reads this.
-  window.__clearline = { state, goTo, renderReview, renderPreflight };
+  window.__clearline = { state, goTo, renderReview, renderPreflight, localStamp };
 })();

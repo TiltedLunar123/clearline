@@ -261,6 +261,26 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+/* What a tab says about its own health, kept out of any card that gets hidden.
+   The notice and the way back both have to survive connect() hiding that card.
+   Collapses to nothing when empty, so it never leaves a gap on a healthy tab. */
+.tabstate {
+  margin: 0 0 16px;
+}
+
+.tabstate .status {
+  margin: 0;
+  min-height: 0;
+}
+
+.tabstate .actions {
+  margin-top: 0;
+}
+
+.tabstate .actions:not(.hidden) {
+  margin-top: 8px;
+}
+
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -287,8 +307,11 @@ button:disabled {
 
 /* Results table ----------------------------------------------------- */
 
+/* Was a flat 380px, which is about ten rows on a laptop. The review step is
+   where the user does the most looking, so it gets as much of the window as it
+   can while still being capped on a very tall screen. */
 .tablewrap {
-  max-height: 380px;
+  max-height: min(60vh, 720px);
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -441,6 +464,39 @@ button:disabled {
 .foot .fine {
   font-size: 12px;
   opacity: 0.75;
+}
+
+/* The step heading takes focus when a step opens, so a keyboard user carries on
+   from the step that appeared rather than from the top of the document. That is
+   a programmatic focus, so it should not paint a ring the way a Tab would. */
+.step h2:focus,
+.report:focus {
+  outline: none;
+}
+
+/* The default ring disappears against the filled buttons, which are the two
+   most consequential controls on the page. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Opening a message in Discord to check its context before sparing it. */
+.results a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.results a:hover {
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
 }
 
 .hidden {

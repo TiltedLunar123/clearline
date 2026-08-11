@@ -33,9 +33,23 @@
           never saved, and is forgotten when you close it.
         </p>
         <button id="connect" class="primary" type="button">Connect to Discord</button>
-        <p class="status" id="status" role="status" aria-live="polite"></p>
-        <button id="takeover" class="ghost hidden" type="button">Use this tab instead</button>
       </section>
+
+      <!--
+        Deliberately outside the connect card, which is hidden for good the
+        moment a connect succeeds. Everything in here is what a tab says about
+        its own health, and the two things it says most matter after that point:
+        that another tab took the queue, and that the session expired mid-run.
+        Both used to be written into this card's subtree, so a connected tab
+        showed nothing and had no control left to recover with.
+      -->
+      <div class="tabstate" id="tabstate">
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <div class="actions left" id="tabstate-actions">
+          <button id="takeover" class="ghost hidden" type="button">Use this tab instead</button>
+          <button id="reconnect" class="ghost hidden" type="button">Reconnect to Discord</button>
+        </div>
+      </div>
 
       <section class="card summary hidden" id="account-card">
         <dl class="facts inline">
@@ -64,13 +78,13 @@
           </label>
           <label class="field">
             <span>Channels</span>
-            <select id="channel-select" multiple size="6" disabled>
+            <select id="channel-select" multiple size="10" disabled>
               <option value="">Pick a server first</option>
             </select>
           </label>
           <p class="hint tight">
             Leave the channel list untouched to search the whole server. Ctrl or Cmd click to pick
-            several.
+            several. Picking a channel includes anything you wrote in its threads.
           </p>
         </div>
 
@@ -126,7 +140,9 @@
         </div>
         <p class="status" id="filter-status" role="status" aria-live="polite"></p>
         <div class="progress hidden" id="search-progress">
+          <div class="bar"><div class="fill" id="search-fill"></div></div>
           <p class="counter" id="search-counter">Searching...</p>
+          <p class="hint tight" id="search-elapsed"></p>
           <button id="search-stop" class="ghost small" type="button">Stop and keep what I have</button>
         </div>
       </section>
@@ -152,6 +168,9 @@
             </thead>
             <tbody id="results-body"></tbody>
           </table>
+        </div>
+        <div class="actions left">
+          <button id="show-more" class="ghost small hidden" type="button">Show more</button>
         </div>
         <p class="hint tight" id="results-note"></p>
 
@@ -213,8 +232,20 @@
         <p class="status" id="run-status" role="status" aria-live="polite"></p>
 
         <div class="progress hidden" id="run-progress">
-          <div class="bar"><div class="fill" id="run-fill"></div></div>
-          <p class="counter" id="run-counter"></p>
+          <div
+            class="bar"
+            id="run-bar"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            aria-label="Run progress"
+          >
+            <div class="fill" id="run-fill"></div>
+          </div>
+          <!-- The run is the one part of the app that takes hours with nobody
+               looking at it, so it is also the part that has to announce itself. -->
+          <p class="counter" id="run-counter" role="status" aria-live="polite"></p>
           <p class="hint tight" id="run-eta"></p>
           <div class="actions left">
             <button id="run-pause" class="ghost small" type="button">Pause</button>
@@ -222,7 +253,7 @@
           </div>
         </div>
 
-        <div class="report hidden" id="run-report"></div>
+        <div class="report hidden" id="run-report" tabindex="-1"></div>
       </section>
 
       <footer class="foot">
