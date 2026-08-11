@@ -79,8 +79,20 @@ const MAX_NAME = 75;
 /**
  * `externally_connectable` would let a web page drive the extension, which on a
  * tool holding a Discord token is the worst possible hole. Never declare it.
+ *
+ * The rest are here because the permission checks below read `permissions` and
+ * `host_permissions` and nothing else, so every one of these was a way to widen
+ * the extension's reach while the gate printed "permissions, single host".
+ * `optional_host_permissions: ["<all_urls>"]` would have shipped clean.
  */
-const FORBIDDEN_MANIFEST_KEYS = ['externally_connectable', 'declarative_net_request'];
+const FORBIDDEN_MANIFEST_KEYS = [
+  'externally_connectable',
+  'declarative_net_request',
+  'optional_permissions',
+  'optional_host_permissions',
+  'web_accessible_resources',
+  'content_security_policy',
+];
 
 const args = new Set(process.argv.slice(2));
 
@@ -97,13 +109,13 @@ async function exists(p) {
   }
 }
 
-async function copyDir(from, to) {
+async function copyDir(from, to, keep) {
   await fs.mkdir(to, { recursive: true });
   for (const entry of await fs.readdir(from, { withFileTypes: true })) {
     const s = path.join(from, entry.name);
     const d = path.join(to, entry.name);
-    if (entry.isDirectory()) await copyDir(s, d);
-    else await fs.copyFile(s, d);
+    if (entry.isDirectory()) await copyDir(s, d, keep);
+    else if (!keep || keep(entry.name)) await fs.copyFile(s, d);
   }
 }
 
@@ -151,9 +163,17 @@ async function buildTarget(target, base, background) {
   await rmrf(out);
   await fs.mkdir(out, { recursive: true });
 
+  // Only the icons the manifest actually names. src/icons also holds the two
+  // SVG masters that tools/icons.mjs rasterises from and a 256 for store
+  // listings, none of which the extension ever loads, so shipping them just put
+  // three unreferenced files into both uploads.
+  const wanted = new Set(Object.values(base.icons || {}).map((rel) => path.posix.basename(rel)));
+  const keepIcon = (name) => wanted.has(name);
+
   for (const dir of [...STATIC_DIRS, ...OPTIONAL_DIRS]) {
     const from = path.join(SRC, dir);
-    if (await exists(from)) await copyDir(from, path.join(out, dir));
+    if (!(await exists(from))) continue;
+    await copyDir(from, path.join(out, dir), dir === 'icons' ? keepIcon : null);
   }
   await fs.writeFile(path.join(out, 'background.js'), background);
   await fs.writeFile(
@@ -169,6 +189,7 @@ async function buildTarget(target, base, background) {
 
 async function check(base) {
   const problems = [];
+  const pkgVersion = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8')).version;
 
   for (const target of TARGETS) {
     const dir = path.join(DIST, target);
@@ -206,7 +227,14 @@ async function check(base) {
       if (key in manifest) problems.push(`${tag} manifest must not declare "${key}"`);
     }
 
-    if (manifest.version !== base.version) problems.push(`${tag} version drifted from base manifest`);
+    // Compared against package.json, not against `base`. `manifest` is built
+    // from `base` a few lines above, so the old check compared a value with
+    // itself and could not fail under any circumstances. The version that
+    // matters is the one two stores read off the package while the changelog and
+    // the release zips are named from package.json.
+    if (manifest.version !== pkgVersion) {
+      problems.push(`${tag} manifest version ${manifest.version} does not match package.json ${pkgVersion}`);
+    }
 
     if ((manifest.description ?? '').length > MAX_DESCRIPTION) {
       problems.push(
@@ -248,9 +276,38 @@ async function check(base) {
       }
     }
 
-    const bg = await fs.readFile(path.join(dir, 'background.js'), 'utf8');
-    for (const banned of ['importScripts(', 'eval(', 'new Function(']) {
-      if (bg.includes(banned)) problems.push(`${tag} background uses forbidden "${banned}"`);
+    // Every shipped script, not just the background bundle. The app page and the
+    // content script run with the same privileges and hold the same token, so
+    // reading one file and printing "no remote code" was a claim about a third
+    // of the package.
+    await walk(dir, async (file) => {
+      if (!file.endsWith('.js')) return;
+      const where = path.relative(dir, file).split(path.sep).join('/');
+      const code = blankCommentsAndStrings(await fs.readFile(file, 'utf8'));
+      for (const banned of ['importScripts(', 'eval(', 'new Function(']) {
+        if (code.includes(banned)) problems.push(`${tag} ${where} uses forbidden "${banned}"`);
+      }
+    });
+
+    // The extension page pulls its own scripts and styles by relative path, and
+    // nothing checked they exist. Renaming app.css shipped a page with no
+    // styles and a green gate.
+    const page = path.join(dir, 'app', 'app.html');
+    if (await exists(page)) {
+      const html = await fs.readFile(page, 'utf8');
+      const refs = [
+        ...html.matchAll(/<script[^>]+src=("|')([^"']+)\1/gi),
+        ...html.matchAll(/<link[^>]+href=("|')([^"']+)\1/gi),
+      ].map((m) => m[2]);
+      for (const ref of refs) {
+        if (/^(https?:)?\/\//i.test(ref)) {
+          problems.push(`${tag} app.html references a remote asset: ${ref}`);
+          continue;
+        }
+        if (!(await exists(path.resolve(path.dirname(page), ref)))) {
+          problems.push(`${tag} app.html references a missing file: ${ref}`);
+        }
+      }
     }
   }
 
@@ -263,12 +320,17 @@ async function check(base) {
    * sentence in a listing.
    */
   await walk(SRC, async (file) => {
-    if (!/\.(js|html)$/.test(file)) return;
+    // CSS is in the list because it is shipped, it is fetched by the extension
+    // page, and it can name a host: `background-image: url(https://...)` and a
+    // top-of-file `@import` both reach the network from a privileged page. The
+    // scan filtered on .js and .html, so a third-party URL in app.css passed
+    // both "no remote code" and "network confined to Discord" and printed both.
+    if (!/\.(js|html|css|json)$/.test(file)) return;
     const rel = path.relative(SRC, file).split(path.sep).join('/');
     const text = await fs.readFile(file, 'utf8');
     // Comments and string literals are blanked first, so prose that mentions an
     // API does not fail a file that never calls it.
-    const code = blankCommentsAndStrings(text);
+    const code = /\.(js|html)$/.test(file) ? blankCommentsAndStrings(text) : text;
 
     if (!NETWORK_ALLOWED_FILES.includes(rel)) {
       for (const m of code.matchAll(/\b(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/g)) {
@@ -447,7 +509,40 @@ function blankCommentsAndStrings(source) {
       continue;
     }
 
-    if (ch === '"' || ch === "'" || ch === '`') {
+    // A template literal is not one string. The parts between `${` and `}` are
+    // ordinary code, and blanking the literal whole hid them: a fetch() written
+    // inside a substitution was invisible to the gate that exists to find
+    // exactly that. So the literal text is blanked and each substitution is run
+    // back through this same scanner, which also handles a string or a nested
+    // template inside one.
+    if (ch === '`') {
+      let j = i + 1;
+      let literalFrom = i + 1;
+      while (j < source.length) {
+        const c = source[j];
+        if (c === '\\') {
+          j += 2;
+          continue;
+        }
+        if (c === '`') break;
+        if (c === '$' && source[j + 1] === '{') {
+          blank(literalFrom, j);
+          const from = j + 2;
+          const to = matchingBrace(source, from);
+          const inner = blankCommentsAndStrings(source.slice(from, to));
+          for (let k = 0; k < inner.length; k++) out[from + k] = inner[k];
+          j = to + 1;
+          literalFrom = j;
+          continue;
+        }
+        j++;
+      }
+      blank(literalFrom, j);
+      i = j + 1;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
       let j = i + 1;
       while (j < source.length) {
         if (source[j] === '\\') {
@@ -457,7 +552,7 @@ function blankCommentsAndStrings(source) {
         if (source[j] === ch) break;
         // An unterminated single quote is almost certainly an apostrophe in
         // prose; stop at the newline rather than eating the rest of the file.
-        if (source[j] === '\n' && ch !== '`') break;
+        if (source[j] === '\n') break;
         j++;
       }
       blank(i + 1, j);
@@ -467,6 +562,57 @@ function blankCommentsAndStrings(source) {
     i++;
   }
   return out.join('');
+}
+
+/**
+ * Index of the `}` closing a substitution that starts at `from`.
+ *
+ * Quoted spans are stepped over so a brace inside a string does not close it.
+ * When it cannot tell, it runs to the end of the file, which leaves more code
+ * visible to the scan rather than less: this gate should fail loudly rather than
+ * quietly pass something it did not understand.
+ */
+function matchingBrace(source, from) {
+  let depth = 1;
+  let k = from;
+  while (k < source.length) {
+    const c = source[k];
+    if (c === '\\') {
+      k += 2;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {
+      k = endOfQuoted(source, k);
+      continue;
+    }
+    if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) return k;
+    k++;
+  }
+  return source.length;
+}
+
+/** Index just past the quote closing the span opened at `at`. */
+function endOfQuoted(source, at) {
+  const quote = source[at];
+  let k = at + 1;
+  while (k < source.length) {
+    const c = source[k];
+    if (c === '\\') {
+      k += 2;
+      continue;
+    }
+    if (c === quote) return k + 1;
+    if (c === '\n' && quote !== '`') return k;
+    // A nested template's own substitutions can carry braces, so they are
+    // stepped over here too rather than counted by the caller.
+    if (quote === '`' && c === '$' && source[k + 1] === '{') {
+      k = matchingBrace(source, k + 2) + 1;
+      continue;
+    }
+    k++;
+  }
+  return source.length;
 }
 
 async function walk(dir, fn) {
@@ -590,6 +736,18 @@ async function writeZip(sourceDir, zipPath) {
 async function writeSourceZip(version) {
   const out = path.join(ROOT, 'release', `clearline-source-v${version}.zip`);
   try {
+    // The packages beside this archive are built from the working tree and this
+    // archive is HEAD, so an uncommitted change means a reviewer building from
+    // the source cannot reproduce the upload. Said out loud rather than left to
+    // be discovered during review, which is where it would otherwise surface.
+    const { stdout } = await execFile('git', ['status', '--porcelain'], { cwd: ROOT });
+    if (stdout.trim()) {
+      console.log('WARNING: the working tree has uncommitted changes, so the source zip (HEAD) does not match the packages.');
+    }
+  } catch {
+    // No repository. The next call reports that properly.
+  }
+  try {
     await execFile(
       'git',
       ['archive', '--format=zip', `--prefix=clearline-${version}/`, '-o', out, 'HEAD'],
@@ -614,6 +772,13 @@ async function main() {
     console.log(`built ${target} -> ${path.relative(ROOT, out)}`);
   }
 
+  // Before the zips, not after and not on a separate flag. --zip and --check
+  // were independent branches and package.json mapped `zip` to --zip alone, so
+  // the artifacts actually uploaded to two stores were the one output nothing
+  // verified. README presents this gate as the enforcement mechanism, so the
+  // path that produces the upload is the path that most needs to run it.
+  if (args.has('--zip') || args.has('--check')) await check(base);
+
   if (args.has('--zip')) {
     await fs.mkdir(path.join(ROOT, 'release'), { recursive: true });
     for (const target of TARGETS) {
@@ -623,8 +788,6 @@ async function main() {
     }
     await writeSourceZip(base.version);
   }
-
-  if (args.has('--check')) await check(base);
 }
 
 main().catch((err) => {
