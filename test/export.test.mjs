@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadLib, STUB_CHROME } from './helper.mjs';
 
-const ctx = await loadLib(['lib/browser.js', 'lib/export.js'], { chrome: STUB_CHROME });
+const ctx = await loadLib(['lib/browser.js', 'lib/i18n.js', 'lib/export.js'], { chrome: STUB_CHROME });
 const exp = ctx.CL.exporter;
 
 const META = {

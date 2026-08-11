@@ -20,7 +20,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  * @param {object} extras extra globals, e.g. a fake `chrome`
  */
 export async function loadLib(files, extras = {}) {
-  const context = vm.createContext({ URL, console, BigInt, Date, Math, JSON, ...extras });
+  // Intl comes in because the library files use it for plurals, list joining
+  // and number formatting, all of which are part of the sentences under test.
+  const context = vm.createContext({ URL, console, BigInt, Date, Math, JSON, Intl, ...extras });
   for (const rel of files) {
     const code = await fs.readFile(path.join(ROOT, 'src', rel), 'utf8');
     vm.runInContext(code, context, { filename: rel });
@@ -38,6 +40,33 @@ export async function loadLib(files, extras = {}) {
  */
 export const plain = (value) => JSON.parse(JSON.stringify(value));
 
+/**
+ * The real English message store, wired up the way the browser wires it.
+ *
+ * Not a stub that echoes keys back. The library files build user-facing
+ * sentences out of these, and a fake that returned the key would let a missing
+ * or misnamed message pass every test and then show up as a blank label in the
+ * shipped extension. Reading the file that ships means the tests fail the same
+ * way a user would see it.
+ */
+const MESSAGES = JSON.parse(
+  await fs.readFile(path.join(ROOT, 'src', '_locales', 'en', 'messages.json'), 'utf8')
+);
+
+function getMessage(key, subs) {
+  const entry = MESSAGES[key];
+  if (!entry) return '';
+  const args = subs === undefined ? [] : Array.isArray(subs) ? subs : [subs];
+  let out = entry.message;
+  // Named placeholders resolve to positional arguments, exactly as the
+  // extension APIs do: `$COUNT$` is declared as `$1` and filled from args[0].
+  for (const [name, spec] of Object.entries(entry.placeholders || {})) {
+    const index = Number(String(spec.content).replace('$', '')) - 1;
+    out = out.replace(new RegExp(`\\$${name}\\$`, 'gi'), args[index] ?? '');
+  }
+  return out;
+}
+
 /** browser.js insists on a namespace object existing, so give it a stub. */
 export const STUB_CHROME = {
   storage: {
@@ -46,6 +75,7 @@ export const STUB_CHROME = {
   },
   runtime: { sendMessage: async () => {}, onMessage: { addListener: () => {} } },
   downloads: { download: async () => 1 },
+  i18n: { getMessage, getUILanguage: () => 'en-US' },
 };
 
 /**

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadLib, STUB_CHROME } from './helper.mjs';
 
-const ctx = await loadLib(['lib/browser.js', 'lib/snowflake.js', 'lib/filter.js'], {
+const ctx = await loadLib(['lib/browser.js', 'lib/i18n.js', 'lib/snowflake.js', 'lib/filter.js'], {
   chrome: STUB_CHROME,
 });
 const filter = ctx.CL.filter;
@@ -168,12 +168,15 @@ test('an empty filter set is recognisable as empty', () => {
 });
 
 test('the description reads as a sentence rather than a list of labels', () => {
+  // Joined by Intl.ListFormat, so the separator is whatever the reader's locale
+  // uses rather than a hard-coded " and ". The stub reports en-US, which takes
+  // the serial comma; en-GB would not, and Japanese uses neither.
   const text = filter.describe({
     contains: 'sorry',
     hasAttachment: true,
     excludePinned: true,
   });
-  assert.equal(text, 'containing "sorry", with an attachment and not pinned');
+  assert.equal(text, 'containing "sorry", with an attachment, and not pinned');
 });
 
 test('the description names both ends of a date range', () => {

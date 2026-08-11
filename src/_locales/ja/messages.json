@@ -1,0 +1,1027 @@
+{
+  "extName": {
+    "message": "Clearline - Discord メッセージ管理",
+    "description": "Extension name. Keep 'Clearline' untranslated: it is the product name."
+  },
+  "extDescription": {
+    "message": "自分の Discord メッセージを検索、書き出し、一括削除。トークンがブラウザーの外に出ることはありません。",
+    "description": "Store description. Hard limit of 132 characters in every language."
+  },
+  "actionTitle": {
+    "message": "Clearline"
+  },
+  "appTagline": {
+    "message": "自分の Discord メッセージを検索、書き出し、削除します。"
+  },
+  "stepConnect": {
+    "message": "接続",
+    "description": "Step 1 name in the progress rail."
+  },
+  "stepWhere": {
+    "message": "場所",
+    "description": "Step 2. Short: it sits in a narrow pill."
+  },
+  "stepNarrow": {
+    "message": "絞り込み",
+    "description": "Step 3, as in narrowing down a search."
+  },
+  "stepReview": {
+    "message": "確認",
+    "description": "Step 4."
+  },
+  "stepAct": {
+    "message": "実行",
+    "description": "Step 5, as in take action."
+  },
+  "connectHeading": {
+    "message": "接続"
+  },
+  "connectHint": {
+    "message": "Clearline は開いている Discord のタブからセッションを読み取ります。トークンはこのタブの中だけにあり、保存されることはなく、タブを閉じれば消えます。"
+  },
+  "connectButton": {
+    "message": "Discord に接続"
+  },
+  "takeoverButton": {
+    "message": "このタブを使う",
+    "description": "Takes control away from whichever other tab currently holds it."
+  },
+  "reconnectButton": {
+    "message": "Discord に再接続"
+  },
+  "labelAccount": {
+    "message": "アカウント"
+  },
+  "labelServers": {
+    "message": "サーバー",
+    "description": "Discord servers, called guilds in the API."
+  },
+  "labelDirectMessages": {
+    "message": "ダイレクトメッセージ"
+  },
+  "statusLooking": {
+    "message": "ログイン済みの Discord タブを探しています..."
+  },
+  "statusConnected": {
+    "message": "接続しました。アカウントを読み込んでいます..."
+  },
+  "statusReconnecting": {
+    "message": "Discord のセッションを読み直しています..."
+  },
+  "statusReconnected": {
+    "message": "再接続しました。見つけたものはすべてそのまま残っています。"
+  },
+  "errNoTab": {
+    "message": "別のタブで discord.com を開いてログインし、もう一度お試しください。"
+  },
+  "errNotLoggedIn": {
+    "message": "その Discord タブはまだログインしていません。ログインしてからもう一度お試しください。"
+  },
+  "errNeedsReload": {
+    "message": "Discord のタブを再読み込みしてから、もう一度お試しください。インストール時点ですでに開いていたタブには Clearline は届きません。",
+    "description": "Content scripts are not injected into tabs that were already open."
+  },
+  "errNoSession": {
+    "message": "Discord のセッションを読み取れませんでした。"
+  },
+  "errGeneric": {
+    "message": "問題が発生しました。"
+  },
+  "alreadyOpen": {
+    "message": "Clearline は別のタブですでに開いています。2 つ同時に動かすと Discord へのリクエストが安全な速度の 2 倍になるため、同時に動けるのは 1 つだけです。"
+  },
+  "stoodDown": {
+    "message": "別の Clearline タブが引き継いだため、こちらは停止しました。"
+  },
+  "runStoppedByTakeover": {
+    "message": "別の Clearline タブが引き継いだため、この処理は停止しました。"
+  },
+  "whereHeading": {
+    "message": "どこを探しますか?"
+  },
+  "scopeServer": {
+    "message": "サーバー"
+  },
+  "scopeDm": {
+    "message": "ダイレクトメッセージ"
+  },
+  "labelServer": {
+    "message": "サーバー"
+  },
+  "labelChannels": {
+    "message": "チャンネル"
+  },
+  "labelConversation": {
+    "message": "会話"
+  },
+  "optLoading": {
+    "message": "読み込み中..."
+  },
+  "optPickServerFirst": {
+    "message": "先にサーバーを選んでください"
+  },
+  "optChooseServer": {
+    "message": "サーバーを選択"
+  },
+  "optChooseConversation": {
+    "message": "会話を選択"
+  },
+  "channelsHint": {
+    "message": "サーバー全体を検索するにはチャンネル一覧に触れないでください。Ctrl または Cmd キーを押しながらクリックで複数選べます。チャンネルを選ぶと、そのスレッドに書いた内容も対象になります。"
+  },
+  "optLoadingChannels": {
+    "message": "チャンネルを読み込み中..."
+  },
+  "optChannelsFailed": {
+    "message": "チャンネルを読み込めませんでした"
+  },
+  "errChannelsFailed": {
+    "message": "チャンネルを読み込めませんでした。"
+  },
+  "errChooseServer": {
+    "message": "先にサーバーを選んでください。"
+  },
+  "errChooseConversation": {
+    "message": "先に会話を選んでください。"
+  },
+  "errChannelsNotLoaded": {
+    "message": "そのサーバーのチャンネル一覧が読み込まれていません。少し待つか、選び直してください。"
+  },
+  "dmFallback": {
+    "message": "ダイレクトメッセージ"
+  },
+  "serverFallback": {
+    "message": "サーバー"
+  },
+  "allChannels": {
+    "message": "すべてのチャンネル",
+    "description": "Follows a server name, as in 'My Server / all channels'."
+  },
+  "dmUnknown": {
+    "message": "不明",
+    "description": "Stands in for a Discord user with no readable name."
+  },
+  "dmAndMore": {
+    "message": "$NAMES$ ほか $COUNT$ 人",
+    "description": "Names a group DM with too many people to list.",
+    "placeholders": {
+      "names": {
+        "content": "$1",
+        "example": "Alex, Sam, Jo"
+      },
+      "count": {
+        "content": "$2",
+        "example": "4"
+      }
+    }
+  },
+  "narrowHeading": {
+    "message": "条件を絞る"
+  },
+  "lookingIn": {
+    "message": "$SCOPE$ を検索します。",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "labelContains": {
+    "message": "含む文字"
+  },
+  "placeholderContains": {
+    "message": "すべてを対象にするなら空のまま"
+  },
+  "optRegex": {
+    "message": "パターンとして扱う",
+    "description": "Treat the search text as a regular expression."
+  },
+  "optMatchCase": {
+    "message": "大文字と小文字を区別"
+  },
+  "labelAfter": {
+    "message": "この日以降に送信"
+  },
+  "labelBefore": {
+    "message": "この日以前に送信"
+  },
+  "optHasAttachment": {
+    "message": "添付ファイルあり"
+  },
+  "optHasLink": {
+    "message": "リンクあり"
+  },
+  "optHasEmbed": {
+    "message": "リンクプレビューあり",
+    "description": "An embed is Discord's rich link preview card."
+  },
+  "optLeavePinned": {
+    "message": "ピン留めされたメッセージはそのままにする"
+  },
+  "buttonBack": {
+    "message": "戻る"
+  },
+  "buttonSearch": {
+    "message": "検索"
+  },
+  "buttonNext": {
+    "message": "次へ"
+  },
+  "searching": {
+    "message": "検索中..."
+  },
+  "buttonStopSearch": {
+    "message": "中断して、ここまでの結果を使う"
+  },
+  "searchStopping": {
+    "message": "実行中のリクエストの後で停止します..."
+  },
+  "errDateRangeBackwards": {
+    "message": "日付の範囲が逆になっています。"
+  },
+  "errSearchFailed": {
+    "message": "検索に失敗しました。"
+  },
+  "searchIndexing": {
+    "message": "Discord がこのサーバーの検索インデックスを作成しています。お待ちください..."
+  },
+  "searchHistoryProgress": {
+    "message": "$SCANNED$ 件を確認し、あなたのものが $FOUND$ 件見つかりました...",
+    "placeholders": {
+      "scanned": {
+        "content": "$1",
+        "example": "12,400"
+      },
+      "found": {
+        "content": "$2",
+        "example": "340"
+      }
+    }
+  },
+  "searchFound": {
+    "message": "$COUNT$ 件見つかりました...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      }
+    }
+  },
+  "searchFoundOf": {
+    "message": "約 $TOTAL$ 件のうち $COUNT$ 件見つかりました...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      },
+      "total": {
+        "content": "$2",
+        "example": "8,400"
+      }
+    }
+  },
+  "searchElapsed": {
+    "message": "ここまで $TIME$。",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "reviewHeading": {
+    "message": "確認"
+  },
+  "colWhen": {
+    "message": "日時"
+  },
+  "colChannel": {
+    "message": "チャンネル"
+  },
+  "colMessage": {
+    "message": "メッセージ"
+  },
+  "pickAllTitle": {
+    "message": "すべて選択または解除"
+  },
+  "includeThisMessage": {
+    "message": "このメッセージを対象にする"
+  },
+  "openInDiscord": {
+    "message": "このメッセージを Discord で開く"
+  },
+  "saveACopy": {
+    "message": "控えを保存"
+  },
+  "saveHint": {
+    "message": "削除は取り消せません。ここで保存したものが、手元に残る唯一の記録になります。"
+  },
+  "downloadHtml": {
+    "message": "HTML でダウンロード"
+  },
+  "downloadJson": {
+    "message": "JSON でダウンロード"
+  },
+  "downloadCsv": {
+    "message": "CSV でダウンロード"
+  },
+  "buttonContinue": {
+    "message": "続ける"
+  },
+  "saved": {
+    "message": "保存しました。"
+  },
+  "errSaveFailed": {
+    "message": "保存できませんでした。"
+  },
+  "attachmentOnly": {
+    "message": "(添付ファイルのみ)"
+  },
+  "noText": {
+    "message": "(本文なし)"
+  },
+  "nothingMatched": {
+    "message": "該当なし"
+  },
+  "truncatedNotice": {
+    "message": "検索は途中で止められたので、これは全体の一部です。"
+  },
+  "shiftClickHint": {
+    "message": "Shift + クリックで範囲を選べます。"
+  },
+  "reviewSummary": {
+    "message": "$FILTER$、$SCOPE$ 内。",
+    "placeholders": {
+      "filter": {
+        "content": "$1",
+        "example": "containing \"sorry\""
+      },
+      "scope": {
+        "content": "$2",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "reviewNoMatch": {
+    "message": "$SCOPE$ にはあなたのメッセージで $FILTER$ に該当するものがありません。",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$2",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "selectedOfTotal": {
+    "message": "$TOTAL$ のうち $PICKED$ 件を選択中",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300 messages"
+      }
+    }
+  },
+  "matched_one": {
+    "message": "$COUNT$ 件が該当",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "matched_other": {
+    "message": "$COUNT$ 件が該当",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "messages_one": {
+    "message": "$COUNT$ 件のメッセージ",
+    "description": "A count of messages, used inside longer sentences.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "messages_other": {
+    "message": "$COUNT$ 件のメッセージ",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "showMore_one": {
+    "message": "さらに $COUNT$ 件表示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "showMore_other": {
+    "message": "さらに $COUNT$ 件表示",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "300"
+      }
+    }
+  },
+  "resultsNote_one": {
+    "message": "$TOTAL$ 件のうち $SHOWN$ 件を表示中。残る $REST$ 件のうち $PICKED$ 件が選択され、上の数に含まれています。",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "301"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "1"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "1"
+      }
+    }
+  },
+  "resultsNote_other": {
+    "message": "$TOTAL$ 件のうち $SHOWN$ 件を表示中。残る $REST$ 件のうち $PICKED$ 件が選択され、上の数に含まれています。",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "4,000"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "3,700"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "3,690"
+      }
+    }
+  },
+  "runHeading": {
+    "message": "これらをどうしますか?"
+  },
+  "actionDelete": {
+    "message": "削除する"
+  },
+  "actionEditThenDelete": {
+    "message": "本文を上書きしてから削除する"
+  },
+  "actionEdit": {
+    "message": "本文を上書きするだけ"
+  },
+  "labelReplacement": {
+    "message": "置き換える本文"
+  },
+  "replacementHint": {
+    "message": "先に上書きすると、どこかに残る最後の版があなたの書いた内容ではなく置き換え後の文になります。リクエスト数が 2 倍になるため、時間もおよそ 2 倍かかります。"
+  },
+  "backupLabel": {
+    "message": "開始前に HTML の控えをダウンロードする"
+  },
+  "backupHint": {
+    "message": "控えは最初の削除より前にブラウザーへ渡されます。開始する前に届いているか確認してください。Clearline はダウンロード権限を求めないため、ブラウザーがどこに保存したかは分かりません。"
+  },
+  "confirmLabelDefault": {
+    "message": "確認のため件数を入力"
+  },
+  "confirmLabel": {
+    "message": "確認のため $COUNT$ と入力",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "confirmRefused": {
+    "message": "確認のため入力欄に $COUNT$ と入力してください。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "buttonStart": {
+    "message": "開始"
+  },
+  "buttonPause": {
+    "message": "一時停止"
+  },
+  "buttonResume": {
+    "message": "再開"
+  },
+  "buttonStop": {
+    "message": "停止"
+  },
+  "runProgressLabel": {
+    "message": "処理の進捗"
+  },
+  "verbDelete": {
+    "message": "完全に削除",
+    "description": "Verb inside 'You are about to VERB 12 messages in ...'."
+  },
+  "verbEdit": {
+    "message": "本文を上書き"
+  },
+  "verbEditThenDelete": {
+    "message": "上書きしてから完全に削除"
+  },
+  "preflightAll": {
+    "message": "$SCOPE$ の $COUNT$ をこれから$VERB$します。そこにあなたが書いたものすべてです。",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "preflightFiltered": {
+    "message": "$SCOPE$ の $COUNT$ ($FILTER$) をこれから$VERB$します。",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$4",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "preflightPace": {
+    "message": "Clearline の処理速度では $DURATION$ かかります。",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "preflightKeepOpen": {
+    "message": "処理中はこのタブを開いたままにしてください。閉じたり再読み込みしたりすると、その時点で処理が止まります。"
+  },
+  "preflightUndeletable": {
+    "message": "$COUNT$ は誰にも削除できません。参加通知などについて Discord が削除を許可していないためです。これらはそのまま残ります。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "preflightNoUndo": {
+    "message": "これは取り消せません。"
+  },
+  "preflightStale": {
+    "message": "この結果はすでに実行済みの処理のものです。別のものを扱うには、もう一度検索してください。"
+  },
+  "runCounter": {
+    "message": "$TOTAL$ 件中 $DONE$ 件完了",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300"
+      }
+    }
+  },
+  "runCounterFailed": {
+    "message": "、失敗 $COUNT$ 件",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "runCounterSkipped": {
+    "message": "、そのまま $COUNT$ 件",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "runPaused": {
+    "message": "一時停止中。"
+  },
+  "runEta": {
+    "message": "残り $DURATION$。",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "titleRunning": {
+    "message": "$PERCENT$% - Clearline",
+    "description": "Browser tab title during a run.",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "titlePaused": {
+    "message": "一時停止 $PERCENT$% - Clearline",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "statusSavingCopy": {
+    "message": "先に控えを保存しています..."
+  },
+  "errCopyIncomplete": {
+    "message": "控えが不完全な状態で出力されました。"
+  },
+  "errCopyFailed": {
+    "message": "控えを保存できなかったため、何も変更していません。$REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "The copy came out incomplete."
+      }
+    }
+  },
+  "reportFinished": {
+    "message": "完了しました。$COUNT$ を処理しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportCancelled": {
+    "message": "停止しました。停止するまでに $COUNT$ を処理しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportHalted": {
+    "message": "途中で停止しました。$COUNT$ を処理しました。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportRemaining_one": {
+    "message": "$COUNT$ 件はまったく手が付けられていません。もう一度検索して続きを行ってください。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "reportRemaining_other": {
+    "message": "$COUNT$ 件はまったく手が付けられていません。もう一度検索して続きを行ってください。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997"
+      }
+    }
+  },
+  "reportSkipped": {
+    "message": "そのまま $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportFailed": {
+    "message": "失敗 $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportAndMore": {
+    "message": "ほか $COUNT$ 件",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "262"
+      }
+    }
+  },
+  "reportRetry": {
+    "message": "失敗した $COUNT$ 件をもう一度試す",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "reportSearchAgain": {
+    "message": "もう一度検索"
+  },
+  "reasonNotYours": {
+    "message": "このアカウントが書いたものだと確認できませんでした"
+  },
+  "reasonUndeletable": {
+    "message": "Discord はこの種類のメッセージの削除を許可していません"
+  },
+  "durationUnderMinute": {
+    "message": "1 分未満"
+  },
+  "durationMinutes_one": {
+    "message": "約 $COUNT$ 分",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationMinutes_other": {
+    "message": "約 $COUNT$ 分",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "18"
+      }
+    }
+  },
+  "durationHours_one": {
+    "message": "約 $COUNT$ 時間",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationHours_other": {
+    "message": "約 $COUNT$ 時間",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "durationHoursMinutes": {
+    "message": "約 $HOURS$ 時間 $MINUTES$ 分",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "3"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "elapsedSeconds": {
+    "message": "$COUNT$ 秒",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedMinutes": {
+    "message": "$MINUTES$ 分 $SECONDS$ 秒",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "2"
+      },
+      "seconds": {
+        "content": "$2",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedHours": {
+    "message": "$HOURS$ 時間 $MINUTES$ 分",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "1"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "footerSupport": {
+    "message": "Clearline は無料でオープンソース、アカウントも有料版もありません。時間の節約になったなら、",
+    "description": "Followed by a 'buy me a coffee' link, so it ends mid-sentence on purpose."
+  },
+  "footerCoffee": {
+    "message": "コーヒーをおごる"
+  },
+  "footerDisclaimer": {
+    "message": "Discord Inc. とは提携、承認、関連のいずれもありません。"
+  },
+  "filterEverything": {
+    "message": "そこに書いたものすべて",
+    "description": "Stands in for the filter clause when nothing was narrowed."
+  },
+  "filterContaining": {
+    "message": "「$TEXT$」を含む",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "sorry"
+      }
+    }
+  },
+  "filterMatching": {
+    "message": "「$TEXT$」に一致する",
+    "description": "As in matching a regular expression.",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "^lol"
+      }
+    }
+  },
+  "filterHasAttachment": {
+    "message": "添付ファイルあり"
+  },
+  "filterHasLink": {
+    "message": "リンクあり"
+  },
+  "filterHasEmbed": {
+    "message": "リンクプレビューあり"
+  },
+  "filterBetween": {
+    "message": "$FROM$ から $TO$ までに送信",
+    "placeholders": {
+      "from": {
+        "content": "$1",
+        "example": "2024-03-01"
+      },
+      "to": {
+        "content": "$2",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterAfter": {
+    "message": "$DATE$ 以降に送信",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-01"
+      }
+    }
+  },
+  "filterBefore": {
+    "message": "$DATE$ 以前に送信",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterNotPinned": {
+    "message": "ピン留めなし"
+  },
+  "errNotConnected": {
+    "message": "Discord に接続していません。"
+  },
+  "errUnauthorized": {
+    "message": "Discord がセッションを拒否しました。再接続してからもう一度お試しください。"
+  },
+  "errForbidden": {
+    "message": "そのチャンネルの権限がありません。"
+  },
+  "errNotFound": {
+    "message": "そのチャンネルまたはメッセージはもうありません。"
+  },
+  "errHttp": {
+    "message": "Discord が $STATUS$ を返しました。",
+    "placeholders": {
+      "status": {
+        "content": "$1",
+        "example": "500"
+      }
+    }
+  },
+  "errBadId": {
+    "message": "「$ID$」を $WHAT$ として使うことは拒否します。",
+    "placeholders": {
+      "id": {
+        "content": "$1",
+        "example": "abc"
+      },
+      "what": {
+        "content": "$2",
+        "example": "channel id"
+      }
+    }
+  },
+  "errRateLimitHalt": {
+    "message": "Discord がすべてのリクエストを制限しています。IP のブロックにつながらないよう停止します。数分待ってからやり直してください。"
+  },
+  "errIndexNotReady": {
+    "message": "Discord がまだこのサーバーの検索インデックスを作成中です。1 分ほどしてからお試しください。"
+  },
+  "errNothingSelected": {
+    "message": "検索する対象が選ばれていません。"
+  },
+  "errContentTooLong": {
+    "message": "置き換える本文が Discord の $LIMIT$ 文字の上限を超えています。",
+    "placeholders": {
+      "limit": {
+        "content": "$1",
+        "example": "2000"
+      }
+    }
+  },
+  "errContentEmpty": {
+    "message": "置き換える本文を空にはできません。"
+  },
+  "errTooManyFailures": {
+    "message": "$COUNT$ 回連続で失敗したため停止しました。Discord 側で何かが変わったため、残りは実行していません。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "reasonNoPermission": {
+    "message": "そのチャンネルの権限がありません"
+  },
+  "reasonMalformedId": {
+    "message": "ID の形式が不正です"
+  },
+  "reasonUnknown": {
+    "message": "不明なエラー"
+  }
+}

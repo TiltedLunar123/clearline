@@ -31,8 +31,20 @@ import {
 } from './cdp.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(ROOT, 'store', 'screenshots');
 const PORT = 9336;
+
+/**
+ * `node tools/screenshots.mjs [locale]`
+ *
+ * With no locale this writes the English set the store listing uses. With one
+ * it writes into a subfolder instead, which is how a translation gets looked at
+ * in the actual layout rather than only in a JSON file: German runs long and
+ * Japanese runs short, and both can break a button that fits in English.
+ */
+const LOCALE = (process.argv[2] || '').trim();
+const OUT = LOCALE
+  ? path.join(ROOT, 'store', 'screenshots', LOCALE)
+  : path.join(ROOT, 'store', 'screenshots');
 
 const WIDTH = 1280;
 const HEIGHT = 800;
@@ -166,7 +178,13 @@ async function main() {
 
   let launched;
   try {
-    launched = await launchWithExtension({ port: PORT, dir, width: WIDTH, height: HEIGHT });
+    launched = await launchWithExtension({
+      port: PORT,
+      dir,
+      width: WIDTH,
+      height: HEIGHT,
+      lang: LOCALE || undefined,
+    });
     const { webSocketDebuggerUrl } = await httpJson(PORT, '/json/version');
     const cdp = await CDP.connect(webSocketDebuggerUrl);
 
@@ -232,12 +250,15 @@ async function main() {
     await shoot(cdp, session, '3-narrow');
 
     await cdp.evaluate(session, "document.getElementById('search').click()");
+    // Waited on structure rather than on words. Matching the heading text meant
+    // this only ever worked in English, which is exactly the run where looking
+    // at the layout matters least.
     await waitFor('review', async () => {
-      const value = await cdp.evaluate(
+      const rows = await cdp.evaluate(
         session,
-        "(document.querySelector('#review-heading')||{}).textContent"
+        "document.querySelectorAll('#results-body tr').length"
       );
-      return value && /matched/.test(value) ? value : null;
+      return rows > 0 ? rows : null;
     });
     await sleep(400);
     await shoot(cdp, session, '4-review');

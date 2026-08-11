@@ -188,22 +188,25 @@ CL.filter = (function () {
    */
   function describe(filters) {
     const f = filters || {};
+    const t = CL.i18n.t;
     const parts = [];
 
     if (f.contains) {
-      parts.push(`${f.useRegex ? 'matching' : 'containing'} "${f.contains}"`);
+      parts.push(t(f.useRegex ? 'filterMatching' : 'filterContaining', [f.contains]));
     }
-    if (f.hasAttachment) parts.push('with an attachment');
-    if (f.hasLink) parts.push('with a link');
-    if (f.hasEmbed) parts.push('with an embed');
-    if (f.after && f.before) parts.push(`sent between ${dayOf(f.after)} and ${dayOf(f.before)}`);
-    else if (f.after) parts.push(`sent on or after ${dayOf(f.after)}`);
-    else if (f.before) parts.push(`sent on or before ${dayOf(f.before)}`);
-    if (f.excludePinned) parts.push('not pinned');
+    if (f.hasAttachment) parts.push(t('filterHasAttachment'));
+    if (f.hasLink) parts.push(t('filterHasLink'));
+    if (f.hasEmbed) parts.push(t('filterHasEmbed'));
+    if (f.after && f.before) parts.push(t('filterBetween', [dayOf(f.after), dayOf(f.before)]));
+    else if (f.after) parts.push(t('filterAfter', [dayOf(f.after)]));
+    else if (f.before) parts.push(t('filterBefore', [dayOf(f.before)]));
+    if (f.excludePinned) parts.push(t('filterNotPinned'));
 
-    if (parts.length === 0) return 'everything you wrote';
-    if (parts.length === 1) return parts[0];
-    return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+    if (parts.length === 0) return t('filterEverything');
+    // Joined by Intl rather than by gluing "and" on: this sentence is read
+    // immediately before something irreversible, in whatever language the
+    // reader has their browser set to.
+    return CL.i18n.list(parts);
   }
 
   return {

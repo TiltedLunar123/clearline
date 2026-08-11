@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "Clearline - Message Manager for Discord",
+  "name": "__MSG_extName__",
   "version": "1.2.0",
-  "description": "Search, export and bulk delete your own Discord messages. Your token never leaves the browser.",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "permissions": ["storage"],
   "host_permissions": ["*://discord.com/*"],
   "action": {
-    "default_title": "Clearline"
+    "default_title": "__MSG_actionTitle__"
   },
   "content_scripts": [
     {

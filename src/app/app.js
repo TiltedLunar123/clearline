@@ -18,6 +18,10 @@
   const client = CL.api_client.createClient();
   const finder = CL.search.createFinder(client);
 
+  const t = CL.i18n.t;
+  const plural = CL.i18n.plural;
+  const num = CL.i18n.num;
+
   const state = {
     me: null,
     guilds: [],
@@ -129,29 +133,36 @@
     }
   }
 
-  /** "about 18 minutes", because a millisecond count is not an answer. */
+  /**
+   * "about 18 minutes", because a millisecond count is not an answer.
+   *
+   * Every branch is a separate message rather than one string with a number
+   * glued on, because languages disagree about where the number goes and how
+   * many plural forms an hour has.
+   */
   function humanDuration(ms) {
     const seconds = Math.round(ms / 1000);
-    if (seconds < 45) return 'under a minute';
+    if (seconds < 45) return t('durationUnderMinute');
     const minutes = Math.round(seconds / 60);
-    if (minutes < 60) return `about ${minutes} minute${minutes === 1 ? '' : 's'}`;
+    if (minutes < 60) return plural('durationMinutes', minutes);
     const hours = Math.floor(minutes / 60);
     const rest = minutes % 60;
-    if (rest === 0) return `about ${hours} hour${hours === 1 ? '' : 's'}`;
-    return `about ${hours}h ${rest}m`;
+    if (rest === 0) return plural('durationHours', hours);
+    return t('durationHoursMinutes', [num(hours), num(rest)]);
   }
 
-  function count(n, one, many) {
-    return `${n.toLocaleString()} ${n === 1 ? one : many || one + 's'}`;
+  /** A count of messages in whatever plural form the reader's language wants. */
+  function count(n) {
+    return plural('messages', n);
   }
 
   /** "2m 40s". Exact rather than rounded, because it is counting up. */
   function humanElapsed(ms) {
     const seconds = Math.max(0, Math.round(ms / 1000));
-    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 60) return t('elapsedSeconds', [num(seconds)]);
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
-    return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+    if (minutes < 60) return t('elapsedMinutes', [num(minutes), num(seconds % 60)]);
+    return t('elapsedHours', [num(Math.floor(minutes / 60)), num(minutes % 60)]);
   }
 
   /**
@@ -207,23 +218,28 @@
   /* Step 1: connect                                                   */
   /* ---------------------------------------------------------------- */
 
+  // Neither browser injects a content script into tabs that were already open
+  // when the extension was installed or updated, so the very first thing a new
+  // user does lands on needs-reload while they are perfectly well signed in.
+  // Telling them to sign in is advice that cannot work; reloading is the fix.
   const TOKEN_PROBLEMS = {
-    'no-tab': 'Open discord.com in another tab, sign in, then try again.',
-    'not-logged-in': 'That Discord tab is not signed in yet. Sign in and try again.',
-    // Neither browser injects a content script into tabs that were already open
-    // when the extension was installed or updated, so the very first thing a new
-    // user does lands here while they are perfectly well signed in. Telling them
-    // to sign in is advice that cannot work; reloading the tab is the fix.
-    'needs-reload': 'Reload your Discord tab, then try again. Clearline cannot reach a tab that was already open when it was installed.',
+    'no-tab': 'errNoTab',
+    'not-logged-in': 'errNotLoggedIn',
+    'needs-reload': 'errNeedsReload',
   };
+
+  /** The message for a token failure, or the generic one for a shape we do not know. */
+  function tokenProblem(reason) {
+    return t(TOKEN_PROBLEMS[reason] || 'errNoSession');
+  }
 
   /** A DM has no name of its own, so it is named after who is in it. */
   function dmLabel(channel) {
     if (channel.name) return channel.name;
-    const names = (channel.recipients || []).map((r) => r.global_name || r.username || 'unknown');
-    if (names.length === 0) return 'Direct message';
+    const names = (channel.recipients || []).map((r) => r.global_name || r.username || t('dmUnknown'));
+    if (names.length === 0) return t('dmFallback');
     if (names.length <= 3) return names.join(', ');
-    return `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`;
+    return t('dmAndMore', [names.slice(0, 3).join(', '), num(names.length - 3)]);
   }
 
   function fillSelect(select, options, placeholder) {
@@ -257,12 +273,7 @@
         token: state.claimToken,
       });
       if (reply && reply.ok === false) {
-        say(
-          $('status'),
-          'Clearline is already open in another tab. Running two copies at once would send ' +
-            'Discord requests twice as fast as is safe, so only one is allowed to work at a time.',
-          'error'
-        );
+        say($('status'), t('alreadyOpen'), 'error');
         show($('takeover'));
         syncTabActions();
         return false;
@@ -281,7 +292,7 @@
     return true;
   }
 
-  const STOOD_DOWN = 'Another Clearline tab took over, so this one has stopped.';
+  const STOOD_DOWN = t('stoodDown');
 
   /**
    * Come back up after a takeover, having won the queue back.
@@ -300,7 +311,7 @@
     $('connect').disabled = false;
     $('search').disabled = false;
     if ($('status').textContent === STOOD_DOWN) say($('status'), '');
-    if ($('run-status').textContent.indexOf('took over') !== -1) say($('run-status'), '');
+    if ($('run-status').textContent === t('runStoppedByTakeover')) say($('run-status'), '');
     hide($('takeover'));
     syncTabActions();
   }
@@ -338,7 +349,7 @@
     syncTabActions();
 
     if (state.job || state.ran) {
-      say($('run-status'), 'Another Clearline tab took over, so this run was stopped.', 'error');
+      say($('run-status'), t('runStoppedByTakeover'), 'error');
     }
   }
 
@@ -370,17 +381,17 @@
       // before it reached the network, with a message about waiting a few
       // minutes that no amount of waiting could make true.
       clearHalt();
-      say($('status'), 'Looking for a signed in Discord tab...');
+      say($('status'), t('statusLooking'));
 
       const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
       if (state.superseded) return;
       if (!reply || !reply.ok) {
-        say($('status'), TOKEN_PROBLEMS[reply && reply.reason] || 'Could not read the Discord session.', 'error');
+        say($('status'), tokenProblem(reply && reply.reason), 'error');
         return;
       }
 
       client.setToken(reply.token);
-      say($('status'), 'Connected. Loading your account...');
+      say($('status'), t('statusConnected'));
 
       // Checked between every call, not once at the top. Connect is the only
       // path to the network that starts before there is anything on screen to
@@ -414,12 +425,12 @@
       fillSelect(
         $('guild-select'),
         guilds.map((g) => ({ value: g.id, label: g.name })),
-        'Choose a server'
+        t('optChooseServer')
       );
       fillSelect(
         $('dm-select'),
         dms.map((d) => ({ value: d.id, label: dmLabel(d) })),
-        'Choose a conversation'
+        t('optChooseConversation')
       );
 
       hide($('connect-card'));
@@ -430,7 +441,7 @@
       goTo('where');
     } catch (err) {
       if (!state.superseded) {
-        say($('status'), (err && err.message) || 'Something went wrong.', 'error');
+        say($('status'), (err && err.message) || t('errGeneric'), 'error');
         offerReconnect();
       }
     } finally {
@@ -458,19 +469,19 @@
     const button = $('reconnect');
     button.disabled = true;
     clearHalt();
-    say($('status'), 'Reading the Discord session again...');
+    say($('status'), t('statusReconnecting'));
     try {
       const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
       if (!reply || !reply.ok) {
-        say($('status'), TOKEN_PROBLEMS[reply && reply.reason] || 'Could not read the Discord session.', 'error');
+        say($('status'), tokenProblem(reply && reply.reason), 'error');
         return;
       }
       client.setToken(reply.token);
-      say($('status'), 'Reconnected. Everything you had found is still here.');
+      say($('status'), t('statusReconnected'));
       hide(button);
       syncTabActions();
     } catch (err) {
-      say($('status'), (err && err.message) || 'Something went wrong.', 'error');
+      say($('status'), (err && err.message) || t('errGeneric'), 'error');
     } finally {
       button.disabled = false;
     }
@@ -512,12 +523,12 @@
     const select = $('channel-select');
     if (!guildId) {
       select.disabled = true;
-      fillSelect(select, [], 'Pick a server first');
+      fillSelect(select, [], t('optPickServerFirst'));
       return;
     }
 
     select.disabled = true;
-    fillSelect(select, [], 'Loading channels...');
+    fillSelect(select, [], t('optLoadingChannels'));
     clearHalt();
     try {
       const channels = await client.guildChannels(guildId);
@@ -539,8 +550,8 @@
       // every row of an export got a blank or a wrong channel name.
       state.channels = [];
       state.channelsFor = null;
-      fillSelect(select, [], 'Could not load channels');
-      say($('where-status'), (err && err.message) || 'Could not load channels.', 'error');
+      fillSelect(select, [], t('optChannelsFailed'));
+      say($('where-status'), (err && err.message) || t('errChannelsFailed'), 'error');
       offerReconnect();
     }
   }
@@ -555,7 +566,7 @@
     if (scopeKind() === 'guild') {
       const guildId = $('guild-select').value;
       if (!guildId) {
-        say($('where-status'), 'Choose a server first.', 'error');
+        say($('where-status'), t('errChooseServer'), 'error');
         return false;
       }
       // Refused rather than carried on with. Without the channel list there is
@@ -563,7 +574,7 @@
       // and then label every result with an empty channel, in the table the
       // user reads immediately before deleting them.
       if (state.channelsFor !== guildId) {
-        say($('where-status'), 'The channel list for that server has not loaded. Wait a moment, or pick it again.', 'error');
+        say($('where-status'), t('errChannelsNotLoaded'), 'error');
         return false;
       }
       const guild = state.guilds.find((g) => g.id === guildId);
@@ -574,7 +585,7 @@
 
       state.scope = {
         guildId,
-        guildName: guild ? guild.name : 'Server',
+        guildName: guild ? guild.name : t('serverFallback'),
         channelIds,
         channelNameFor: (id) => {
           const found = state.channels.find((c) => c.id === id);
@@ -582,19 +593,19 @@
         },
       };
       state.scopeLabel =
-        (guild ? guild.name : 'Server') +
-        (names.length ? ` / ${names.join(' ')}` : ' / all channels');
+        (guild ? guild.name : t('serverFallback')) +
+        (names.length ? ` / ${names.join(' ')}` : ` / ${t('allChannels')}`);
       return true;
     }
 
     const channelId = $('dm-select').value;
     if (!channelId) {
-      say($('where-status'), 'Choose a conversation first.', 'error');
+      say($('where-status'), t('errChooseConversation'), 'error');
       return false;
     }
     const dm = state.dms.find((d) => d.id === channelId);
-    state.scope = { channelId, channelName: dm ? dmLabel(dm) : 'Direct message', guildId: null };
-    state.scopeLabel = dm ? dmLabel(dm) : 'Direct message';
+    state.scope = { channelId, channelName: dm ? dmLabel(dm) : t('dmFallback'), guildId: null };
+    state.scopeLabel = dm ? dmLabel(dm) : t('dmFallback');
     return true;
   }
 
@@ -653,7 +664,7 @@
     }
 
     if (filters.after && filters.before && filters.after > filters.before) {
-      say($('filter-status'), 'That date range runs backwards.', 'error');
+      say($('filter-status'), t('errDateRangeBackwards'), 'error');
       return;
     }
 
@@ -680,24 +691,26 @@
         shouldStop: () => state.stopSearch,
         onProgress: (p) => {
           if (p.phase === 'indexing') {
-            $('search-counter').textContent =
-              'Discord is building the search index for this server. Waiting...';
+            $('search-counter').textContent = t('searchIndexing');
           } else if (p.strategy === 'history') {
             // The history path knows how much it has read but not how much
             // there is, so it reports work done. It was reporting neither, and
             // a big DM sat on one unchanging line for minutes looking wedged.
-            $('search-counter').textContent =
-              `Checked ${(p.scanned || 0).toLocaleString()} messages, found ${p.found.toLocaleString()} of yours...`;
+            $('search-counter').textContent = t('searchHistoryProgress', [
+              num(p.scanned || 0),
+              num(p.found),
+            ]);
           } else {
-            $('search-counter').textContent =
-              `Found ${count(p.found, 'message')}${p.total ? ` of about ${p.total.toLocaleString()}` : ''}...`;
+            $('search-counter').textContent = p.total
+              ? t('searchFoundOf', [count(p.found), num(p.total)])
+              : t('searchFound', [count(p.found)]);
           }
           if (p.total) {
             $('search-fill').style.width = `${Math.min(100, Math.round((p.found / p.total) * 100))}%`;
           }
           // Something on screen has to move even when neither denominator is
           // known, or a slow search is indistinguishable from a stuck one.
-          $('search-elapsed').textContent = `${humanElapsed(Date.now() - startedAt)} so far.`;
+          $('search-elapsed').textContent = t('searchElapsed', [humanElapsed(Date.now() - startedAt)]);
         },
       });
 
@@ -714,7 +727,7 @@
       renderReview();
       goTo('review');
     } catch (err) {
-      say($('filter-status'), (err && err.message) || 'The search failed.', 'error');
+      say($('filter-status'), (err && err.message) || t('errSearchFailed'), 'error');
       offerReconnect();
     } finally {
       // Not unconditionally false. A tab that was superseded while searching
@@ -728,6 +741,13 @@
   /* ---------------------------------------------------------------- */
   /* Step 4: review                                                    */
   /* ---------------------------------------------------------------- */
+
+  /** The review heading, which says something different once rows are spared. */
+  function headingFor(total, picked) {
+    if (!total) return t('nothingMatched');
+    if (picked === total) return plural('matched', total);
+    return t('selectedOfTotal', [num(picked), count(total)]);
+  }
 
   /** Rendering every row of a 50,000 message result set locks the tab. */
   const MAX_ROWS = 300;
@@ -778,19 +798,14 @@
     const total = state.results.length;
     const picked = selected().length;
 
-    $('review-heading').textContent = total
-      ? picked === total
-        ? `${count(total, 'message')} matched`
-        : `${picked.toLocaleString()} of ${count(total, 'message')} selected`
-      : 'Nothing matched';
+    $('review-heading').textContent = headingFor(total, picked);
     $('review-summary').textContent = total
-      ? `${CL.filter.describe(state.filters)}, in ${state.scopeLabel}.`
-      : `No messages of yours in ${state.scopeLabel} match ${CL.filter.describe(state.filters)}.`;
+      ? t('reviewSummary', [CL.filter.describe(state.filters), state.scopeLabel])
+      : t('reviewNoMatch', [state.scopeLabel, CL.filter.describe(state.filters)]);
 
     const truncated = $('review-truncated');
     if (state.truncated) {
-      truncated.textContent =
-        'The search was stopped early, so this is part of the picture rather than all of it.';
+      truncated.textContent = t('truncatedNotice');
       show(truncated);
     } else {
       hide(truncated);
@@ -817,7 +832,7 @@
       const box = document.createElement('input');
       box.type = 'checkbox';
       box.checked = !state.excluded.has(message.id);
-      box.setAttribute('aria-label', 'Include this message');
+      box.setAttribute('aria-label', t('includeThisMessage'));
       // Bound on click rather than change, because only click carries shiftKey.
       box.addEventListener('click', (event) => {
         const on = box.checked;
@@ -840,7 +855,7 @@
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       link.textContent = localStamp(message.timestamp);
-      link.title = 'Open this message in Discord';
+      link.title = t('openInDiscord');
       when.appendChild(link);
 
       const where = document.createElement('td');
@@ -850,7 +865,8 @@
       what.className = 'msg';
       // textContent, never innerHTML. This is other people's text rendered in a
       // privileged extension page, and there is no version of this worth risking.
-      what.textContent = message.content || (message.attachments.length ? '(attachment only)' : '(no text)');
+      what.textContent =
+        message.content || (message.attachments.length ? t('attachmentOnly') : t('noText'));
 
       tr.append(pick, when, where, what);
       tr.dataset.index = String(index);
@@ -880,11 +896,7 @@
     const total = state.results.length;
     const picked = selected().length;
 
-    $('review-heading').textContent = total
-      ? picked === total
-        ? `${count(total, 'message')} matched`
-        : `${picked.toLocaleString()} of ${count(total, 'message')} selected`
-      : 'Nothing matched';
+    $('review-heading').textContent = headingFor(total, picked);
 
     $('pick-all').checked = picked > 0;
     $('pick-all').indeterminate = picked > 0 && picked < total;
@@ -898,16 +910,20 @@
       ? state.results.slice(rendered).reduce((n, m) => n + (state.excluded.has(m.id) ? 0 : 1), 0)
       : 0;
     $('results-note').textContent = beyond
-      ? `Showing ${rendered.toLocaleString()} of ${total.toLocaleString()}. Of the other ` +
-        `${beyond.toLocaleString()}, ${beyondPicked.toLocaleString()} ` +
-        `${beyondPicked === 1 ? 'is' : 'are'} selected and counted above. Shift-click to pick a range.`
+      ? `${plural('resultsNote', beyondPicked, [
+          num(rendered),
+          num(total),
+          num(beyond),
+          num(beyondPicked),
+        ])} ${t('shiftClickHint')}`
       : total > 1
-        ? 'Shift-click to pick a range.'
+        ? t('shiftClickHint')
         : '';
 
     const more = $('show-more');
     more.classList.toggle('hidden', beyond === 0);
-    more.textContent = `Show ${Math.min(MAX_ROWS, beyond).toLocaleString()} more`;
+    const nextBatch = Math.min(MAX_ROWS, beyond);
+    more.textContent = plural('showMore', nextBatch);
 
     $('review-next').disabled = picked === 0;
     for (const button of document.querySelectorAll('[data-export]')) button.disabled = picked === 0;
@@ -951,34 +967,32 @@
     const writes = action === 'edit-then-delete' ? 2 : 1;
     const estimate = CL.job.estimateMs(affected, writes, null);
 
-    const verb =
-      action === 'delete'
-        ? 'permanently delete'
-        : action === 'edit'
-          ? 'overwrite the text of'
-          : 'overwrite and then permanently delete';
+    const verb = t(
+      action === 'delete' ? 'verbDelete' : action === 'edit' ? 'verbEdit' : 'verbEditThenDelete'
+    );
 
     const lines = [];
-    const where = `${count(affected, 'message')} in ${state.scopeLabel}`;
     lines.push(
       CL.filter.isEmpty(state.filters)
-        ? `You are about to ${verb} ${where}. That is everything you wrote there.`
-        : `You are about to ${verb} ${where}, ${CL.filter.describe(state.filters)}.`
+        ? t('preflightAll', [verb, count(affected), state.scopeLabel])
+        : t('preflightFiltered', [
+            verb,
+            count(affected),
+            state.scopeLabel,
+            CL.filter.describe(state.filters),
+          ])
     );
-    lines.push(`At the pace Clearline runs, that is ${humanDuration(estimate)}.`);
+    lines.push(t('preflightPace', [humanDuration(estimate)]));
     // The job loop lives in this page on purpose, so the tab is the run. Nothing
     // said so, and "about 3 hours" is exactly the sentence that makes somebody
     // shut the laptop.
     if (estimate > 5 * 60 * 1000) {
-      lines.push('Leave this tab open while it runs. Closing or reloading it stops the run where it is.');
+      lines.push(t('preflightKeepOpen'));
     }
     if (action !== 'edit' && deletable < total) {
-      lines.push(
-        `${count(total - deletable, 'message')} cannot be deleted by anyone, ` +
-          'because Discord does not allow it for join notices and similar. They are left alone.'
-      );
+      lines.push(t('preflightUndeletable', [count(total - deletable)]));
     }
-    if (action !== 'edit') lines.push('This cannot be undone.');
+    if (action !== 'edit') lines.push(t('preflightNoUndo'));
 
     const box = $('preflight');
     box.textContent = '';
@@ -994,7 +1008,7 @@
     // and the box wanted "1234", so a user who typed what they had just read was
     // told they had got it wrong, on the last screen before something
     // irreversible. The separators are stripped again on the way back in.
-    $('confirm-label').textContent = `Type ${affected.toLocaleString()} to confirm`;
+    $('confirm-label').textContent = t('confirmLabel', [num(affected)]);
     $('confirm').value = '';
 
     // A finished run leaves the result set describing messages that mostly no
@@ -1002,7 +1016,7 @@
     // gone, counts as done", which looks like success and means nothing.
     if (state.ran) {
       const stale = document.createElement('p');
-      stale.textContent = 'These results are from a run that already happened. Search again to act on anything else.';
+      stale.textContent = t('preflightStale');
       box.appendChild(stale);
     }
     $('start').disabled = affected === 0 || state.ran || state.superseded;
@@ -1014,15 +1028,16 @@
     $('run-fill').style.width = `${pct}%`;
     $('run-bar').setAttribute('aria-valuenow', String(pct));
     $('run-counter').textContent =
-      `${done.toLocaleString()} of ${p.total.toLocaleString()} done` +
-      (p.failed ? `, ${p.failed} failed` : '') +
-      (p.skipped ? `, ${p.skipped} left alone` : '');
+      t('runCounter', [num(done), num(p.total)]) +
+      (p.failed ? t('runCounterFailed', [num(p.failed)]) : '') +
+      (p.skipped ? t('runCounterSkipped', [num(p.skipped)]) : '');
     $('run-eta').textContent =
-      p.status === 'paused' ? 'Paused.' : p.etaMs ? `${humanDuration(p.etaMs)} to go.` : '';
+      p.status === 'paused' ? t('runPaused') : p.etaMs ? t('runEta', [humanDuration(p.etaMs)]) : '';
     // The whole design asks the user to leave the run alone, then gave them no
     // way to check on it without switching to the tab. The title is the one
     // surface a background tab still has.
-    document.title = p.status === 'paused' ? `Paused ${pct}% - Clearline` : `${pct}% - Clearline`;
+    document.title =
+      p.status === 'paused' ? t('titlePaused', [num(pct)]) : t('titleRunning', [num(pct)]);
   }
 
   function renderReport(summary) {
@@ -1031,12 +1046,14 @@
 
     const headline = document.createElement('p');
     headline.className = 'headline';
-    headline.textContent =
+    headline.textContent = t(
       summary.status === 'done'
-        ? `Finished. ${count(summary.done, 'message')} handled.`
+        ? 'reportFinished'
         : summary.status === 'cancelled'
-          ? `Stopped. ${count(summary.done, 'message')} handled before you stopped it.`
-          : `Stopped early. ${count(summary.done, 'message')} handled.`;
+          ? 'reportCancelled'
+          : 'reportHalted',
+      [count(summary.done)]
+    );
     box.appendChild(headline);
 
     if (summary.error) {
@@ -1052,20 +1069,18 @@
     // 4,997 were never attempted.
     if (summary.remaining > 0) {
       const left = document.createElement('p');
-      left.textContent =
-        `${count(summary.remaining, 'message')} ${summary.remaining === 1 ? 'was' : 'were'} never attempted. ` +
-        'Search again to pick them up.';
+      left.textContent = plural('reportRemaining', summary.remaining);
       box.appendChild(left);
     }
 
     for (const [label, list] of [
-      ['left alone', summary.skips],
-      ['failed', summary.failures],
+      ['reportSkipped', summary.skips],
+      ['reportFailed', summary.failures],
     ]) {
       if (!list.length) continue;
       const details = document.createElement('details');
       const sum = document.createElement('summary');
-      sum.textContent = `${count(list.length, 'message')} ${label}`;
+      sum.textContent = t(label, [count(list.length)]);
       details.appendChild(sum);
       const ul = document.createElement('ul');
       for (const entry of list.slice(0, 50)) {
@@ -1082,7 +1097,7 @@
       // Truncating without saying so made the report understate itself.
       if (list.length > 50) {
         const rest = document.createElement('li');
-        rest.textContent = `and ${(list.length - 50).toLocaleString()} more`;
+        rest.textContent = t('reportAndMore', [num(list.length - 50)]);
         ul.appendChild(rest);
       }
       details.appendChild(ul);
@@ -1096,7 +1111,7 @@
       const retry = document.createElement('button');
       retry.className = 'ghost';
       retry.type = 'button';
-      retry.textContent = `Try the ${summary.failures.length} failures again`;
+      retry.textContent = t('reportRetry', [num(summary.failures.length)]);
       retry.addEventListener('click', () => {
         state.results = summary.failures.map((f) => f.message);
         state.excluded = new Set();
@@ -1115,7 +1130,7 @@
     const again = document.createElement('button');
     again.className = 'ghost';
     again.type = 'button';
-    again.textContent = 'Search again';
+    again.textContent = t('reportSearchAgain');
     again.addEventListener('click', () => {
       state.results = [];
       state.excluded = new Set();
@@ -1144,7 +1159,7 @@
 
     const typed = $('confirm').value.replace(/[\s,._]/g, '');
     if (affected > CONFIRM_ABOVE && action !== 'edit' && typed !== String(affected)) {
-      say($('run-status'), `Type ${affected.toLocaleString()} in the box to confirm.`, 'error');
+      say($('run-status'), t('confirmRefused', [num(affected)]), 'error');
       return;
     }
 
@@ -1172,18 +1187,18 @@
     // still exist.
     if ($('backup').checked) {
       try {
-        say($('run-status'), 'Saving a copy first...');
+        say($('run-status'), t('statusSavingCopy'));
         const meta = metaFor();
         const text = CL.exporter.toHTML(selected(), meta);
         // Built and checked before it is handed over, rather than trusting that
         // producing it worked. An empty file that looks like a backup is worse
         // than no backup, because it is the thing the user will reach for.
         if (!text || text.indexOf('</html>') === -1) {
-          throw new Error('The copy came out incomplete.');
+          throw new Error(t('errCopyIncomplete'));
         }
         download(text, CL.exporter.filenameFor(meta, 'html'), 'text/html');
       } catch (err) {
-        say($('run-status'), `Could not save the copy, so nothing was touched. ${err.message}`, 'error');
+        say($('run-status'), t('errCopyFailed', [err.message]), 'error');
         return;
       }
     }
@@ -1194,7 +1209,7 @@
     $('run-back').disabled = true;
     hide($('run-report'));
     show($('run-progress'));
-    $('run-pause').textContent = 'Pause';
+    $('run-pause').textContent = t('buttonPause');
 
     const summary = await runner.start();
 
@@ -1224,7 +1239,7 @@
   $('guild-select').addEventListener('change', loadChannels);
   $('where-next').addEventListener('click', () => {
     if (!commitScope()) return;
-    $('filter-scope-label').textContent = `Looking in ${state.scopeLabel}.`;
+    $('filter-scope-label').textContent = t('lookingIn', [state.scopeLabel]);
     goTo('filter');
   });
 
@@ -1232,7 +1247,7 @@
   $('search').addEventListener('click', runSearch);
   $('search-stop').addEventListener('click', () => {
     state.stopSearch = true;
-    $('search-counter').textContent = 'Stopping after the request in flight...';
+    $('search-counter').textContent = t('searchStopping');
   });
 
   // There is no form here, so there is no implicit submit and Enter did nothing
@@ -1271,9 +1286,9 @@
     button.addEventListener('click', () => {
       try {
         exportAs(button.dataset.export);
-        say($('review-status'), 'Saved.');
+        say($('review-status'), t('saved'));
       } catch (err) {
-        say($('review-status'), (err && err.message) || 'Could not save that.', 'error');
+        say($('review-status'), (err && err.message) || t('errSaveFailed'), 'error');
       }
     });
   }
@@ -1287,10 +1302,10 @@
     if (!state.job) return;
     if (state.job.status === 'paused') {
       state.job.resume();
-      $('run-pause').textContent = 'Pause';
+      $('run-pause').textContent = t('buttonPause');
     } else {
       state.job.pause();
-      $('run-pause').textContent = 'Resume';
+      $('run-pause').textContent = t('buttonResume');
     }
   });
   $('run-cancel').addEventListener('click', () => {
@@ -1312,6 +1327,7 @@
     event.returnValue = '';
   });
 
+  CL.i18n.apply();
   syncScopeKind();
   syncTabActions();
 

@@ -58,7 +58,7 @@ CL.api_client = (function () {
    */
   function requireId(id, what) {
     if (!CL.snowflake.isValid(String(id))) {
-      throw Object.assign(new Error(`Refusing to use "${id}" as a ${what}.`), { code: 'BAD_ID' });
+      throw Object.assign(new Error(CL.i18n.t('errBadId', [String(id), what])), { code: 'BAD_ID' });
     }
     return String(id);
   }
@@ -78,7 +78,7 @@ CL.api_client = (function () {
     }
 
     async function request(method, path, config) {
-      if (!token) throw Object.assign(new Error('Not connected to Discord.'), { code: 'NO_TOKEN' });
+      if (!token) throw Object.assign(new Error(CL.i18n.t('errNotConnected')), { code: 'NO_TOKEN' });
       const cfg = config || {};
 
       const init = {
@@ -103,18 +103,18 @@ CL.api_client = (function () {
 
       if (response.status === 401) {
         token = null;
-        throw Object.assign(new Error('Discord rejected the session. Reconnect and try again.'), {
+        throw Object.assign(new Error(CL.i18n.t('errUnauthorized')), {
           code: 'UNAUTHORIZED',
         });
       }
       if (response.status === 403) {
-        throw Object.assign(new Error('No permission for that channel.'), { code: 'FORBIDDEN' });
+        throw Object.assign(new Error(CL.i18n.t('errForbidden')), { code: 'FORBIDDEN' });
       }
       if (response.status === 404) {
-        throw Object.assign(new Error('That channel or message is gone.'), { code: 'NOT_FOUND' });
+        throw Object.assign(new Error(CL.i18n.t('errNotFound')), { code: 'NOT_FOUND' });
       }
       if (!response.ok) {
-        throw Object.assign(new Error(`Discord returned ${response.status}.`), {
+        throw Object.assign(new Error(CL.i18n.t('errHttp', [String(response.status)])), {
           code: 'HTTP_ERROR',
           status: response.status,
         });

@@ -235,10 +235,7 @@ CL.ratelimit = (function () {
           onEvent({ type: 'throttled', routeKey, ms, global: isGlobal, consecutive: consecutive429 });
 
           if (consecutive429 >= MAX_CONSECUTIVE_429) {
-            halted = new Error(
-              'Discord is rate limiting every request. Stopping so this does not turn into ' +
-                'an IP block. Wait a few minutes and start again.'
-            );
+            halted = new Error(CL.i18n.t('errRateLimitHalt'));
             halted.code = 'RATE_LIMIT_HALT';
             throw halted;
           }

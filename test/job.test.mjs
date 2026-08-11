@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { loadLib, STUB_CHROME } from './helper.mjs';
 
 const ctx = await loadLib(
-  ['lib/browser.js', 'lib/snowflake.js', 'lib/ratelimit.js', 'lib/filter.js', 'lib/job.js'],
+  ['lib/browser.js', 'lib/i18n.js', 'lib/snowflake.js', 'lib/ratelimit.js', 'lib/filter.js', 'lib/job.js'],
   { chrome: STUB_CHROME }
 );
 const job = ctx.CL.job;

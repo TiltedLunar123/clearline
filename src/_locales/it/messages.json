@@ -1,0 +1,1027 @@
+{
+  "extName": {
+    "message": "Clearline - Gestore di messaggi per Discord",
+    "description": "Extension name. Keep 'Clearline' untranslated: it is the product name."
+  },
+  "extDescription": {
+    "message": "Cerca, esporta ed elimina in blocco i tuoi messaggi di Discord. Il tuo token non lascia mai il browser.",
+    "description": "Store description. Hard limit of 132 characters in every language."
+  },
+  "actionTitle": {
+    "message": "Clearline"
+  },
+  "appTagline": {
+    "message": "Cerca, esporta ed elimina i tuoi messaggi di Discord."
+  },
+  "stepConnect": {
+    "message": "Connetti",
+    "description": "Step 1 name in the progress rail."
+  },
+  "stepWhere": {
+    "message": "Dove",
+    "description": "Step 2. Short: it sits in a narrow pill."
+  },
+  "stepNarrow": {
+    "message": "Filtra",
+    "description": "Step 3, as in narrowing down a search."
+  },
+  "stepReview": {
+    "message": "Controlla",
+    "description": "Step 4."
+  },
+  "stepAct": {
+    "message": "Agisci",
+    "description": "Step 5, as in take action."
+  },
+  "connectHeading": {
+    "message": "Connetti"
+  },
+  "connectHint": {
+    "message": "Clearline legge la tua sessione da una scheda di Discord aperta. Il token resta in questa scheda, non viene mai salvato e sparisce quando la chiudi."
+  },
+  "connectButton": {
+    "message": "Connetti a Discord"
+  },
+  "takeoverButton": {
+    "message": "Usa questa scheda",
+    "description": "Takes control away from whichever other tab currently holds it."
+  },
+  "reconnectButton": {
+    "message": "Riconnetti a Discord"
+  },
+  "labelAccount": {
+    "message": "Account"
+  },
+  "labelServers": {
+    "message": "Server",
+    "description": "Discord servers, called guilds in the API."
+  },
+  "labelDirectMessages": {
+    "message": "Messaggi diretti"
+  },
+  "statusLooking": {
+    "message": "Cerco una scheda di Discord con l'accesso fatto..."
+  },
+  "statusConnected": {
+    "message": "Connesso. Carico il tuo account..."
+  },
+  "statusReconnecting": {
+    "message": "Rileggo la sessione di Discord..."
+  },
+  "statusReconnected": {
+    "message": "Riconnesso. Tutto quello che avevi trovato è ancora qui."
+  },
+  "errNoTab": {
+    "message": "Apri discord.com in un'altra scheda, accedi e riprova."
+  },
+  "errNotLoggedIn": {
+    "message": "In quella scheda di Discord non hai ancora fatto l'accesso. Accedi e riprova."
+  },
+  "errNeedsReload": {
+    "message": "Ricarica la scheda di Discord e riprova. Clearline non raggiunge una scheda che era già aperta quando è stato installato.",
+    "description": "Content scripts are not injected into tabs that were already open."
+  },
+  "errNoSession": {
+    "message": "Non sono riuscito a leggere la sessione di Discord."
+  },
+  "errGeneric": {
+    "message": "Qualcosa è andato storto."
+  },
+  "alreadyOpen": {
+    "message": "Clearline è già aperto in un'altra scheda. Tenerne due in funzione insieme manderebbe richieste a Discord al doppio della velocità sicura, quindi solo una può lavorare per volta."
+  },
+  "stoodDown": {
+    "message": "Un'altra scheda di Clearline ha preso il controllo, quindi questa si è fermata."
+  },
+  "runStoppedByTakeover": {
+    "message": "Un'altra scheda di Clearline ha preso il controllo, quindi questa esecuzione si è fermata."
+  },
+  "whereHeading": {
+    "message": "Dove devo cercare?"
+  },
+  "scopeServer": {
+    "message": "Un server"
+  },
+  "scopeDm": {
+    "message": "Un messaggio diretto"
+  },
+  "labelServer": {
+    "message": "Server"
+  },
+  "labelChannels": {
+    "message": "Canali"
+  },
+  "labelConversation": {
+    "message": "Conversazione"
+  },
+  "optLoading": {
+    "message": "Caricamento..."
+  },
+  "optPickServerFirst": {
+    "message": "Scegli prima un server"
+  },
+  "optChooseServer": {
+    "message": "Scegli un server"
+  },
+  "optChooseConversation": {
+    "message": "Scegli una conversazione"
+  },
+  "channelsHint": {
+    "message": "Lascia stare l'elenco dei canali per cercare in tutto il server. Ctrl o Cmd + clic per sceglierne diversi. Scegliere un canale include quello che hai scritto nei suoi thread."
+  },
+  "optLoadingChannels": {
+    "message": "Carico i canali..."
+  },
+  "optChannelsFailed": {
+    "message": "Non sono riuscito a caricare i canali"
+  },
+  "errChannelsFailed": {
+    "message": "Non sono riuscito a caricare i canali."
+  },
+  "errChooseServer": {
+    "message": "Scegli prima un server."
+  },
+  "errChooseConversation": {
+    "message": "Scegli prima una conversazione."
+  },
+  "errChannelsNotLoaded": {
+    "message": "L'elenco dei canali di quel server non si è caricato. Aspetta un momento o riscegli il server."
+  },
+  "dmFallback": {
+    "message": "Messaggio diretto"
+  },
+  "serverFallback": {
+    "message": "Server"
+  },
+  "allChannels": {
+    "message": "tutti i canali",
+    "description": "Follows a server name, as in 'My Server / all channels'."
+  },
+  "dmUnknown": {
+    "message": "sconosciuto",
+    "description": "Stands in for a Discord user with no readable name."
+  },
+  "dmAndMore": {
+    "message": "$NAMES$ e altri $COUNT$",
+    "description": "Names a group DM with too many people to list.",
+    "placeholders": {
+      "names": {
+        "content": "$1",
+        "example": "Alex, Sam, Jo"
+      },
+      "count": {
+        "content": "$2",
+        "example": "4"
+      }
+    }
+  },
+  "narrowHeading": {
+    "message": "Restringi il campo"
+  },
+  "lookingIn": {
+    "message": "Cerco in $SCOPE$.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "labelContains": {
+    "message": "Contiene"
+  },
+  "placeholderContains": {
+    "message": "Lascia vuoto per tutto"
+  },
+  "optRegex": {
+    "message": "Trattalo come un pattern",
+    "description": "Treat the search text as a regular expression."
+  },
+  "optMatchCase": {
+    "message": "Distingui maiuscole"
+  },
+  "labelAfter": {
+    "message": "Inviato il giorno o dopo"
+  },
+  "labelBefore": {
+    "message": "Inviato il giorno o prima"
+  },
+  "optHasAttachment": {
+    "message": "Ha un allegato"
+  },
+  "optHasLink": {
+    "message": "Ha un link"
+  },
+  "optHasEmbed": {
+    "message": "Ha un'anteprima",
+    "description": "An embed is Discord's rich link preview card."
+  },
+  "optLeavePinned": {
+    "message": "Non toccare i messaggi fissati"
+  },
+  "buttonBack": {
+    "message": "Indietro"
+  },
+  "buttonSearch": {
+    "message": "Cerca"
+  },
+  "buttonNext": {
+    "message": "Avanti"
+  },
+  "searching": {
+    "message": "Cerco..."
+  },
+  "buttonStopSearch": {
+    "message": "Fermati e tieni quello che ho"
+  },
+  "searchStopping": {
+    "message": "Mi fermo dopo la richiesta in corso..."
+  },
+  "errDateRangeBackwards": {
+    "message": "Questo intervallo di date è al contrario."
+  },
+  "errSearchFailed": {
+    "message": "La ricerca non è riuscita."
+  },
+  "searchIndexing": {
+    "message": "Discord sta costruendo l'indice di ricerca di questo server. Attendo..."
+  },
+  "searchHistoryProgress": {
+    "message": "Controllati $SCANNED$ messaggi, trovati $FOUND$ tuoi...",
+    "placeholders": {
+      "scanned": {
+        "content": "$1",
+        "example": "12,400"
+      },
+      "found": {
+        "content": "$2",
+        "example": "340"
+      }
+    }
+  },
+  "searchFound": {
+    "message": "Trovati $COUNT$...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      }
+    }
+  },
+  "searchFoundOf": {
+    "message": "Trovati $COUNT$ su circa $TOTAL$...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      },
+      "total": {
+        "content": "$2",
+        "example": "8,400"
+      }
+    }
+  },
+  "searchElapsed": {
+    "message": "$TIME$ finora.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "reviewHeading": {
+    "message": "Controlla"
+  },
+  "colWhen": {
+    "message": "Quando"
+  },
+  "colChannel": {
+    "message": "Canale"
+  },
+  "colMessage": {
+    "message": "Messaggio"
+  },
+  "pickAllTitle": {
+    "message": "Seleziona tutto o niente"
+  },
+  "includeThisMessage": {
+    "message": "Includi questo messaggio"
+  },
+  "openInDiscord": {
+    "message": "Apri questo messaggio in Discord"
+  },
+  "saveACopy": {
+    "message": "Salva una copia"
+  },
+  "saveHint": {
+    "message": "L'eliminazione non si può annullare. Quello che tieni qui sarà l'unica traccia che ti resta."
+  },
+  "downloadHtml": {
+    "message": "Scarica HTML"
+  },
+  "downloadJson": {
+    "message": "Scarica JSON"
+  },
+  "downloadCsv": {
+    "message": "Scarica CSV"
+  },
+  "buttonContinue": {
+    "message": "Continua"
+  },
+  "saved": {
+    "message": "Salvato."
+  },
+  "errSaveFailed": {
+    "message": "Non sono riuscito a salvarlo."
+  },
+  "attachmentOnly": {
+    "message": "(solo allegato)"
+  },
+  "noText": {
+    "message": "(senza testo)"
+  },
+  "nothingMatched": {
+    "message": "Nessun risultato"
+  },
+  "truncatedNotice": {
+    "message": "La ricerca è stata fermata prima della fine, quindi questa è una parte e non il quadro completo."
+  },
+  "shiftClickHint": {
+    "message": "Maiusc + clic per scegliere un intervallo."
+  },
+  "reviewSummary": {
+    "message": "$FILTER$, in $SCOPE$.",
+    "placeholders": {
+      "filter": {
+        "content": "$1",
+        "example": "containing \"sorry\""
+      },
+      "scope": {
+        "content": "$2",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "reviewNoMatch": {
+    "message": "Nessun tuo messaggio in $SCOPE$ corrisponde a $FILTER$.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$2",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "selectedOfTotal": {
+    "message": "$PICKED$ di $TOTAL$ selezionati",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300 messages"
+      }
+    }
+  },
+  "matched_one": {
+    "message": "$COUNT$ messaggio trovato",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "matched_other": {
+    "message": "$COUNT$ messaggi trovati",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "messages_one": {
+    "message": "$COUNT$ messaggio",
+    "description": "A count of messages, used inside longer sentences.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "messages_other": {
+    "message": "$COUNT$ messaggi",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "showMore_one": {
+    "message": "Mostra altri $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "showMore_other": {
+    "message": "Mostra altri $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "300"
+      }
+    }
+  },
+  "resultsNote_one": {
+    "message": "Mostro $SHOWN$ di $TOTAL$. Degli altri $REST$, $PICKED$ è selezionato e contato sopra.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "301"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "1"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "1"
+      }
+    }
+  },
+  "resultsNote_other": {
+    "message": "Mostro $SHOWN$ di $TOTAL$. Degli altri $REST$, $PICKED$ sono selezionati e contati sopra.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "4,000"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "3,700"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "3,690"
+      }
+    }
+  },
+  "runHeading": {
+    "message": "Cosa devo farne?"
+  },
+  "actionDelete": {
+    "message": "Eliminali"
+  },
+  "actionEditThenDelete": {
+    "message": "Sovrascrivi il testo, poi elimina"
+  },
+  "actionEdit": {
+    "message": "Sovrascrivi solo il testo"
+  },
+  "labelReplacement": {
+    "message": "Testo sostitutivo"
+  },
+  "replacementHint": {
+    "message": "Sovrascrivere prima significa che l'ultima versione registrata da chiunque è la sostituzione e non quello che avevi scritto. Raddoppia il numero di richieste, quindi ci mette circa il doppio."
+  },
+  "backupLabel": {
+    "message": "Scarica una copia HTML prima di iniziare"
+  },
+  "backupHint": {
+    "message": "La copia viene consegnata al browser prima della prima eliminazione. Controlla che sia arrivata prima di iniziare: Clearline non chiede il permesso di download, quindi non può vedere dove l'ha messa il browser."
+  },
+  "confirmLabelDefault": {
+    "message": "Scrivi il numero per confermare"
+  },
+  "confirmLabel": {
+    "message": "Scrivi $COUNT$ per confermare",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "confirmRefused": {
+    "message": "Scrivi $COUNT$ nella casella per confermare.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "buttonStart": {
+    "message": "Avvia"
+  },
+  "buttonPause": {
+    "message": "Pausa"
+  },
+  "buttonResume": {
+    "message": "Riprendi"
+  },
+  "buttonStop": {
+    "message": "Ferma"
+  },
+  "runProgressLabel": {
+    "message": "Avanzamento dell'esecuzione"
+  },
+  "verbDelete": {
+    "message": "eliminare per sempre",
+    "description": "Verb inside 'You are about to VERB 12 messages in ...'."
+  },
+  "verbEdit": {
+    "message": "sovrascrivere il testo di"
+  },
+  "verbEditThenDelete": {
+    "message": "sovrascrivere e poi eliminare per sempre"
+  },
+  "preflightAll": {
+    "message": "Stai per $VERB$ $COUNT$ in $SCOPE$. È tutto quello che hai scritto lì.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "preflightFiltered": {
+    "message": "Stai per $VERB$ $COUNT$ in $SCOPE$, $FILTER$.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$4",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "preflightPace": {
+    "message": "Al ritmo di Clearline, sono $DURATION$.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "preflightKeepOpen": {
+    "message": "Lascia questa scheda aperta mentre lavora. Chiuderla o ricaricarla ferma l'esecuzione dov'è."
+  },
+  "preflightUndeletable": {
+    "message": "$COUNT$ non li può eliminare nessuno, perché Discord non lo permette per gli avvisi di ingresso e simili. Restano intatti.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "preflightNoUndo": {
+    "message": "Non si può annullare."
+  },
+  "preflightStale": {
+    "message": "Questi risultati vengono da un'esecuzione già avvenuta. Cerca di nuovo per agire su altro."
+  },
+  "runCounter": {
+    "message": "$DONE$ di $TOTAL$ fatti",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300"
+      }
+    }
+  },
+  "runCounterFailed": {
+    "message": ", $COUNT$ falliti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "runCounterSkipped": {
+    "message": ", $COUNT$ intatti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "runPaused": {
+    "message": "In pausa."
+  },
+  "runEta": {
+    "message": "Mancano $DURATION$.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "titleRunning": {
+    "message": "$PERCENT$% - Clearline",
+    "description": "Browser tab title during a run.",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "titlePaused": {
+    "message": "In pausa $PERCENT$% - Clearline",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "statusSavingCopy": {
+    "message": "Prima salvo una copia..."
+  },
+  "errCopyIncomplete": {
+    "message": "La copia è venuta incompleta."
+  },
+  "errCopyFailed": {
+    "message": "Non sono riuscito a salvare la copia, quindi non ho toccato niente. $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "The copy came out incomplete."
+      }
+    }
+  },
+  "reportFinished": {
+    "message": "Finito. $COUNT$ gestiti.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportCancelled": {
+    "message": "Fermato. $COUNT$ gestiti prima che lo fermassi.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportHalted": {
+    "message": "Fermato prima della fine. $COUNT$ gestiti.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportRemaining_one": {
+    "message": "$COUNT$ messaggio non è mai stato tentato. Cerca di nuovo per riprenderlo.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "reportRemaining_other": {
+    "message": "$COUNT$ messaggi non sono mai stati tentati. Cerca di nuovo per riprenderli.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997"
+      }
+    }
+  },
+  "reportSkipped": {
+    "message": "$COUNT$ intatti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportFailed": {
+    "message": "$COUNT$ falliti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportAndMore": {
+    "message": "e altri $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "262"
+      }
+    }
+  },
+  "reportRetry": {
+    "message": "Riprova i $COUNT$ falliti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "reportSearchAgain": {
+    "message": "Cerca di nuovo"
+  },
+  "reasonNotYours": {
+    "message": "Non confermato come scritto da questo account"
+  },
+  "reasonUndeletable": {
+    "message": "Discord non permette di eliminare questo tipo di messaggio"
+  },
+  "durationUnderMinute": {
+    "message": "meno di un minuto"
+  },
+  "durationMinutes_one": {
+    "message": "circa $COUNT$ minuto",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationMinutes_other": {
+    "message": "circa $COUNT$ minuti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "18"
+      }
+    }
+  },
+  "durationHours_one": {
+    "message": "circa $COUNT$ ora",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationHours_other": {
+    "message": "circa $COUNT$ ore",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "durationHoursMinutes": {
+    "message": "circa $HOURS$ h $MINUTES$ min",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "3"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "elapsedSeconds": {
+    "message": "$COUNT$ s",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedMinutes": {
+    "message": "$MINUTES$ min $SECONDS$ s",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "2"
+      },
+      "seconds": {
+        "content": "$2",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedHours": {
+    "message": "$HOURS$ h $MINUTES$ min",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "1"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "footerSupport": {
+    "message": "Clearline è gratuito, open source e non ha account né versione a pagamento. Se ti ha fatto risparmiare tempo,",
+    "description": "Followed by a 'buy me a coffee' link, so it ends mid-sentence on purpose."
+  },
+  "footerCoffee": {
+    "message": "offrimi un caffè"
+  },
+  "footerDisclaimer": {
+    "message": "Non affiliato, approvato o collegato a Discord Inc."
+  },
+  "filterEverything": {
+    "message": "tutto quello che hai scritto",
+    "description": "Stands in for the filter clause when nothing was narrowed."
+  },
+  "filterContaining": {
+    "message": "che contengono \"$TEXT$\"",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "sorry"
+      }
+    }
+  },
+  "filterMatching": {
+    "message": "che corrispondono a \"$TEXT$\"",
+    "description": "As in matching a regular expression.",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "^lol"
+      }
+    }
+  },
+  "filterHasAttachment": {
+    "message": "con allegato"
+  },
+  "filterHasLink": {
+    "message": "con link"
+  },
+  "filterHasEmbed": {
+    "message": "con anteprima"
+  },
+  "filterBetween": {
+    "message": "inviati tra il $FROM$ e il $TO$",
+    "placeholders": {
+      "from": {
+        "content": "$1",
+        "example": "2024-03-01"
+      },
+      "to": {
+        "content": "$2",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterAfter": {
+    "message": "inviati il $DATE$ o dopo",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-01"
+      }
+    }
+  },
+  "filterBefore": {
+    "message": "inviati il $DATE$ o prima",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterNotPinned": {
+    "message": "non fissati"
+  },
+  "errNotConnected": {
+    "message": "Non connesso a Discord."
+  },
+  "errUnauthorized": {
+    "message": "Discord ha rifiutato la sessione. Riconnettiti e riprova."
+  },
+  "errForbidden": {
+    "message": "Nessun permesso su quel canale."
+  },
+  "errNotFound": {
+    "message": "Quel canale o messaggio non c'è più."
+  },
+  "errHttp": {
+    "message": "Discord ha risposto $STATUS$.",
+    "placeholders": {
+      "status": {
+        "content": "$1",
+        "example": "500"
+      }
+    }
+  },
+  "errBadId": {
+    "message": "Mi rifiuto di usare \"$ID$\" come $WHAT$.",
+    "placeholders": {
+      "id": {
+        "content": "$1",
+        "example": "abc"
+      },
+      "what": {
+        "content": "$2",
+        "example": "channel id"
+      }
+    }
+  },
+  "errRateLimitHalt": {
+    "message": "Discord sta limitando ogni richiesta. Mi fermo per non farla diventare un blocco dell'IP. Aspetta qualche minuto e ricomincia."
+  },
+  "errIndexNotReady": {
+    "message": "Discord sta ancora costruendo l'indice di ricerca di questo server. Riprova tra un minuto."
+  },
+  "errNothingSelected": {
+    "message": "Non è stato selezionato niente da cercare."
+  },
+  "errContentTooLong": {
+    "message": "Il testo sostitutivo supera il limite di $LIMIT$ caratteri di Discord.",
+    "placeholders": {
+      "limit": {
+        "content": "$1",
+        "example": "2000"
+      }
+    }
+  },
+  "errContentEmpty": {
+    "message": "Il testo sostitutivo non può essere vuoto."
+  },
+  "errTooManyFailures": {
+    "message": "Fermato dopo $COUNT$ errori di fila. Qualcosa è cambiato dal lato di Discord, quindi il resto non è stato tentato.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "reasonNoPermission": {
+    "message": "Nessun permesso su quel canale"
+  },
+  "reasonMalformedId": {
+    "message": "Identificatore malformato"
+  },
+  "reasonUnknown": {
+    "message": "Errore sconosciuto"
+  }
+}

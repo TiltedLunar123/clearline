@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadLib, STUB_CHROME } from './helper.mjs';
 
-const ctx = await loadLib(['lib/browser.js', 'lib/snowflake.js'], { chrome: STUB_CHROME });
+const ctx = await loadLib(['lib/browser.js', 'lib/i18n.js', 'lib/snowflake.js'], { chrome: STUB_CHROME });
 const sf = ctx.CL.snowflake;
 
 test('round trips a date through an id', () => {

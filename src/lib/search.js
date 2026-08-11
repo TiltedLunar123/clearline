@@ -195,9 +195,7 @@ CL.search = (function () {
           indexWaits++;
           if (indexWaits > MAX_INDEX_WAITS) {
             throw Object.assign(
-              new Error(
-                'Discord is still building the search index for this server. Try again in a minute.'
-              ),
+              new Error(CL.i18n.t('errIndexNotReady')),
               { code: 'INDEX_NOT_READY' }
             );
           }
@@ -332,7 +330,7 @@ CL.search = (function () {
       const strategy = req.strategy || 'auto';
 
       if (scope.guildId) return runSearch(req);
-      if (!scope.channelId) throw new Error('Nothing selected to search.');
+      if (!scope.channelId) throw new Error(CL.i18n.t('errNothingSelected'));
 
       if (strategy === 'history') return runHistory(req);
       if (strategy === 'search') return runSearch(req);

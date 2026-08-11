@@ -61,14 +61,14 @@ CL.job = (function () {
     const edits = action !== 'delete';
     const editContent = cfg.editContent === undefined ? '' : String(cfg.editContent);
     if (edits && editContent.length > MAX_CONTENT) {
-      throw Object.assign(new Error(`Replacement text is over Discord's ${MAX_CONTENT} character limit.`), {
+      throw Object.assign(new Error(CL.i18n.t('errContentTooLong', [String(MAX_CONTENT)])), {
         code: 'CONTENT_TOO_LONG',
       });
     }
     // An empty edit is rejected by Discord with a 400 that reads like a bug, so
     // it is caught here where the message can say what to do about it.
     if (edits && editContent.trim() === '') {
-      throw Object.assign(new Error('Replacement text cannot be empty.'), { code: 'CONTENT_EMPTY' });
+      throw Object.assign(new Error(CL.i18n.t('errContentEmpty')), { code: 'CONTENT_EMPTY' });
     }
 
     const writesPerMessage = action === 'edit-then-delete' ? 2 : 1;
@@ -173,11 +173,11 @@ CL.job = (function () {
     function classify(err) {
       const code = err && err.code;
       if (code === 'NOT_FOUND') return { kind: 'gone' };
-      if (code === 'FORBIDDEN') return { kind: 'skip', reason: 'No permission in that channel' };
-      if (code === 'BAD_ID') return { kind: 'skip', reason: 'Malformed id' };
+      if (code === 'FORBIDDEN') return { kind: 'skip', reason: CL.i18n.t('reasonNoPermission') };
+      if (code === 'BAD_ID') return { kind: 'skip', reason: CL.i18n.t('reasonMalformedId') };
       if (code === 'RATE_LIMIT_HALT') return { kind: 'halt', reason: err.message };
       if (code === 'UNAUTHORIZED') return { kind: 'halt', reason: err.message };
-      return { kind: 'fail', reason: (err && err.message) || 'Unknown error' };
+      return { kind: 'fail', reason: (err && err.message) || CL.i18n.t('reasonUnknown') };
     }
 
     async function actOn(message) {
@@ -215,7 +215,7 @@ CL.job = (function () {
         // the data reaching it is already wrong.
         if (authorId && String(message.authorId || '') !== authorId) {
           state.skipped++;
-          skips.push({ message, reason: 'Not confirmed as written by this account' });
+          skips.push({ message, reason: CL.i18n.t('reasonNotYours') });
           onLog({ level: 'error', message: `${message.id}: refused, not confirmed as written by this account` });
           state.index++;
           recomputeEta();
@@ -228,7 +228,7 @@ CL.job = (function () {
         // is owed an answer for the other 20.
         if (action !== 'edit' && !CL.filter.isDeletable(message)) {
           state.skipped++;
-          skips.push({ message, reason: 'Discord does not allow deleting this kind of message' });
+          skips.push({ message, reason: CL.i18n.t('reasonUndeletable') });
           state.index++;
           recomputeEta();
           emit();
@@ -263,9 +263,7 @@ CL.job = (function () {
             consecutiveFailures++;
             if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
               state.status = 'halted';
-              state.error =
-                `Stopped after ${MAX_CONSECUTIVE_FAILURES} failures in a row. ` +
-                'Something changed on Discord\'s side, so the rest of the run was not attempted.';
+              state.error = CL.i18n.t('errTooManyFailures', [String(MAX_CONSECUTIVE_FAILURES)]);
               state.current = null;
               emit();
               return summary();

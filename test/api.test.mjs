@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadLib, STUB_CHROME, fakeClock, fakeResponse } from './helper.mjs';
 
-const ctx = await loadLib(['lib/browser.js', 'lib/ratelimit.js', 'lib/api.js'], {
+const ctx = await loadLib(['lib/browser.js', 'lib/i18n.js', 'lib/ratelimit.js', 'lib/api.js'], {
   chrome: STUB_CHROME,
   fetch: async () => fakeResponse(200, {}, {}),
 });

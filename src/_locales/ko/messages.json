@@ -1,0 +1,1027 @@
+{
+  "extName": {
+    "message": "Clearline - Discord 메시지 관리자",
+    "description": "Extension name. Keep 'Clearline' untranslated: it is the product name."
+  },
+  "extDescription": {
+    "message": "내 Discord 메시지를 검색하고 내보내고 한 번에 삭제하세요. 토큰은 브라우저 밖으로 나가지 않습니다.",
+    "description": "Store description. Hard limit of 132 characters in every language."
+  },
+  "actionTitle": {
+    "message": "Clearline"
+  },
+  "appTagline": {
+    "message": "내 Discord 메시지를 검색하고 내보내고 지웁니다."
+  },
+  "stepConnect": {
+    "message": "연결",
+    "description": "Step 1 name in the progress rail."
+  },
+  "stepWhere": {
+    "message": "위치",
+    "description": "Step 2. Short: it sits in a narrow pill."
+  },
+  "stepNarrow": {
+    "message": "좁히기",
+    "description": "Step 3, as in narrowing down a search."
+  },
+  "stepReview": {
+    "message": "검토",
+    "description": "Step 4."
+  },
+  "stepAct": {
+    "message": "실행",
+    "description": "Step 5, as in take action."
+  },
+  "connectHeading": {
+    "message": "연결"
+  },
+  "connectHint": {
+    "message": "Clearline은 열려 있는 Discord 탭에서 세션을 읽습니다. 토큰은 이 탭 안에만 있고 저장되지 않으며, 탭을 닫으면 사라집니다."
+  },
+  "connectButton": {
+    "message": "Discord에 연결"
+  },
+  "takeoverButton": {
+    "message": "이 탭 사용하기",
+    "description": "Takes control away from whichever other tab currently holds it."
+  },
+  "reconnectButton": {
+    "message": "Discord에 다시 연결"
+  },
+  "labelAccount": {
+    "message": "계정"
+  },
+  "labelServers": {
+    "message": "서버",
+    "description": "Discord servers, called guilds in the API."
+  },
+  "labelDirectMessages": {
+    "message": "다이렉트 메시지"
+  },
+  "statusLooking": {
+    "message": "로그인된 Discord 탭을 찾는 중..."
+  },
+  "statusConnected": {
+    "message": "연결됨. 계정을 불러오는 중..."
+  },
+  "statusReconnecting": {
+    "message": "Discord 세션을 다시 읽는 중..."
+  },
+  "statusReconnected": {
+    "message": "다시 연결됐습니다. 찾아 둔 것은 그대로 있습니다."
+  },
+  "errNoTab": {
+    "message": "다른 탭에서 discord.com을 열고 로그인한 뒤 다시 시도하세요."
+  },
+  "errNotLoggedIn": {
+    "message": "그 Discord 탭은 아직 로그인되어 있지 않습니다. 로그인한 뒤 다시 시도하세요."
+  },
+  "errNeedsReload": {
+    "message": "Discord 탭을 새로고침한 뒤 다시 시도하세요. 설치 시점에 이미 열려 있던 탭에는 Clearline이 접근할 수 없습니다.",
+    "description": "Content scripts are not injected into tabs that were already open."
+  },
+  "errNoSession": {
+    "message": "Discord 세션을 읽지 못했습니다."
+  },
+  "errGeneric": {
+    "message": "문제가 발생했습니다."
+  },
+  "alreadyOpen": {
+    "message": "Clearline이 이미 다른 탭에서 열려 있습니다. 두 개를 동시에 돌리면 안전한 속도의 두 배로 Discord에 요청을 보내게 되므로, 한 번에 하나만 작동할 수 있습니다."
+  },
+  "stoodDown": {
+    "message": "다른 Clearline 탭이 넘겨받아서 이 탭은 멈췄습니다."
+  },
+  "runStoppedByTakeover": {
+    "message": "다른 Clearline 탭이 넘겨받아서 이 작업은 중단됐습니다."
+  },
+  "whereHeading": {
+    "message": "어디를 찾을까요?"
+  },
+  "scopeServer": {
+    "message": "서버"
+  },
+  "scopeDm": {
+    "message": "다이렉트 메시지"
+  },
+  "labelServer": {
+    "message": "서버"
+  },
+  "labelChannels": {
+    "message": "채널"
+  },
+  "labelConversation": {
+    "message": "대화"
+  },
+  "optLoading": {
+    "message": "불러오는 중..."
+  },
+  "optPickServerFirst": {
+    "message": "먼저 서버를 고르세요"
+  },
+  "optChooseServer": {
+    "message": "서버 선택"
+  },
+  "optChooseConversation": {
+    "message": "대화 선택"
+  },
+  "channelsHint": {
+    "message": "서버 전체를 검색하려면 채널 목록을 건드리지 마세요. Ctrl 또는 Cmd를 누른 채 클릭하면 여러 개를 고를 수 있습니다. 채널을 고르면 그 채널의 스레드에 쓴 내용도 포함됩니다."
+  },
+  "optLoadingChannels": {
+    "message": "채널을 불러오는 중..."
+  },
+  "optChannelsFailed": {
+    "message": "채널을 불러오지 못했습니다"
+  },
+  "errChannelsFailed": {
+    "message": "채널을 불러오지 못했습니다."
+  },
+  "errChooseServer": {
+    "message": "먼저 서버를 고르세요."
+  },
+  "errChooseConversation": {
+    "message": "먼저 대화를 고르세요."
+  },
+  "errChannelsNotLoaded": {
+    "message": "그 서버의 채널 목록이 불러와지지 않았습니다. 잠시 기다리거나 다시 고르세요."
+  },
+  "dmFallback": {
+    "message": "다이렉트 메시지"
+  },
+  "serverFallback": {
+    "message": "서버"
+  },
+  "allChannels": {
+    "message": "모든 채널",
+    "description": "Follows a server name, as in 'My Server / all channels'."
+  },
+  "dmUnknown": {
+    "message": "알 수 없음",
+    "description": "Stands in for a Discord user with no readable name."
+  },
+  "dmAndMore": {
+    "message": "$NAMES$ 외 $COUNT$명",
+    "description": "Names a group DM with too many people to list.",
+    "placeholders": {
+      "names": {
+        "content": "$1",
+        "example": "Alex, Sam, Jo"
+      },
+      "count": {
+        "content": "$2",
+        "example": "4"
+      }
+    }
+  },
+  "narrowHeading": {
+    "message": "조건 좁히기"
+  },
+  "lookingIn": {
+    "message": "$SCOPE$에서 찾습니다.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "labelContains": {
+    "message": "포함하는 말"
+  },
+  "placeholderContains": {
+    "message": "전부 대상으로 하려면 비워 두세요"
+  },
+  "optRegex": {
+    "message": "패턴으로 처리",
+    "description": "Treat the search text as a regular expression."
+  },
+  "optMatchCase": {
+    "message": "대소문자 구분"
+  },
+  "labelAfter": {
+    "message": "이 날짜 또는 이후에 보냄"
+  },
+  "labelBefore": {
+    "message": "이 날짜 또는 이전에 보냄"
+  },
+  "optHasAttachment": {
+    "message": "첨부 파일 있음"
+  },
+  "optHasLink": {
+    "message": "링크 있음"
+  },
+  "optHasEmbed": {
+    "message": "링크 미리보기 있음",
+    "description": "An embed is Discord's rich link preview card."
+  },
+  "optLeavePinned": {
+    "message": "고정된 메시지는 그대로 두기"
+  },
+  "buttonBack": {
+    "message": "뒤로"
+  },
+  "buttonSearch": {
+    "message": "검색"
+  },
+  "buttonNext": {
+    "message": "다음"
+  },
+  "searching": {
+    "message": "검색 중..."
+  },
+  "buttonStopSearch": {
+    "message": "멈추고 지금까지 찾은 것만 쓰기"
+  },
+  "searchStopping": {
+    "message": "진행 중인 요청 후에 멈춥니다..."
+  },
+  "errDateRangeBackwards": {
+    "message": "날짜 범위가 거꾸로입니다."
+  },
+  "errSearchFailed": {
+    "message": "검색에 실패했습니다."
+  },
+  "searchIndexing": {
+    "message": "Discord가 이 서버의 검색 색인을 만들고 있습니다. 기다리는 중..."
+  },
+  "searchHistoryProgress": {
+    "message": "$SCANNED$개를 확인해 내 것 $FOUND$개를 찾았습니다...",
+    "placeholders": {
+      "scanned": {
+        "content": "$1",
+        "example": "12,400"
+      },
+      "found": {
+        "content": "$2",
+        "example": "340"
+      }
+    }
+  },
+  "searchFound": {
+    "message": "$COUNT$개를 찾았습니다...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      }
+    }
+  },
+  "searchFoundOf": {
+    "message": "약 $TOTAL$개 중 $COUNT$개를 찾았습니다...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      },
+      "total": {
+        "content": "$2",
+        "example": "8,400"
+      }
+    }
+  },
+  "searchElapsed": {
+    "message": "지금까지 $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "reviewHeading": {
+    "message": "검토"
+  },
+  "colWhen": {
+    "message": "시각"
+  },
+  "colChannel": {
+    "message": "채널"
+  },
+  "colMessage": {
+    "message": "메시지"
+  },
+  "pickAllTitle": {
+    "message": "전체 선택 또는 해제"
+  },
+  "includeThisMessage": {
+    "message": "이 메시지를 대상에 포함"
+  },
+  "openInDiscord": {
+    "message": "이 메시지를 Discord에서 열기"
+  },
+  "saveACopy": {
+    "message": "사본 저장"
+  },
+  "saveHint": {
+    "message": "삭제는 되돌릴 수 없습니다. 여기서 남겨 두는 것이 손에 남는 유일한 기록이 됩니다."
+  },
+  "downloadHtml": {
+    "message": "HTML 내려받기"
+  },
+  "downloadJson": {
+    "message": "JSON 내려받기"
+  },
+  "downloadCsv": {
+    "message": "CSV 내려받기"
+  },
+  "buttonContinue": {
+    "message": "계속"
+  },
+  "saved": {
+    "message": "저장했습니다."
+  },
+  "errSaveFailed": {
+    "message": "저장하지 못했습니다."
+  },
+  "attachmentOnly": {
+    "message": "(첨부 파일만)"
+  },
+  "noText": {
+    "message": "(본문 없음)"
+  },
+  "nothingMatched": {
+    "message": "해당 없음"
+  },
+  "truncatedNotice": {
+    "message": "검색이 중간에 멈춰서, 이건 전체가 아니라 일부입니다."
+  },
+  "shiftClickHint": {
+    "message": "Shift + 클릭으로 범위를 고를 수 있습니다."
+  },
+  "reviewSummary": {
+    "message": "$FILTER$, $SCOPE$ 안에서.",
+    "placeholders": {
+      "filter": {
+        "content": "$1",
+        "example": "containing \"sorry\""
+      },
+      "scope": {
+        "content": "$2",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "reviewNoMatch": {
+    "message": "$SCOPE$에는 $FILTER$에 해당하는 내 메시지가 없습니다.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$2",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "selectedOfTotal": {
+    "message": "$TOTAL$ 중 $PICKED$개 선택됨",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300 messages"
+      }
+    }
+  },
+  "matched_one": {
+    "message": "$COUNT$개가 검색됨",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "matched_other": {
+    "message": "$COUNT$개가 검색됨",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "messages_one": {
+    "message": "$COUNT$개의 메시지",
+    "description": "A count of messages, used inside longer sentences.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "messages_other": {
+    "message": "$COUNT$개의 메시지",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "showMore_one": {
+    "message": "$COUNT$개 더 보기",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "showMore_other": {
+    "message": "$COUNT$개 더 보기",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "300"
+      }
+    }
+  },
+  "resultsNote_one": {
+    "message": "$TOTAL$개 중 $SHOWN$개를 보여 주는 중입니다. 나머지 $REST$개 가운데 $PICKED$개가 선택되어 위 숫자에 포함돼 있습니다.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "301"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "1"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "1"
+      }
+    }
+  },
+  "resultsNote_other": {
+    "message": "$TOTAL$개 중 $SHOWN$개를 보여 주는 중입니다. 나머지 $REST$개 가운데 $PICKED$개가 선택되어 위 숫자에 포함돼 있습니다.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "4,000"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "3,700"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "3,690"
+      }
+    }
+  },
+  "runHeading": {
+    "message": "이것들을 어떻게 할까요?"
+  },
+  "actionDelete": {
+    "message": "삭제하기"
+  },
+  "actionEditThenDelete": {
+    "message": "본문을 덮어쓴 뒤 삭제"
+  },
+  "actionEdit": {
+    "message": "본문만 덮어쓰기"
+  },
+  "labelReplacement": {
+    "message": "대체할 본문"
+  },
+  "replacementHint": {
+    "message": "먼저 덮어쓰면 어딘가에 남는 마지막 판이 내가 쓴 글이 아니라 대체한 문장이 됩니다. 요청 수가 두 배가 되므로 시간도 약 두 배 걸립니다."
+  },
+  "backupLabel": {
+    "message": "시작 전에 HTML 사본 내려받기"
+  },
+  "backupHint": {
+    "message": "사본은 첫 삭제 전에 브라우저로 넘겨집니다. 시작하기 전에 도착했는지 확인하세요. Clearline은 다운로드 권한을 요구하지 않아서 브라우저가 어디에 뒀는지 알 수 없습니다."
+  },
+  "confirmLabelDefault": {
+    "message": "확인을 위해 숫자를 입력하세요"
+  },
+  "confirmLabel": {
+    "message": "확인을 위해 $COUNT$을(를) 입력하세요",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "confirmRefused": {
+    "message": "확인하려면 칸에 $COUNT$을(를) 입력하세요.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "buttonStart": {
+    "message": "시작"
+  },
+  "buttonPause": {
+    "message": "일시정지"
+  },
+  "buttonResume": {
+    "message": "이어서"
+  },
+  "buttonStop": {
+    "message": "중지"
+  },
+  "runProgressLabel": {
+    "message": "작업 진행 상황"
+  },
+  "verbDelete": {
+    "message": "영구 삭제",
+    "description": "Verb inside 'You are about to VERB 12 messages in ...'."
+  },
+  "verbEdit": {
+    "message": "본문 덮어쓰기"
+  },
+  "verbEditThenDelete": {
+    "message": "덮어쓴 뒤 영구 삭제"
+  },
+  "preflightAll": {
+    "message": "$SCOPE$의 $COUNT$을(를) $VERB$하려고 합니다. 거기에 쓴 전부입니다.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "preflightFiltered": {
+    "message": "$SCOPE$의 $COUNT$($FILTER$)을(를) $VERB$하려고 합니다.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$4",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "preflightPace": {
+    "message": "Clearline의 처리 속도로는 $DURATION$ 걸립니다.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "preflightKeepOpen": {
+    "message": "작업하는 동안 이 탭을 열어 두세요. 닫거나 새로고침하면 그 지점에서 멈춥니다."
+  },
+  "preflightUndeletable": {
+    "message": "$COUNT$은(는) 누구도 삭제할 수 없습니다. 입장 알림 같은 것에 대해 Discord가 삭제를 허용하지 않기 때문입니다. 그대로 둡니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "preflightNoUndo": {
+    "message": "이것은 되돌릴 수 없습니다."
+  },
+  "preflightStale": {
+    "message": "이 결과는 이미 끝난 작업의 것입니다. 다른 것을 처리하려면 다시 검색하세요."
+  },
+  "runCounter": {
+    "message": "$TOTAL$개 중 $DONE$개 완료",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300"
+      }
+    }
+  },
+  "runCounterFailed": {
+    "message": ", 실패 $COUNT$개",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "runCounterSkipped": {
+    "message": ", 그대로 둠 $COUNT$개",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "runPaused": {
+    "message": "일시정지됨."
+  },
+  "runEta": {
+    "message": "$DURATION$ 남음.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "titleRunning": {
+    "message": "$PERCENT$% - Clearline",
+    "description": "Browser tab title during a run.",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "titlePaused": {
+    "message": "일시정지 $PERCENT$% - Clearline",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "statusSavingCopy": {
+    "message": "먼저 사본을 저장하는 중..."
+  },
+  "errCopyIncomplete": {
+    "message": "사본이 불완전하게 만들어졌습니다."
+  },
+  "errCopyFailed": {
+    "message": "사본을 저장하지 못해서 아무것도 건드리지 않았습니다. $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "The copy came out incomplete."
+      }
+    }
+  },
+  "reportFinished": {
+    "message": "완료. $COUNT$을(를) 처리했습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportCancelled": {
+    "message": "중지됨. 중지하기 전까지 $COUNT$을(를) 처리했습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportHalted": {
+    "message": "도중에 중지됨. $COUNT$을(를) 처리했습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportRemaining_one": {
+    "message": "$COUNT$개는 아예 시도하지 못했습니다. 다시 검색해서 이어서 하세요.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "reportRemaining_other": {
+    "message": "$COUNT$개는 아예 시도하지 못했습니다. 다시 검색해서 이어서 하세요.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997"
+      }
+    }
+  },
+  "reportSkipped": {
+    "message": "그대로 둠 $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportFailed": {
+    "message": "실패 $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportAndMore": {
+    "message": "외 $COUNT$개",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "262"
+      }
+    }
+  },
+  "reportRetry": {
+    "message": "실패한 $COUNT$개 다시 시도",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "reportSearchAgain": {
+    "message": "다시 검색"
+  },
+  "reasonNotYours": {
+    "message": "이 계정이 쓴 것으로 확인되지 않음"
+  },
+  "reasonUndeletable": {
+    "message": "Discord가 이런 종류의 메시지 삭제를 허용하지 않음"
+  },
+  "durationUnderMinute": {
+    "message": "1분 미만"
+  },
+  "durationMinutes_one": {
+    "message": "약 $COUNT$분",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationMinutes_other": {
+    "message": "약 $COUNT$분",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "18"
+      }
+    }
+  },
+  "durationHours_one": {
+    "message": "약 $COUNT$시간",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationHours_other": {
+    "message": "약 $COUNT$시간",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "durationHoursMinutes": {
+    "message": "약 $HOURS$시간 $MINUTES$분",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "3"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "elapsedSeconds": {
+    "message": "$COUNT$초",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedMinutes": {
+    "message": "$MINUTES$분 $SECONDS$초",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "2"
+      },
+      "seconds": {
+        "content": "$2",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedHours": {
+    "message": "$HOURS$시간 $MINUTES$분",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "1"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "footerSupport": {
+    "message": "Clearline은 무료이고 오픈 소스이며 계정도 유료 등급도 없습니다. 시간을 아꼈다면,",
+    "description": "Followed by a 'buy me a coffee' link, so it ends mid-sentence on purpose."
+  },
+  "footerCoffee": {
+    "message": "커피 한 잔 사주기"
+  },
+  "footerDisclaimer": {
+    "message": "Discord Inc.와 제휴, 보증, 관련이 없습니다."
+  },
+  "filterEverything": {
+    "message": "거기에 쓴 전부",
+    "description": "Stands in for the filter clause when nothing was narrowed."
+  },
+  "filterContaining": {
+    "message": "\"$TEXT$\"을(를) 포함",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "sorry"
+      }
+    }
+  },
+  "filterMatching": {
+    "message": "\"$TEXT$\"에 일치",
+    "description": "As in matching a regular expression.",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "^lol"
+      }
+    }
+  },
+  "filterHasAttachment": {
+    "message": "첨부 파일 있음"
+  },
+  "filterHasLink": {
+    "message": "링크 있음"
+  },
+  "filterHasEmbed": {
+    "message": "링크 미리보기 있음"
+  },
+  "filterBetween": {
+    "message": "$FROM$부터 $TO$ 사이에 보냄",
+    "placeholders": {
+      "from": {
+        "content": "$1",
+        "example": "2024-03-01"
+      },
+      "to": {
+        "content": "$2",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterAfter": {
+    "message": "$DATE$ 또는 그 이후에 보냄",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-01"
+      }
+    }
+  },
+  "filterBefore": {
+    "message": "$DATE$ 또는 그 이전에 보냄",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterNotPinned": {
+    "message": "고정되지 않음"
+  },
+  "errNotConnected": {
+    "message": "Discord에 연결되어 있지 않습니다."
+  },
+  "errUnauthorized": {
+    "message": "Discord가 세션을 거부했습니다. 다시 연결한 뒤 시도하세요."
+  },
+  "errForbidden": {
+    "message": "그 채널에 권한이 없습니다."
+  },
+  "errNotFound": {
+    "message": "그 채널이나 메시지는 이제 없습니다."
+  },
+  "errHttp": {
+    "message": "Discord가 $STATUS$을(를) 반환했습니다.",
+    "placeholders": {
+      "status": {
+        "content": "$1",
+        "example": "500"
+      }
+    }
+  },
+  "errBadId": {
+    "message": "\"$ID$\"을(를) $WHAT$(으)로 쓰는 것을 거부합니다.",
+    "placeholders": {
+      "id": {
+        "content": "$1",
+        "example": "abc"
+      },
+      "what": {
+        "content": "$2",
+        "example": "channel id"
+      }
+    }
+  },
+  "errRateLimitHalt": {
+    "message": "Discord가 모든 요청을 제한하고 있습니다. IP 차단으로 번지지 않도록 중단합니다. 몇 분 기다린 뒤 다시 시작하세요."
+  },
+  "errIndexNotReady": {
+    "message": "Discord가 아직 이 서버의 검색 색인을 만들고 있습니다. 1분 뒤에 다시 시도하세요."
+  },
+  "errNothingSelected": {
+    "message": "검색할 대상이 선택되지 않았습니다."
+  },
+  "errContentTooLong": {
+    "message": "대체할 본문이 Discord의 $LIMIT$자 제한을 넘습니다.",
+    "placeholders": {
+      "limit": {
+        "content": "$1",
+        "example": "2000"
+      }
+    }
+  },
+  "errContentEmpty": {
+    "message": "대체할 본문은 비워 둘 수 없습니다."
+  },
+  "errTooManyFailures": {
+    "message": "연속 $COUNT$번 실패해서 중단했습니다. Discord 쪽에서 무언가 바뀌어 나머지는 시도하지 않았습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "reasonNoPermission": {
+    "message": "그 채널에 권한이 없습니다"
+  },
+  "reasonMalformedId": {
+    "message": "잘못된 식별자"
+  },
+  "reasonUnknown": {
+    "message": "알 수 없는 오류"
+  }
+}

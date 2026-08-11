@@ -256,7 +256,14 @@ export async function findBrowser() {
   throw new Error('No Chromium-based browser found.');
 }
 
-export async function launchWithExtension({ port, dir, headless = true, width = 1200, height = 900 }) {
+export async function launchWithExtension({
+  port,
+  dir,
+  headless = true,
+  width = 1200,
+  height = 900,
+  lang,
+}) {
   const binary = await findBrowser();
   const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'clearline-e2e-'));
   const args = [
@@ -270,6 +277,10 @@ export async function launchWithExtension({ port, dir, headless = true, width = 
     `--window-size=${width},${height}`,
     'about:blank',
   ];
+  // The locale the extension resolves comes from the browser's UI language, so
+  // seeing a translation actually render means launching the browser in it.
+  // Both flags are needed: one sets the UI, the other what pages are told.
+  if (lang) args.unshift(`--lang=${lang}`, `--accept-lang=${lang}`);
   if (headless) args.unshift('--headless=new');
 
   const child = spawn(binary, args, { stdio: 'ignore' });

@@ -1,0 +1,1027 @@
+{
+  "extName": {
+    "message": "Clearline - Discord için Mesaj Yöneticisi",
+    "description": "Extension name. Keep 'Clearline' untranslated: it is the product name."
+  },
+  "extDescription": {
+    "message": "Kendi Discord mesajlarını ara, dışa aktar ve toplu sil. Jetonun tarayıcıdan asla çıkmaz.",
+    "description": "Store description. Hard limit of 132 characters in every language."
+  },
+  "actionTitle": {
+    "message": "Clearline"
+  },
+  "appTagline": {
+    "message": "Kendi Discord mesajlarını ara, dışa aktar ve temizle."
+  },
+  "stepConnect": {
+    "message": "Bağlan",
+    "description": "Step 1 name in the progress rail."
+  },
+  "stepWhere": {
+    "message": "Nerede",
+    "description": "Step 2. Short: it sits in a narrow pill."
+  },
+  "stepNarrow": {
+    "message": "Daralt",
+    "description": "Step 3, as in narrowing down a search."
+  },
+  "stepReview": {
+    "message": "Gözden geçir",
+    "description": "Step 4."
+  },
+  "stepAct": {
+    "message": "Uygula",
+    "description": "Step 5, as in take action."
+  },
+  "connectHeading": {
+    "message": "Bağlan"
+  },
+  "connectHint": {
+    "message": "Clearline oturumunu açık bir Discord sekmesinden okur. Jeton bu sekmede kalır, hiçbir zaman kaydedilmez ve sekmeyi kapattığında unutulur."
+  },
+  "connectButton": {
+    "message": "Discord'a bağlan"
+  },
+  "takeoverButton": {
+    "message": "Bunun yerine bu sekmeyi kullan",
+    "description": "Takes control away from whichever other tab currently holds it."
+  },
+  "reconnectButton": {
+    "message": "Discord'a yeniden bağlan"
+  },
+  "labelAccount": {
+    "message": "Hesap"
+  },
+  "labelServers": {
+    "message": "Sunucular",
+    "description": "Discord servers, called guilds in the API."
+  },
+  "labelDirectMessages": {
+    "message": "Özel mesajlar"
+  },
+  "statusLooking": {
+    "message": "Oturumu açık bir Discord sekmesi aranıyor..."
+  },
+  "statusConnected": {
+    "message": "Bağlanıldı. Hesabın yükleniyor..."
+  },
+  "statusReconnecting": {
+    "message": "Discord oturumu yeniden okunuyor..."
+  },
+  "statusReconnected": {
+    "message": "Yeniden bağlanıldı. Bulduğun her şey hâlâ burada."
+  },
+  "errNoTab": {
+    "message": "Başka bir sekmede discord.com aç, giriş yap ve tekrar dene."
+  },
+  "errNotLoggedIn": {
+    "message": "O Discord sekmesinde henüz giriş yapılmamış. Giriş yap ve tekrar dene."
+  },
+  "errNeedsReload": {
+    "message": "Discord sekmeni yenile ve tekrar dene. Clearline, kurulduğu sırada zaten açık olan bir sekmeye ulaşamaz.",
+    "description": "Content scripts are not injected into tabs that were already open."
+  },
+  "errNoSession": {
+    "message": "Discord oturumu okunamadı."
+  },
+  "errGeneric": {
+    "message": "Bir şeyler ters gitti."
+  },
+  "alreadyOpen": {
+    "message": "Clearline zaten başka bir sekmede açık. İki kopyayı aynı anda çalıştırmak Discord'a güvenli olanın iki katı hızda istek göndermek demek, bu yüzden aynı anda yalnızca biri çalışabilir."
+  },
+  "stoodDown": {
+    "message": "Başka bir Clearline sekmesi devraldı, bu yüzden bu sekme durdu."
+  },
+  "runStoppedByTakeover": {
+    "message": "Başka bir Clearline sekmesi devraldı, bu yüzden bu işlem durduruldu."
+  },
+  "whereHeading": {
+    "message": "Nerede arayayım?"
+  },
+  "scopeServer": {
+    "message": "Bir sunucu"
+  },
+  "scopeDm": {
+    "message": "Bir özel mesaj"
+  },
+  "labelServer": {
+    "message": "Sunucu"
+  },
+  "labelChannels": {
+    "message": "Kanallar"
+  },
+  "labelConversation": {
+    "message": "Sohbet"
+  },
+  "optLoading": {
+    "message": "Yükleniyor..."
+  },
+  "optPickServerFirst": {
+    "message": "Önce bir sunucu seç"
+  },
+  "optChooseServer": {
+    "message": "Bir sunucu seç"
+  },
+  "optChooseConversation": {
+    "message": "Bir sohbet seç"
+  },
+  "channelsHint": {
+    "message": "Sunucunun tamamında aramak için kanal listesine dokunma. Birkaç tane seçmek için Ctrl ya da Cmd ile tıkla. Bir kanalı seçmek, o kanalın başlıklarında yazdıklarını da kapsar."
+  },
+  "optLoadingChannels": {
+    "message": "Kanallar yükleniyor..."
+  },
+  "optChannelsFailed": {
+    "message": "Kanallar yüklenemedi"
+  },
+  "errChannelsFailed": {
+    "message": "Kanallar yüklenemedi."
+  },
+  "errChooseServer": {
+    "message": "Önce bir sunucu seç."
+  },
+  "errChooseConversation": {
+    "message": "Önce bir sohbet seç."
+  },
+  "errChannelsNotLoaded": {
+    "message": "O sunucunun kanal listesi yüklenmedi. Biraz bekle ya da sunucuyu yeniden seç."
+  },
+  "dmFallback": {
+    "message": "Özel mesaj"
+  },
+  "serverFallback": {
+    "message": "Sunucu"
+  },
+  "allChannels": {
+    "message": "tüm kanallar",
+    "description": "Follows a server name, as in 'My Server / all channels'."
+  },
+  "dmUnknown": {
+    "message": "bilinmiyor",
+    "description": "Stands in for a Discord user with no readable name."
+  },
+  "dmAndMore": {
+    "message": "$NAMES$ ve $COUNT$ kişi daha",
+    "description": "Names a group DM with too many people to list.",
+    "placeholders": {
+      "names": {
+        "content": "$1",
+        "example": "Alex, Sam, Jo"
+      },
+      "count": {
+        "content": "$2",
+        "example": "4"
+      }
+    }
+  },
+  "narrowHeading": {
+    "message": "Aramayı daralt"
+  },
+  "lookingIn": {
+    "message": "$SCOPE$ içinde aranıyor.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "labelContains": {
+    "message": "İçeriyor"
+  },
+  "placeholderContains": {
+    "message": "Her şey için boş bırak"
+  },
+  "optRegex": {
+    "message": "Kalıp olarak değerlendir",
+    "description": "Treat the search text as a regular expression."
+  },
+  "optMatchCase": {
+    "message": "Büyük küçük harfe duyarlı"
+  },
+  "labelAfter": {
+    "message": "Şu tarihte veya sonrasında gönderilmiş"
+  },
+  "labelBefore": {
+    "message": "Şu tarihte veya öncesinde gönderilmiş"
+  },
+  "optHasAttachment": {
+    "message": "Eki var"
+  },
+  "optHasLink": {
+    "message": "Bağlantısı var"
+  },
+  "optHasEmbed": {
+    "message": "Bağlantı önizlemesi var",
+    "description": "An embed is Discord's rich link preview card."
+  },
+  "optLeavePinned": {
+    "message": "Sabitlenmiş mesajlara dokunma"
+  },
+  "buttonBack": {
+    "message": "Geri"
+  },
+  "buttonSearch": {
+    "message": "Ara"
+  },
+  "buttonNext": {
+    "message": "İleri"
+  },
+  "searching": {
+    "message": "Aranıyor..."
+  },
+  "buttonStopSearch": {
+    "message": "Durdur ve elimdekiyle kal"
+  },
+  "searchStopping": {
+    "message": "Süren istekten sonra durduruluyor..."
+  },
+  "errDateRangeBackwards": {
+    "message": "Bu tarih aralığı ters."
+  },
+  "errSearchFailed": {
+    "message": "Arama başarısız oldu."
+  },
+  "searchIndexing": {
+    "message": "Discord bu sunucunun arama dizinini oluşturuyor. Bekleniyor..."
+  },
+  "searchHistoryProgress": {
+    "message": "$SCANNED$ mesaj tarandı, sana ait $FOUND$ tane bulundu...",
+    "placeholders": {
+      "scanned": {
+        "content": "$1",
+        "example": "12,400"
+      },
+      "found": {
+        "content": "$2",
+        "example": "340"
+      }
+    }
+  },
+  "searchFound": {
+    "message": "$COUNT$ bulundu...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      }
+    }
+  },
+  "searchFoundOf": {
+    "message": "Yaklaşık $TOTAL$ içinden $COUNT$ bulundu...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      },
+      "total": {
+        "content": "$2",
+        "example": "8,400"
+      }
+    }
+  },
+  "searchElapsed": {
+    "message": "Şu ana kadar $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "reviewHeading": {
+    "message": "Gözden geçir"
+  },
+  "colWhen": {
+    "message": "Ne zaman"
+  },
+  "colChannel": {
+    "message": "Kanal"
+  },
+  "colMessage": {
+    "message": "Mesaj"
+  },
+  "pickAllTitle": {
+    "message": "Tümünü seç ya da hiçbirini"
+  },
+  "includeThisMessage": {
+    "message": "Bu mesajı dahil et"
+  },
+  "openInDiscord": {
+    "message": "Bu mesajı Discord'da aç"
+  },
+  "saveACopy": {
+    "message": "Bir kopya kaydet"
+  },
+  "saveHint": {
+    "message": "Silme geri alınamaz. Burada sakladığın şey elinde kalacak tek kayıt olacak."
+  },
+  "downloadHtml": {
+    "message": "HTML indir"
+  },
+  "downloadJson": {
+    "message": "JSON indir"
+  },
+  "downloadCsv": {
+    "message": "CSV indir"
+  },
+  "buttonContinue": {
+    "message": "Devam"
+  },
+  "saved": {
+    "message": "Kaydedildi."
+  },
+  "errSaveFailed": {
+    "message": "Bu kaydedilemedi."
+  },
+  "attachmentOnly": {
+    "message": "(yalnızca ek)"
+  },
+  "noText": {
+    "message": "(metin yok)"
+  },
+  "nothingMatched": {
+    "message": "Eşleşme yok"
+  },
+  "truncatedNotice": {
+    "message": "Arama erken durduruldu, yani bu resmin tamamı değil bir kısmı."
+  },
+  "shiftClickHint": {
+    "message": "Aralık seçmek için Shift ile tıkla."
+  },
+  "reviewSummary": {
+    "message": "$FILTER$, $SCOPE$ içinde.",
+    "placeholders": {
+      "filter": {
+        "content": "$1",
+        "example": "containing \"sorry\""
+      },
+      "scope": {
+        "content": "$2",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "reviewNoMatch": {
+    "message": "$SCOPE$ içinde $FILTER$ ile eşleşen bir mesajın yok.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$2",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "selectedOfTotal": {
+    "message": "$TOTAL$ içinden $PICKED$ seçildi",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300 messages"
+      }
+    }
+  },
+  "matched_one": {
+    "message": "$COUNT$ mesaj eşleşti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "matched_other": {
+    "message": "$COUNT$ mesaj eşleşti",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "messages_one": {
+    "message": "$COUNT$ mesaj",
+    "description": "A count of messages, used inside longer sentences.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "messages_other": {
+    "message": "$COUNT$ mesaj",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "showMore_one": {
+    "message": "$COUNT$ tane daha göster",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "showMore_other": {
+    "message": "$COUNT$ tane daha göster",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "300"
+      }
+    }
+  },
+  "resultsNote_one": {
+    "message": "$TOTAL$ içinden $SHOWN$ gösteriliyor. Kalan $REST$ tanenin $PICKED$ tanesi seçili ve yukarıda sayılıyor.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "301"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "1"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "1"
+      }
+    }
+  },
+  "resultsNote_other": {
+    "message": "$TOTAL$ içinden $SHOWN$ gösteriliyor. Kalan $REST$ tanenin $PICKED$ tanesi seçili ve yukarıda sayılıyor.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "4,000"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "3,700"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "3,690"
+      }
+    }
+  },
+  "runHeading": {
+    "message": "Bunlarla ne yapayım?"
+  },
+  "actionDelete": {
+    "message": "Sil"
+  },
+  "actionEditThenDelete": {
+    "message": "Metnin üzerine yaz, sonra sil"
+  },
+  "actionEdit": {
+    "message": "Yalnızca metnin üzerine yaz"
+  },
+  "labelReplacement": {
+    "message": "Yerine geçecek metin"
+  },
+  "replacementHint": {
+    "message": "Önce üzerine yazmak, herhangi bir yerde kayda geçen son sürümün senin yazdığın değil bu metin olması demek. İstek sayısını ikiye katlar, yani yaklaşık iki kat sürer."
+  },
+  "backupLabel": {
+    "message": "Başlamadan önce HTML kopyası indir"
+  },
+  "backupHint": {
+    "message": "Kopya, ilk silmeden önce tarayıcına teslim edilir. Başlamadan önce geldiğini kontrol et: Clearline indirme izni istemiyor, bu yüzden tarayıcının onu nereye koyduğunu göremiyor."
+  },
+  "confirmLabelDefault": {
+    "message": "Onaylamak için sayıyı yaz"
+  },
+  "confirmLabel": {
+    "message": "Onaylamak için $COUNT$ yaz",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "confirmRefused": {
+    "message": "Onaylamak için kutuya $COUNT$ yaz.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "buttonStart": {
+    "message": "Başlat"
+  },
+  "buttonPause": {
+    "message": "Duraklat"
+  },
+  "buttonResume": {
+    "message": "Sürdür"
+  },
+  "buttonStop": {
+    "message": "Durdur"
+  },
+  "runProgressLabel": {
+    "message": "İşlem ilerlemesi"
+  },
+  "verbDelete": {
+    "message": "kalıcı olarak silmek",
+    "description": "Verb inside 'You are about to VERB 12 messages in ...'."
+  },
+  "verbEdit": {
+    "message": "metnin üzerine yazmak"
+  },
+  "verbEditThenDelete": {
+    "message": "üzerine yazıp sonra kalıcı olarak silmek"
+  },
+  "preflightAll": {
+    "message": "Şunları $VERB$ üzeresin: $SCOPE$ içinde $COUNT$. Orada yazdığın her şey bu.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "preflightFiltered": {
+    "message": "Şunları $VERB$ üzeresin: $SCOPE$ içinde $COUNT$, $FILTER$.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$4",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "preflightPace": {
+    "message": "Clearline'ın çalışma hızında bu $DURATION$ eder.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "preflightKeepOpen": {
+    "message": "Çalışırken bu sekmeyi açık bırak. Kapatmak ya da yenilemek işlemi olduğu yerde durdurur."
+  },
+  "preflightUndeletable": {
+    "message": "$COUNT$ kimse tarafından silinemez, çünkü Discord katılma bildirimleri ve benzerleri için buna izin vermiyor. Onlara dokunulmaz.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "preflightNoUndo": {
+    "message": "Bu geri alınamaz."
+  },
+  "preflightStale": {
+    "message": "Bu sonuçlar zaten tamamlanmış bir işleme ait. Başka bir şeye uygulamak için yeniden ara."
+  },
+  "runCounter": {
+    "message": "$TOTAL$ içinden $DONE$ tamamlandı",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300"
+      }
+    }
+  },
+  "runCounterFailed": {
+    "message": ", $COUNT$ başarısız",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "runCounterSkipped": {
+    "message": ", $COUNT$ dokunulmadı",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "runPaused": {
+    "message": "Duraklatıldı."
+  },
+  "runEta": {
+    "message": "$DURATION$ kaldı.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "titleRunning": {
+    "message": "%$PERCENT$ - Clearline",
+    "description": "Browser tab title during a run.",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "titlePaused": {
+    "message": "Duraklatıldı %$PERCENT$ - Clearline",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "statusSavingCopy": {
+    "message": "Önce bir kopya kaydediliyor..."
+  },
+  "errCopyIncomplete": {
+    "message": "Kopya eksik çıktı."
+  },
+  "errCopyFailed": {
+    "message": "Kopya kaydedilemedi, bu yüzden hiçbir şeye dokunulmadı. $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "The copy came out incomplete."
+      }
+    }
+  },
+  "reportFinished": {
+    "message": "Bitti. $COUNT$ işlendi.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportCancelled": {
+    "message": "Durduruldu. Sen durdurmadan önce $COUNT$ işlendi.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportHalted": {
+    "message": "Erken durduruldu. $COUNT$ işlendi.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportRemaining_one": {
+    "message": "$COUNT$ mesaj hiç denenmedi. Onları almak için yeniden ara.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "reportRemaining_other": {
+    "message": "$COUNT$ mesaj hiç denenmedi. Onları almak için yeniden ara.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997"
+      }
+    }
+  },
+  "reportSkipped": {
+    "message": "$COUNT$ dokunulmadı",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportFailed": {
+    "message": "$COUNT$ başarısız",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportAndMore": {
+    "message": "ve $COUNT$ tane daha",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "262"
+      }
+    }
+  },
+  "reportRetry": {
+    "message": "Başarısız olan $COUNT$ tanesini yeniden dene",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "reportSearchAgain": {
+    "message": "Yeniden ara"
+  },
+  "reasonNotYours": {
+    "message": "Bu hesabın yazdığı doğrulanmadı"
+  },
+  "reasonUndeletable": {
+    "message": "Discord bu tür mesajların silinmesine izin vermiyor"
+  },
+  "durationUnderMinute": {
+    "message": "bir dakikadan az"
+  },
+  "durationMinutes_one": {
+    "message": "yaklaşık $COUNT$ dakika",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationMinutes_other": {
+    "message": "yaklaşık $COUNT$ dakika",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "18"
+      }
+    }
+  },
+  "durationHours_one": {
+    "message": "yaklaşık $COUNT$ saat",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationHours_other": {
+    "message": "yaklaşık $COUNT$ saat",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "durationHoursMinutes": {
+    "message": "yaklaşık $HOURS$ sa $MINUTES$ dk",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "3"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "elapsedSeconds": {
+    "message": "$COUNT$ sn",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedMinutes": {
+    "message": "$MINUTES$ dk $SECONDS$ sn",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "2"
+      },
+      "seconds": {
+        "content": "$2",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedHours": {
+    "message": "$HOURS$ sa $MINUTES$ dk",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "1"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "footerSupport": {
+    "message": "Clearline ücretsiz, açık kaynak, hesabı ve ücretli sürümü yok. Sana zaman kazandırdıysa,",
+    "description": "Followed by a 'buy me a coffee' link, so it ends mid-sentence on purpose."
+  },
+  "footerCoffee": {
+    "message": "bana bir kahve ısmarla"
+  },
+  "footerDisclaimer": {
+    "message": "Discord Inc. ile bağlantılı, tarafından onaylanmış ya da ilişkili değildir."
+  },
+  "filterEverything": {
+    "message": "orada yazdığın her şey",
+    "description": "Stands in for the filter clause when nothing was narrowed."
+  },
+  "filterContaining": {
+    "message": "\"$TEXT$\" içeren",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "sorry"
+      }
+    }
+  },
+  "filterMatching": {
+    "message": "\"$TEXT$\" ile eşleşen",
+    "description": "As in matching a regular expression.",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "^lol"
+      }
+    }
+  },
+  "filterHasAttachment": {
+    "message": "eki olan"
+  },
+  "filterHasLink": {
+    "message": "bağlantısı olan"
+  },
+  "filterHasEmbed": {
+    "message": "bağlantı önizlemesi olan"
+  },
+  "filterBetween": {
+    "message": "$FROM$ ile $TO$ arasında gönderilmiş",
+    "placeholders": {
+      "from": {
+        "content": "$1",
+        "example": "2024-03-01"
+      },
+      "to": {
+        "content": "$2",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterAfter": {
+    "message": "$DATE$ tarihinde veya sonrasında gönderilmiş",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-01"
+      }
+    }
+  },
+  "filterBefore": {
+    "message": "$DATE$ tarihinde veya öncesinde gönderilmiş",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterNotPinned": {
+    "message": "sabitlenmemiş"
+  },
+  "errNotConnected": {
+    "message": "Discord'a bağlı değil."
+  },
+  "errUnauthorized": {
+    "message": "Discord oturumu reddetti. Yeniden bağlanıp tekrar dene."
+  },
+  "errForbidden": {
+    "message": "O kanalda yetki yok."
+  },
+  "errNotFound": {
+    "message": "O kanal ya da mesaj artık yok."
+  },
+  "errHttp": {
+    "message": "Discord $STATUS$ döndürdü.",
+    "placeholders": {
+      "status": {
+        "content": "$1",
+        "example": "500"
+      }
+    }
+  },
+  "errBadId": {
+    "message": "\"$ID$\" değeri $WHAT$ olarak kullanılmıyor.",
+    "placeholders": {
+      "id": {
+        "content": "$1",
+        "example": "abc"
+      },
+      "what": {
+        "content": "$2",
+        "example": "channel id"
+      }
+    }
+  },
+  "errRateLimitHalt": {
+    "message": "Discord her isteği sınırlıyor. Bunun IP engeline dönüşmemesi için duruluyor. Birkaç dakika bekleyip yeniden başla."
+  },
+  "errIndexNotReady": {
+    "message": "Discord bu sunucunun arama dizinini hâlâ oluşturuyor. Bir dakika sonra tekrar dene."
+  },
+  "errNothingSelected": {
+    "message": "Aranacak bir şey seçilmedi."
+  },
+  "errContentTooLong": {
+    "message": "Yerine geçecek metin, Discord'un $LIMIT$ karakter sınırını aşıyor.",
+    "placeholders": {
+      "limit": {
+        "content": "$1",
+        "example": "2000"
+      }
+    }
+  },
+  "errContentEmpty": {
+    "message": "Yerine geçecek metin boş olamaz."
+  },
+  "errTooManyFailures": {
+    "message": "Üst üste $COUNT$ başarısızlıktan sonra durduruldu. Discord tarafında bir şey değişti, bu yüzden geri kalanı denenmedi.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "reasonNoPermission": {
+    "message": "O kanalda yetki yok"
+  },
+  "reasonMalformedId": {
+    "message": "Hatalı kimlik"
+  },
+  "reasonUnknown": {
+    "message": "Bilinmeyen hata"
+  }
+}

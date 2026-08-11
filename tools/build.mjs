@@ -32,7 +32,7 @@ const TARGETS = ['chrome', 'firefox'];
 const BACKGROUND_MODULES = ['lib/browser.js', 'background.main.js'];
 
 /** Copied verbatim. `lib` ships too, because the app page loads it directly. */
-const STATIC_DIRS = ['content', 'lib'];
+const STATIC_DIRS = ['content', 'lib', '_locales'];
 const OPTIONAL_DIRS = ['app', 'icons'];
 
 const ALLOWED_PERMISSIONS = ['storage', 'unlimitedStorage', 'downloads'];
@@ -187,9 +187,99 @@ async function buildTarget(target, base, background) {
 /* Release gate                                                        */
 /* ------------------------------------------------------------------ */
 
+/** `__MSG_key__` resolved against one locale, or the literal if it is not one. */
+function resolveMsg(value, messages) {
+  const match = /^__MSG_(\w+)__$/.exec(String(value ?? ''));
+  if (!match) return String(value ?? '');
+  const entry = messages[match[1]];
+  return entry && typeof entry.message === 'string' ? entry.message : null;
+}
+
+/**
+ * Every locale is checked against the default one.
+ *
+ * A missing key does not throw: getMessage returns an empty string, so the
+ * failure is a blank button in a language the author does not read. That is the
+ * kind of thing that ships and stays shipped, so it fails the build instead.
+ */
+async function readLocales(problems) {
+  const dir = path.join(SRC, '_locales');
+  const locales = {};
+  if (!(await exists(dir))) {
+    problems.push('_locales is missing, so the extension cannot be translated at all');
+    return locales;
+  }
+
+  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const file = path.join(dir, entry.name, 'messages.json');
+    try {
+      locales[entry.name] = JSON.parse(await fs.readFile(file, 'utf8'));
+    } catch (err) {
+      problems.push(`_locales/${entry.name}/messages.json does not parse: ${err.message}`);
+    }
+  }
+
+  const base = locales.en;
+  if (!base) {
+    problems.push('_locales/en is missing, and it is the default locale');
+    return locales;
+  }
+
+  // Categories from CLDR. A language with more plural forms than English needs
+  // keys English does not have (Polish wants _few and _many where English has
+  // only _one and _other), so those are legitimate as long as the base exists.
+  const CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other'];
+  const pluralBase = (key) => {
+    const c = CATEGORIES.find((cat) => key.endsWith(`_${cat}`));
+    return c ? key.slice(0, -c.length - 1) : null;
+  };
+
+  for (const [locale, messages] of Object.entries(locales)) {
+    for (const key of Object.keys(base)) {
+      // A plural form English does not use is not required of anyone else.
+      if (!(key in messages)) problems.push(`_locales/${locale} is missing "${key}"`);
+    }
+    for (const key of Object.keys(messages)) {
+      if (key in base) continue;
+      const stem = pluralBase(key);
+      if (stem && `${stem}_other` in base) continue;
+      problems.push(`_locales/${locale} has "${key}", which en does not`);
+    }
+    // Every plural family must have the fallback the picker lands on.
+    for (const key of Object.keys(messages)) {
+      const stem = pluralBase(key);
+      if (stem && `${stem}_other` in base && !(`${stem}_other` in messages)) {
+        problems.push(`_locales/${locale} has "${key}" but no "${stem}_other" to fall back to`);
+      }
+    }
+    // A placeholder named in the text but not declared renders literally, as
+    // "$COUNT$", in the middle of a sentence about how many messages are about
+    // to be destroyed.
+    for (const [key, entry] of Object.entries(messages)) {
+      const declared = new Set(Object.keys(entry.placeholders || {}).map((p) => p.toLowerCase()));
+      for (const m of String(entry.message || '').matchAll(/\$([A-Za-z_]\w*)\$/g)) {
+        if (!declared.has(m[1].toLowerCase())) {
+          problems.push(`_locales/${locale} "${key}" uses $${m[1]}$ without declaring it`);
+        }
+      }
+      // And one declared but never used is a substitution the caller passes
+      // that this language silently drops.
+      for (const name of declared) {
+        if (!String(entry.message || '').toLowerCase().includes(`$${name}$`)) {
+          problems.push(`_locales/${locale} "${key}" declares ${name} but never uses it`);
+        }
+      }
+    }
+  }
+
+  return locales;
+}
+
 async function check(base) {
   const problems = [];
   const pkgVersion = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8')).version;
+  const locales = await readLocales(problems);
 
   for (const target of TARGETS) {
     const dir = path.join(DIST, target);
@@ -236,14 +326,28 @@ async function check(base) {
       problems.push(`${tag} manifest version ${manifest.version} does not match package.json ${pkgVersion}`);
     }
 
-    if ((manifest.description ?? '').length > MAX_DESCRIPTION) {
-      problems.push(
-        `${tag} description is ${manifest.description.length} characters, ` +
-          `over the store limit of ${MAX_DESCRIPTION}`
-      );
-    }
-    if ((manifest.name ?? '').length > MAX_NAME) {
-      problems.push(`${tag} name is ${manifest.name.length} characters, over the limit of ${MAX_NAME}`);
+    // Name and description are __MSG_ references now, so the limits have to be
+    // checked against what each locale actually resolves to. A store enforces
+    // them per locale, and a description that fits in English is routinely 30%
+    // longer in German, so checking only the default locale would pass a build
+    // that the store rejects on upload.
+    if (!manifest.default_locale) problems.push(`${tag} default_locale is missing`);
+    for (const [locale, messages] of Object.entries(locales)) {
+      for (const [field, limit] of [
+        ['name', MAX_NAME],
+        ['description', MAX_DESCRIPTION],
+      ]) {
+        const resolved = resolveMsg(manifest[field], messages);
+        if (resolved === null) {
+          problems.push(`${tag} ${locale} is missing the message for ${field}`);
+          continue;
+        }
+        if (resolved.length > limit) {
+          problems.push(
+            `${tag} ${locale} ${field} is ${resolved.length} characters, over the store limit of ${limit}`
+          );
+        }
+      }
     }
 
     for (const [size, rel] of Object.entries(manifest.icons ?? {})) {

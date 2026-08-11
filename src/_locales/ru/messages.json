@@ -1,0 +1,1177 @@
+{
+  "extName": {
+    "message": "Clearline - менеджер сообщений для Discord",
+    "description": "Extension name. Keep 'Clearline' untranslated: it is the product name."
+  },
+  "extDescription": {
+    "message": "Поиск, экспорт и массовое удаление своих сообщений в Discord. Токен никогда не покидает браузер.",
+    "description": "Store description. Hard limit of 132 characters in every language."
+  },
+  "actionTitle": {
+    "message": "Clearline"
+  },
+  "appTagline": {
+    "message": "Ищите, экспортируйте и удаляйте свои сообщения в Discord."
+  },
+  "stepConnect": {
+    "message": "Подключение",
+    "description": "Step 1 name in the progress rail."
+  },
+  "stepWhere": {
+    "message": "Где",
+    "description": "Step 2. Short: it sits in a narrow pill."
+  },
+  "stepNarrow": {
+    "message": "Фильтр",
+    "description": "Step 3, as in narrowing down a search."
+  },
+  "stepReview": {
+    "message": "Проверка",
+    "description": "Step 4."
+  },
+  "stepAct": {
+    "message": "Действие",
+    "description": "Step 5, as in take action."
+  },
+  "connectHeading": {
+    "message": "Подключение"
+  },
+  "connectHint": {
+    "message": "Clearline читает вашу сессию из открытой вкладки Discord. Токен остаётся в этой вкладке, никогда не сохраняется и забывается, когда вы её закроете."
+  },
+  "connectButton": {
+    "message": "Подключиться к Discord"
+  },
+  "takeoverButton": {
+    "message": "Использовать эту вкладку",
+    "description": "Takes control away from whichever other tab currently holds it."
+  },
+  "reconnectButton": {
+    "message": "Переподключиться к Discord"
+  },
+  "labelAccount": {
+    "message": "Аккаунт"
+  },
+  "labelServers": {
+    "message": "Серверы",
+    "description": "Discord servers, called guilds in the API."
+  },
+  "labelDirectMessages": {
+    "message": "Личные сообщения"
+  },
+  "statusLooking": {
+    "message": "Ищу вкладку Discord с выполненным входом..."
+  },
+  "statusConnected": {
+    "message": "Подключено. Загружаю ваш аккаунт..."
+  },
+  "statusReconnecting": {
+    "message": "Читаю сессию Discord заново..."
+  },
+  "statusReconnected": {
+    "message": "Переподключено. Всё, что вы нашли, на месте."
+  },
+  "errNoTab": {
+    "message": "Откройте discord.com в другой вкладке, войдите в аккаунт и попробуйте снова."
+  },
+  "errNotLoggedIn": {
+    "message": "В этой вкладке Discord вход ещё не выполнен. Войдите и попробуйте снова."
+  },
+  "errNeedsReload": {
+    "message": "Обновите вкладку Discord и попробуйте снова. Clearline не достаёт до вкладки, которая была открыта ещё до его установки.",
+    "description": "Content scripts are not injected into tabs that were already open."
+  },
+  "errNoSession": {
+    "message": "Не удалось прочитать сессию Discord."
+  },
+  "errGeneric": {
+    "message": "Что-то пошло не так."
+  },
+  "alreadyOpen": {
+    "message": "Clearline уже открыт в другой вкладке. Две копии сразу отправляли бы запросы к Discord вдвое быстрее безопасного темпа, поэтому работать может только одна."
+  },
+  "stoodDown": {
+    "message": "Другая вкладка Clearline взяла управление, поэтому эта остановилась."
+  },
+  "runStoppedByTakeover": {
+    "message": "Другая вкладка Clearline взяла управление, поэтому этот запуск остановлен."
+  },
+  "whereHeading": {
+    "message": "Где искать?"
+  },
+  "scopeServer": {
+    "message": "Сервер"
+  },
+  "scopeDm": {
+    "message": "Личные сообщения"
+  },
+  "labelServer": {
+    "message": "Сервер"
+  },
+  "labelChannels": {
+    "message": "Каналы"
+  },
+  "labelConversation": {
+    "message": "Переписка"
+  },
+  "optLoading": {
+    "message": "Загрузка..."
+  },
+  "optPickServerFirst": {
+    "message": "Сначала выберите сервер"
+  },
+  "optChooseServer": {
+    "message": "Выберите сервер"
+  },
+  "optChooseConversation": {
+    "message": "Выберите переписку"
+  },
+  "channelsHint": {
+    "message": "Не трогайте список каналов, чтобы искать по всему серверу. Ctrl или Cmd + клик выбирает несколько. Выбор канала включает и то, что вы писали в его ветках."
+  },
+  "optLoadingChannels": {
+    "message": "Загружаю каналы..."
+  },
+  "optChannelsFailed": {
+    "message": "Не удалось загрузить каналы"
+  },
+  "errChannelsFailed": {
+    "message": "Не удалось загрузить каналы."
+  },
+  "errChooseServer": {
+    "message": "Сначала выберите сервер."
+  },
+  "errChooseConversation": {
+    "message": "Сначала выберите переписку."
+  },
+  "errChannelsNotLoaded": {
+    "message": "Список каналов этого сервера не загрузился. Подождите немного или выберите его снова."
+  },
+  "dmFallback": {
+    "message": "Личные сообщения"
+  },
+  "serverFallback": {
+    "message": "Сервер"
+  },
+  "allChannels": {
+    "message": "все каналы",
+    "description": "Follows a server name, as in 'My Server / all channels'."
+  },
+  "dmUnknown": {
+    "message": "неизвестно",
+    "description": "Stands in for a Discord user with no readable name."
+  },
+  "dmAndMore": {
+    "message": "$NAMES$ и ещё $COUNT$",
+    "description": "Names a group DM with too many people to list.",
+    "placeholders": {
+      "names": {
+        "content": "$1",
+        "example": "Alex, Sam, Jo"
+      },
+      "count": {
+        "content": "$2",
+        "example": "4"
+      }
+    }
+  },
+  "narrowHeading": {
+    "message": "Сузьте поиск"
+  },
+  "lookingIn": {
+    "message": "Ищу в $SCOPE$.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "labelContains": {
+    "message": "Содержит"
+  },
+  "placeholderContains": {
+    "message": "Оставьте пустым, чтобы взять всё"
+  },
+  "optRegex": {
+    "message": "Считать шаблоном",
+    "description": "Treat the search text as a regular expression."
+  },
+  "optMatchCase": {
+    "message": "Учитывать регистр"
+  },
+  "labelAfter": {
+    "message": "Отправлено в этот день или позже"
+  },
+  "labelBefore": {
+    "message": "Отправлено в этот день или раньше"
+  },
+  "optHasAttachment": {
+    "message": "Есть вложение"
+  },
+  "optHasLink": {
+    "message": "Есть ссылка"
+  },
+  "optHasEmbed": {
+    "message": "Есть превью ссылки",
+    "description": "An embed is Discord's rich link preview card."
+  },
+  "optLeavePinned": {
+    "message": "Не трогать закреплённые сообщения"
+  },
+  "buttonBack": {
+    "message": "Назад"
+  },
+  "buttonSearch": {
+    "message": "Искать"
+  },
+  "buttonNext": {
+    "message": "Далее"
+  },
+  "searching": {
+    "message": "Ищу..."
+  },
+  "buttonStopSearch": {
+    "message": "Остановить и оставить найденное"
+  },
+  "searchStopping": {
+    "message": "Останавливаюсь после текущего запроса..."
+  },
+  "errDateRangeBackwards": {
+    "message": "Этот диапазон дат перевёрнут."
+  },
+  "errSearchFailed": {
+    "message": "Поиск не удался."
+  },
+  "searchIndexing": {
+    "message": "Discord строит поисковый индекс для этого сервера. Жду..."
+  },
+  "searchHistoryProgress": {
+    "message": "Просмотрено сообщений: $SCANNED$, найдено ваших: $FOUND$...",
+    "placeholders": {
+      "scanned": {
+        "content": "$1",
+        "example": "12,400"
+      },
+      "found": {
+        "content": "$2",
+        "example": "340"
+      }
+    }
+  },
+  "searchFound": {
+    "message": "Найдено $COUNT$...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      }
+    }
+  },
+  "searchFoundOf": {
+    "message": "Найдено $COUNT$ примерно из $TOTAL$...",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,250 messages"
+      },
+      "total": {
+        "content": "$2",
+        "example": "8,400"
+      }
+    }
+  },
+  "searchElapsed": {
+    "message": "$TIME$ на данный момент.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "reviewHeading": {
+    "message": "Проверка"
+  },
+  "colWhen": {
+    "message": "Когда"
+  },
+  "colChannel": {
+    "message": "Канал"
+  },
+  "colMessage": {
+    "message": "Сообщение"
+  },
+  "pickAllTitle": {
+    "message": "Выбрать всё или ничего"
+  },
+  "includeThisMessage": {
+    "message": "Включить это сообщение"
+  },
+  "openInDiscord": {
+    "message": "Открыть это сообщение в Discord"
+  },
+  "saveACopy": {
+    "message": "Сохранить копию"
+  },
+  "saveHint": {
+    "message": "Удаление нельзя отменить. То, что вы сохраните здесь, будет единственной записью, которая у вас останется."
+  },
+  "downloadHtml": {
+    "message": "Скачать HTML"
+  },
+  "downloadJson": {
+    "message": "Скачать JSON"
+  },
+  "downloadCsv": {
+    "message": "Скачать CSV"
+  },
+  "buttonContinue": {
+    "message": "Продолжить"
+  },
+  "saved": {
+    "message": "Сохранено."
+  },
+  "errSaveFailed": {
+    "message": "Не удалось это сохранить."
+  },
+  "attachmentOnly": {
+    "message": "(только вложение)"
+  },
+  "noText": {
+    "message": "(без текста)"
+  },
+  "nothingMatched": {
+    "message": "Ничего не найдено"
+  },
+  "truncatedNotice": {
+    "message": "Поиск был остановлен досрочно, так что это часть картины, а не вся она."
+  },
+  "shiftClickHint": {
+    "message": "Shift + клик выделяет диапазон."
+  },
+  "reviewSummary": {
+    "message": "$FILTER$, в $SCOPE$.",
+    "placeholders": {
+      "filter": {
+        "content": "$1",
+        "example": "containing \"sorry\""
+      },
+      "scope": {
+        "content": "$2",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "reviewNoMatch": {
+    "message": "Ни одно ваше сообщение в $SCOPE$ не подходит под $FILTER$.",
+    "placeholders": {
+      "scope": {
+        "content": "$1",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$2",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "selectedOfTotal": {
+    "message": "Выбрано $PICKED$ из $TOTAL$",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300 messages"
+      }
+    }
+  },
+  "matched_one": {
+    "message": "Найдено $COUNT$ сообщение",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "matched_other": {
+    "message": "Найдено $COUNT$ сообщений",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "messages_one": {
+    "message": "$COUNT$ сообщение",
+    "description": "A count of messages, used inside longer sentences.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "messages_other": {
+    "message": "$COUNT$ сообщений",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "showMore_one": {
+    "message": "Показать ещё $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "showMore_other": {
+    "message": "Показать ещё $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "300"
+      }
+    }
+  },
+  "resultsNote_one": {
+    "message": "Показано $SHOWN$ из $TOTAL$. Из остальных $REST$ выбрано и учтено выше: $PICKED$.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "301"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "1"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "1"
+      }
+    }
+  },
+  "resultsNote_other": {
+    "message": "Показано $SHOWN$ из $TOTAL$. Из остальных $REST$ выбрано и учтено выше: $PICKED$.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "4,000"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "3,700"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "3,690"
+      }
+    }
+  },
+  "runHeading": {
+    "message": "Что с ними сделать?"
+  },
+  "actionDelete": {
+    "message": "Удалить"
+  },
+  "actionEditThenDelete": {
+    "message": "Заменить текст, потом удалить"
+  },
+  "actionEdit": {
+    "message": "Только заменить текст"
+  },
+  "labelReplacement": {
+    "message": "Текст замены"
+  },
+  "replacementHint": {
+    "message": "Замена сначала означает, что последней версией, которую кто-либо сохранил, будет текст замены, а не то, что вы написали. Число запросов удваивается, поэтому времени уйдёт примерно вдвое больше."
+  },
+  "backupLabel": {
+    "message": "Скачать копию в HTML перед запуском"
+  },
+  "backupHint": {
+    "message": "Копия передаётся браузеру до первого удаления. Убедитесь, что она дошла, прежде чем начинать: Clearline не запрашивает разрешение на загрузки, поэтому не видит, куда браузер её положил."
+  },
+  "confirmLabelDefault": {
+    "message": "Введите число для подтверждения"
+  },
+  "confirmLabel": {
+    "message": "Введите $COUNT$ для подтверждения",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "confirmRefused": {
+    "message": "Введите $COUNT$ в поле для подтверждения.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "buttonStart": {
+    "message": "Запустить"
+  },
+  "buttonPause": {
+    "message": "Пауза"
+  },
+  "buttonResume": {
+    "message": "Продолжить"
+  },
+  "buttonStop": {
+    "message": "Остановить"
+  },
+  "runProgressLabel": {
+    "message": "Ход выполнения"
+  },
+  "verbDelete": {
+    "message": "навсегда удалить",
+    "description": "Verb inside 'You are about to VERB 12 messages in ...'."
+  },
+  "verbEdit": {
+    "message": "заменить текст у"
+  },
+  "verbEditThenDelete": {
+    "message": "заменить, а затем навсегда удалить"
+  },
+  "preflightAll": {
+    "message": "Вы собираетесь $VERB$ $COUNT$ в $SCOPE$. Это всё, что вы там написали.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      }
+    }
+  },
+  "preflightFiltered": {
+    "message": "Вы собираетесь $VERB$ $COUNT$ в $SCOPE$, $FILTER$.",
+    "placeholders": {
+      "verb": {
+        "content": "$1",
+        "example": "permanently delete"
+      },
+      "count": {
+        "content": "$2",
+        "example": "12 messages"
+      },
+      "scope": {
+        "content": "$3",
+        "example": "My Server / #general"
+      },
+      "filter": {
+        "content": "$4",
+        "example": "containing \"sorry\""
+      }
+    }
+  },
+  "preflightPace": {
+    "message": "В темпе, в котором работает Clearline, это $DURATION$.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "preflightKeepOpen": {
+    "message": "Оставьте эту вкладку открытой на время работы. Закрытие или перезагрузка останавливает запуск на том месте, где он есть."
+  },
+  "preflightUndeletable": {
+    "message": "$COUNT$ не может удалить никто, потому что Discord не позволяет этого для уведомлений о входе и подобных. Их не трогают.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "preflightNoUndo": {
+    "message": "Это нельзя отменить."
+  },
+  "preflightStale": {
+    "message": "Эти результаты относятся к уже выполненному запуску. Выполните поиск заново, чтобы работать с чем-то ещё."
+  },
+  "runCounter": {
+    "message": "Готово $DONE$ из $TOTAL$",
+    "placeholders": {
+      "done": {
+        "content": "$1",
+        "example": "40"
+      },
+      "total": {
+        "content": "$2",
+        "example": "300"
+      }
+    }
+  },
+  "runCounterFailed": {
+    "message": ", с ошибкой $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "runCounterSkipped": {
+    "message": ", не тронуто $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "runPaused": {
+    "message": "Пауза."
+  },
+  "runEta": {
+    "message": "Осталось $DURATION$.",
+    "placeholders": {
+      "duration": {
+        "content": "$1",
+        "example": "about 18 minutes"
+      }
+    }
+  },
+  "titleRunning": {
+    "message": "$PERCENT$% - Clearline",
+    "description": "Browser tab title during a run.",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "titlePaused": {
+    "message": "Пауза $PERCENT$% - Clearline",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "statusSavingCopy": {
+    "message": "Сначала сохраняю копию..."
+  },
+  "errCopyIncomplete": {
+    "message": "Копия получилась неполной."
+  },
+  "errCopyFailed": {
+    "message": "Не удалось сохранить копию, поэтому ничего не тронуто. $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "The copy came out incomplete."
+      }
+    }
+  },
+  "reportFinished": {
+    "message": "Готово. Обработано $COUNT$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportCancelled": {
+    "message": "Остановлено. Обработано $COUNT$ до того, как вы остановили.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportHalted": {
+    "message": "Остановлено досрочно. Обработано $COUNT$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12 messages"
+      }
+    }
+  },
+  "reportRemaining_one": {
+    "message": "$COUNT$ сообщение так и не было затронуто. Выполните поиск заново, чтобы вернуться к нему.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "reportRemaining_other": {
+    "message": "$COUNT$ сообщений так и не были затронуты. Выполните поиск заново, чтобы вернуться к ним.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997"
+      }
+    }
+  },
+  "reportSkipped": {
+    "message": "не тронуто $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportFailed": {
+    "message": "с ошибкой $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
+  "reportAndMore": {
+    "message": "и ещё $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "262"
+      }
+    }
+  },
+  "reportRetry": {
+    "message": "Повторить неудачные: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "reportSearchAgain": {
+    "message": "Искать заново"
+  },
+  "reasonNotYours": {
+    "message": "Не подтверждено, что это написал данный аккаунт"
+  },
+  "reasonUndeletable": {
+    "message": "Discord не позволяет удалять такие сообщения"
+  },
+  "durationUnderMinute": {
+    "message": "меньше минуты"
+  },
+  "durationMinutes_one": {
+    "message": "около $COUNT$ минуты",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationMinutes_other": {
+    "message": "около $COUNT$ минут",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "18"
+      }
+    }
+  },
+  "durationHours_one": {
+    "message": "около $COUNT$ часа",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "durationHours_other": {
+    "message": "около $COUNT$ часов",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "durationHoursMinutes": {
+    "message": "около $HOURS$ ч $MINUTES$ мин",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "3"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "elapsedSeconds": {
+    "message": "$COUNT$ с",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedMinutes": {
+    "message": "$MINUTES$ мин $SECONDS$ с",
+    "placeholders": {
+      "minutes": {
+        "content": "$1",
+        "example": "2"
+      },
+      "seconds": {
+        "content": "$2",
+        "example": "40"
+      }
+    }
+  },
+  "elapsedHours": {
+    "message": "$HOURS$ ч $MINUTES$ мин",
+    "placeholders": {
+      "hours": {
+        "content": "$1",
+        "example": "1"
+      },
+      "minutes": {
+        "content": "$2",
+        "example": "20"
+      }
+    }
+  },
+  "footerSupport": {
+    "message": "Clearline бесплатен, с открытым кодом, без аккаунта и платной версии. Если он сэкономил вам время,",
+    "description": "Followed by a 'buy me a coffee' link, so it ends mid-sentence on purpose."
+  },
+  "footerCoffee": {
+    "message": "купите мне кофе"
+  },
+  "footerDisclaimer": {
+    "message": "Не связано с Discord Inc., не одобрено и не аффилировано с ней."
+  },
+  "matched_few": {
+    "message": "Найдено $COUNT$ сообщения",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "matched_many": {
+    "message": "Найдено $COUNT$ сообщений",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "messages_few": {
+    "message": "$COUNT$ сообщения",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "messages_many": {
+    "message": "$COUNT$ сообщений",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "showMore_few": {
+    "message": "Показать ещё $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "300"
+      }
+    }
+  },
+  "showMore_many": {
+    "message": "Показать ещё $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "300"
+      }
+    }
+  },
+  "resultsNote_few": {
+    "message": "Показано $SHOWN$ из $TOTAL$. Из остальных $REST$ выбрано и учтено выше: $PICKED$.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "4,000"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "3,700"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "3,690"
+      }
+    }
+  },
+  "resultsNote_many": {
+    "message": "Показано $SHOWN$ из $TOTAL$. Из остальных $REST$ выбрано и учтено выше: $PICKED$.",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "300"
+      },
+      "total": {
+        "content": "$2",
+        "example": "4,000"
+      },
+      "rest": {
+        "content": "$3",
+        "example": "3,700"
+      },
+      "picked": {
+        "content": "$4",
+        "example": "3,690"
+      }
+    }
+  },
+  "reportRemaining_few": {
+    "message": "$COUNT$ сообщения так и не были затронуты. Выполните поиск заново, чтобы вернуться к ним.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997"
+      }
+    }
+  },
+  "reportRemaining_many": {
+    "message": "$COUNT$ сообщений так и не были затронуты. Выполните поиск заново, чтобы вернуться к ним.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997"
+      }
+    }
+  },
+  "durationMinutes_few": {
+    "message": "около $COUNT$ минут",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "18"
+      }
+    }
+  },
+  "durationMinutes_many": {
+    "message": "около $COUNT$ минут",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "18"
+      }
+    }
+  },
+  "durationHours_few": {
+    "message": "около $COUNT$ часов",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "durationHours_many": {
+    "message": "около $COUNT$ часов",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "filterEverything": {
+    "message": "всё, что вы там написали",
+    "description": "Stands in for the filter clause when nothing was narrowed."
+  },
+  "filterContaining": {
+    "message": "содержащие «$TEXT$»",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "sorry"
+      }
+    }
+  },
+  "filterMatching": {
+    "message": "подходящие под «$TEXT$»",
+    "description": "As in matching a regular expression.",
+    "placeholders": {
+      "text": {
+        "content": "$1",
+        "example": "^lol"
+      }
+    }
+  },
+  "filterHasAttachment": {
+    "message": "с вложением"
+  },
+  "filterHasLink": {
+    "message": "со ссылкой"
+  },
+  "filterHasEmbed": {
+    "message": "с превью ссылки"
+  },
+  "filterBetween": {
+    "message": "отправленные с $FROM$ по $TO$",
+    "placeholders": {
+      "from": {
+        "content": "$1",
+        "example": "2024-03-01"
+      },
+      "to": {
+        "content": "$2",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterAfter": {
+    "message": "отправленные $DATE$ или позже",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-01"
+      }
+    }
+  },
+  "filterBefore": {
+    "message": "отправленные $DATE$ или раньше",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "2024-03-05"
+      }
+    }
+  },
+  "filterNotPinned": {
+    "message": "не закреплённые"
+  },
+  "errNotConnected": {
+    "message": "Нет подключения к Discord."
+  },
+  "errUnauthorized": {
+    "message": "Discord отклонил сессию. Переподключитесь и попробуйте снова."
+  },
+  "errForbidden": {
+    "message": "Нет прав в этом канале."
+  },
+  "errNotFound": {
+    "message": "Этого канала или сообщения больше нет."
+  },
+  "errHttp": {
+    "message": "Discord вернул $STATUS$.",
+    "placeholders": {
+      "status": {
+        "content": "$1",
+        "example": "500"
+      }
+    }
+  },
+  "errBadId": {
+    "message": "Отказываюсь использовать «$ID$» как $WHAT$.",
+    "placeholders": {
+      "id": {
+        "content": "$1",
+        "example": "abc"
+      },
+      "what": {
+        "content": "$2",
+        "example": "channel id"
+      }
+    }
+  },
+  "errRateLimitHalt": {
+    "message": "Discord ограничивает каждый запрос. Останавливаюсь, чтобы это не превратилось в блокировку IP. Подождите несколько минут и начните заново."
+  },
+  "errIndexNotReady": {
+    "message": "Discord ещё строит поисковый индекс для этого сервера. Попробуйте через минуту."
+  },
+  "errNothingSelected": {
+    "message": "Не выбрано ничего для поиска."
+  },
+  "errContentTooLong": {
+    "message": "Текст замены превышает ограничение Discord в $LIMIT$ символов.",
+    "placeholders": {
+      "limit": {
+        "content": "$1",
+        "example": "2000"
+      }
+    }
+  },
+  "errContentEmpty": {
+    "message": "Текст замены не может быть пустым."
+  },
+  "errTooManyFailures": {
+    "message": "Остановлено после $COUNT$ ошибок подряд. На стороне Discord что-то изменилось, поэтому остальное не выполнялось.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "reasonNoPermission": {
+    "message": "Нет прав в этом канале"
+  },
+  "reasonMalformedId": {
+    "message": "Неверный идентификатор"
+  },
+  "reasonUnknown": {
+    "message": "Неизвестная ошибка"
+  }
+}

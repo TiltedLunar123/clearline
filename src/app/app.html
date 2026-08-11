@@ -9,7 +9,7 @@
     <main class="shell">
       <header class="head">
         <h1>Clearline</h1>
-        <p class="sub">Search, export and clear your own Discord messages.</p>
+        <p class="sub" data-i18n="appTagline">Search, export and clear your own Discord messages.</p>
       </header>
 
       <!--
@@ -19,20 +19,20 @@
         the user has any idea what the filter matches.
       -->
       <ol class="rail" id="rail">
-        <li data-step="connect" class="on">Connect</li>
-        <li data-step="where">Where</li>
-        <li data-step="filter">Narrow</li>
-        <li data-step="review">Review</li>
-        <li data-step="run">Act</li>
+        <li data-step="connect" class="on" data-i18n="stepConnect">Connect</li>
+        <li data-step="where" data-i18n="stepWhere">Where</li>
+        <li data-step="filter" data-i18n="stepNarrow">Narrow</li>
+        <li data-step="review" data-i18n="stepReview">Review</li>
+        <li data-step="run" data-i18n="stepAct">Act</li>
       </ol>
 
       <section class="card" id="connect-card">
-        <h2>Connect</h2>
-        <p class="hint">
+        <h2 data-i18n="connectHeading">Connect</h2>
+        <p class="hint" data-i18n="connectHint">
           Clearline reads your session from an open Discord tab. The token stays in this tab, is
           never saved, and is forgotten when you close it.
         </p>
-        <button id="connect" class="primary" type="button">Connect to Discord</button>
+        <button id="connect" class="primary" type="button" data-i18n="connectButton">Connect to Discord</button>
       </section>
 
       <!--
@@ -46,43 +46,45 @@
       <div class="tabstate" id="tabstate">
         <p class="status" id="status" role="status" aria-live="polite"></p>
         <div class="actions left" id="tabstate-actions">
-          <button id="takeover" class="ghost hidden" type="button">Use this tab instead</button>
-          <button id="reconnect" class="ghost hidden" type="button">Reconnect to Discord</button>
+          <button id="takeover" class="ghost hidden" type="button" data-i18n="takeoverButton">Use this tab instead</button>
+          <button id="reconnect" class="ghost hidden" type="button" data-i18n="reconnectButton">Reconnect to Discord</button>
         </div>
       </div>
 
       <section class="card summary hidden" id="account-card">
         <dl class="facts inline">
-          <dt>Account</dt>
+          <dt data-i18n="labelAccount">Account</dt>
           <dd id="account">-</dd>
-          <dt>Servers</dt>
+          <dt data-i18n="labelServers">Servers</dt>
           <dd id="guild-count">-</dd>
-          <dt>Direct messages</dt>
+          <dt data-i18n="labelDirectMessages">Direct messages</dt>
           <dd id="dm-count">-</dd>
         </dl>
       </section>
 
       <!-- Step: where ------------------------------------------------------->
       <section class="card step hidden" id="step-where">
-        <h2>Where should I look?</h2>
+        <h2 data-i18n="whereHeading">Where should I look?</h2>
 
         <div class="choice">
-          <label><input type="radio" name="scope-kind" value="guild" checked /> A server</label>
-          <label><input type="radio" name="scope-kind" value="dm" /> A direct message</label>
+          <label><input type="radio" name="scope-kind" value="guild" checked /> <span data-i18n="scopeServer">A server</span></label>
+          <label><input type="radio" name="scope-kind" value="dm" /> <span data-i18n="scopeDm">A direct message</span></label>
         </div>
 
         <div id="guild-picker">
           <label class="field">
-            <span>Server</span>
-            <select id="guild-select"><option value="">Loading...</option></select>
-          </label>
-          <label class="field">
-            <span>Channels</span>
-            <select id="channel-select" multiple size="10" disabled>
-              <option value="">Pick a server first</option>
+            <span data-i18n="labelServer">Server</span>
+            <select id="guild-select">
+              <option value="" data-i18n="optLoading">Loading...</option>
             </select>
           </label>
-          <p class="hint tight">
+          <label class="field">
+            <span data-i18n="labelChannels">Channels</span>
+            <select id="channel-select" multiple size="10" disabled>
+              <option value="" data-i18n="optPickServerFirst">Pick a server first</option>
+            </select>
+          </label>
+          <p class="hint tight" data-i18n="channelsHint">
             Leave the channel list untouched to search the whole server. Ctrl or Cmd click to pick
             several. Picking a channel includes anything you wrote in its threads.
           </p>
@@ -90,66 +92,75 @@
 
         <div id="dm-picker" class="hidden">
           <label class="field">
-            <span>Conversation</span>
-            <select id="dm-select"><option value="">Loading...</option></select>
+            <span data-i18n="labelConversation">Conversation</span>
+            <select id="dm-select">
+              <option value="" data-i18n="optLoading">Loading...</option>
+            </select>
           </label>
         </div>
 
         <div class="actions">
-          <button id="where-next" class="primary" type="button">Next</button>
+          <button id="where-next" class="primary" type="button" data-i18n="buttonNext">Next</button>
         </div>
         <p class="status" id="where-status" role="status" aria-live="polite"></p>
       </section>
 
       <!-- Step: filter ------------------------------------------------------>
       <section class="card step hidden" id="step-filter">
-        <h2>Narrow it down</h2>
+        <h2 data-i18n="narrowHeading">Narrow it down</h2>
         <p class="hint" id="filter-scope-label"></p>
 
         <label class="field">
-          <span>Contains</span>
-          <input type="text" id="f-contains" placeholder="Leave empty for everything" />
+          <span data-i18n="labelContains">Contains</span>
+          <input
+            type="text"
+            id="f-contains"
+            placeholder="Leave empty for everything"
+            data-i18n-attr="placeholder:placeholderContains"
+          />
         </label>
 
         <div class="choice tight">
-          <label><input type="checkbox" id="f-regex" /> Treat as a pattern</label>
-          <label><input type="checkbox" id="f-case" /> Match case</label>
+          <label><input type="checkbox" id="f-regex" /> <span data-i18n="optRegex">Treat as a pattern</span></label>
+          <label><input type="checkbox" id="f-case" /> <span data-i18n="optMatchCase">Match case</span></label>
         </div>
 
         <div class="row">
           <label class="field">
-            <span>Sent on or after</span>
+            <span data-i18n="labelAfter">Sent on or after</span>
             <input type="date" id="f-after" />
           </label>
           <label class="field">
-            <span>Sent on or before</span>
+            <span data-i18n="labelBefore">Sent on or before</span>
             <input type="date" id="f-before" />
           </label>
         </div>
 
         <div class="choice">
-          <label><input type="checkbox" id="f-attachment" /> Has an attachment</label>
-          <label><input type="checkbox" id="f-link" /> Has a link</label>
-          <label><input type="checkbox" id="f-embed" /> Has an embed</label>
-          <label><input type="checkbox" id="f-pinned" checked /> Leave pinned messages alone</label>
+          <label><input type="checkbox" id="f-attachment" /> <span data-i18n="optHasAttachment">Has an attachment</span></label>
+          <label><input type="checkbox" id="f-link" /> <span data-i18n="optHasLink">Has a link</span></label>
+          <label><input type="checkbox" id="f-embed" /> <span data-i18n="optHasEmbed">Has an embed</span></label>
+          <label><input type="checkbox" id="f-pinned" checked /> <span data-i18n="optLeavePinned">Leave pinned messages alone</span></label>
         </div>
 
         <div class="actions">
-          <button id="filter-back" class="ghost" type="button">Back</button>
-          <button id="search" class="primary" type="button">Search</button>
+          <button id="filter-back" class="ghost" type="button" data-i18n="buttonBack">Back</button>
+          <button id="search" class="primary" type="button" data-i18n="buttonSearch">Search</button>
         </div>
         <p class="status" id="filter-status" role="status" aria-live="polite"></p>
         <div class="progress hidden" id="search-progress">
           <div class="bar"><div class="fill" id="search-fill"></div></div>
-          <p class="counter" id="search-counter">Searching...</p>
+          <p class="counter" id="search-counter" data-i18n="searching">Searching...</p>
           <p class="hint tight" id="search-elapsed"></p>
-          <button id="search-stop" class="ghost small" type="button">Stop and keep what I have</button>
+          <button id="search-stop" class="ghost small" type="button" data-i18n="buttonStopSearch">
+            Stop and keep what I have
+          </button>
         </div>
       </section>
 
       <!-- Step: review ------------------------------------------------------>
       <section class="card step hidden" id="step-review">
-        <h2 id="review-heading">Review</h2>
+        <h2 id="review-heading" data-i18n="reviewHeading">Review</h2>
         <p class="hint" id="review-summary"></p>
 
         <div class="notice hidden" id="review-truncated"></div>
@@ -159,11 +170,17 @@
             <thead>
               <tr>
                 <th scope="col" class="pick">
-                  <input type="checkbox" id="pick-all" checked title="Select all or none" />
+                  <input
+                    type="checkbox"
+                    id="pick-all"
+                    checked
+                    title="Select all or none"
+                    data-i18n-attr="title:pickAllTitle,aria-label:pickAllTitle"
+                  />
                 </th>
-                <th scope="col">When</th>
-                <th scope="col">Channel</th>
-                <th scope="col">Message</th>
+                <th scope="col" data-i18n="colWhen">When</th>
+                <th scope="col" data-i18n="colChannel">Channel</th>
+                <th scope="col" data-i18n="colMessage">Message</th>
               </tr>
             </thead>
             <tbody id="results-body"></tbody>
@@ -174,53 +191,56 @@
         </div>
         <p class="hint tight" id="results-note"></p>
 
-        <h3>Save a copy</h3>
-        <p class="hint tight">
+        <h3 data-i18n="saveACopy">Save a copy</h3>
+        <p class="hint tight" data-i18n="saveHint">
           Deleting cannot be undone. Whatever you keep here is the only record you will have.
         </p>
         <div class="actions left">
-          <button class="ghost" type="button" data-export="html">Download HTML</button>
-          <button class="ghost" type="button" data-export="json">Download JSON</button>
-          <button class="ghost" type="button" data-export="csv">Download CSV</button>
+          <button class="ghost" type="button" data-export="html" data-i18n="downloadHtml">Download HTML</button>
+          <button class="ghost" type="button" data-export="json" data-i18n="downloadJson">Download JSON</button>
+          <button class="ghost" type="button" data-export="csv" data-i18n="downloadCsv">Download CSV</button>
         </div>
 
         <div class="actions">
-          <button id="review-back" class="ghost" type="button">Back</button>
-          <button id="review-next" class="danger" type="button">Continue</button>
+          <button id="review-back" class="ghost" type="button" data-i18n="buttonBack">Back</button>
+          <button id="review-next" class="danger" type="button" data-i18n="buttonContinue">Continue</button>
         </div>
         <p class="status" id="review-status" role="status" aria-live="polite"></p>
       </section>
 
       <!-- Step: run --------------------------------------------------------->
       <section class="card step hidden" id="step-run">
-        <h2>What should I do with them?</h2>
+        <h2 data-i18n="runHeading">What should I do with them?</h2>
 
         <div class="choice" id="action-choice">
-          <label><input type="radio" name="action" value="delete" checked /> Delete them</label>
+          <label><input type="radio" name="action" value="delete" checked /> <span data-i18n="actionDelete">Delete them</span></label>
           <label>
-            <input type="radio" name="action" value="edit-then-delete" /> Overwrite the text, then
-            delete
+            <input type="radio" name="action" value="edit-then-delete" />
+            <span data-i18n="actionEditThenDelete">Overwrite the text, then delete</span>
           </label>
-          <label><input type="radio" name="action" value="edit" /> Overwrite the text only</label>
+          <label>
+            <input type="radio" name="action" value="edit" />
+            <span data-i18n="actionEdit">Overwrite the text only</span>
+          </label>
         </div>
 
         <label class="field hidden" id="replacement-field">
-          <span>Replacement text</span>
+          <span data-i18n="labelReplacement">Replacement text</span>
           <input type="text" id="replacement" value="." maxlength="2000" />
         </label>
-        <p class="hint tight hidden" id="replacement-hint">
+        <p class="hint tight hidden" id="replacement-hint" data-i18n="replacementHint">
           Overwriting first means the last version anyone logged is the replacement rather than what
           you wrote. It doubles the number of requests, so it takes about twice as long.
         </p>
 
         <label class="check">
           <input type="checkbox" id="backup" checked />
-          <span>Download an HTML copy before starting</span>
+          <span data-i18n="backupLabel">Download an HTML copy before starting</span>
         </label>
         <!-- Said plainly, because the copy is the only record that will exist.
              Clearline takes no downloads permission, so it can promise the file
              was built and handed over and cannot promise it was written. -->
-        <p class="hint tight">
+        <p class="hint tight" data-i18n="backupHint">
           The copy is handed to your browser before the first deletion. Check it arrived before
           you start: Clearline does not take the downloads permission, so it cannot see where your
           browser put it.
@@ -229,13 +249,13 @@
         <div class="preflight" id="preflight"></div>
 
         <label class="field hidden" id="confirm-field">
-          <span id="confirm-label">Type the number to confirm</span>
+          <span id="confirm-label" data-i18n="confirmLabelDefault">Type the number to confirm</span>
           <input type="text" id="confirm" autocomplete="off" />
         </label>
 
         <div class="actions">
-          <button id="run-back" class="ghost" type="button">Back</button>
-          <button id="start" class="danger" type="button">Start</button>
+          <button id="run-back" class="ghost" type="button" data-i18n="buttonBack">Back</button>
+          <button id="start" class="danger" type="button" data-i18n="buttonStart">Start</button>
         </div>
         <p class="status" id="run-status" role="status" aria-live="polite"></p>
 
@@ -248,6 +268,7 @@
             aria-valuemax="100"
             aria-valuenow="0"
             aria-label="Run progress"
+            data-i18n-attr="aria-label:runProgressLabel"
           >
             <div class="fill" id="run-fill"></div>
           </div>
@@ -256,8 +277,8 @@
           <p class="counter" id="run-counter" role="status" aria-live="polite"></p>
           <p class="hint tight" id="run-eta"></p>
           <div class="actions left">
-            <button id="run-pause" class="ghost small" type="button">Pause</button>
-            <button id="run-cancel" class="ghost small" type="button">Stop</button>
+            <button id="run-pause" class="ghost small" type="button" data-i18n="buttonPause">Pause</button>
+            <button id="run-cancel" class="ghost small" type="button" data-i18n="buttonStop">Stop</button>
           </div>
         </div>
 
@@ -266,17 +287,24 @@
 
       <footer class="foot">
         <p>
-          Clearline is free, open source, and has no account or paid tier. If it saved you some
-          time,
-          <a href="https://buymeacoffee.com/judeh1l" target="_blank" rel="noopener noreferrer"
+          <span data-i18n="footerSupport">
+            Clearline is free, open source, and has no account or paid tier. If it saved you some
+            time,
+          </span>
+          <a
+            href="https://buymeacoffee.com/judeh1l"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="footerCoffee"
             >buy me a coffee</a
           >.
         </p>
-        <p class="fine">Not affiliated with, endorsed by, or connected to Discord Inc.</p>
+        <p class="fine" data-i18n="footerDisclaimer">Not affiliated with, endorsed by, or connected to Discord Inc.</p>
       </footer>
     </main>
 
     <script src="../lib/browser.js"></script>
+    <script src="../lib/i18n.js"></script>
     <script src="../lib/snowflake.js"></script>
     <script src="../lib/ratelimit.js"></script>
     <script src="../lib/api.js"></script>

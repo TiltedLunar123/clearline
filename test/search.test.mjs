@@ -6,7 +6,7 @@ import { loadLib, STUB_CHROME } from './helper.mjs';
 // across the two files: search decides which channel a message belongs to, and
 // filter decides whether that channel was picked. Testing either alone is what
 // let thread messages fall down the gap between them.
-const ctx = await loadLib(['lib/browser.js', 'lib/snowflake.js', 'lib/filter.js', 'lib/search.js'], {
+const ctx = await loadLib(['lib/browser.js', 'lib/i18n.js', 'lib/snowflake.js', 'lib/filter.js', 'lib/search.js'], {
   chrome: STUB_CHROME,
 });
 const search = ctx.CL.search;
