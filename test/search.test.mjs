@@ -2,10 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadLib, STUB_CHROME } from './helper.mjs';
 
-const ctx = await loadLib(['lib/browser.js', 'lib/snowflake.js', 'lib/search.js'], {
+// filter.js rides along because the channel scoping the app applies is split
+// across the two files: search decides which channel a message belongs to, and
+// filter decides whether that channel was picked. Testing either alone is what
+// let thread messages fall down the gap between them.
+const ctx = await loadLib(['lib/browser.js', 'lib/snowflake.js', 'lib/filter.js', 'lib/search.js'], {
   chrome: STUB_CHROME,
 });
 const search = ctx.CL.search;
+const filter = ctx.CL.filter;
 const snowflake = ctx.CL.snowflake;
 
 const ME = '111111111111111111';
@@ -443,4 +448,83 @@ test('a message by somebody else never reaches the result set', async () => {
 
   assert.equal(result.messages.length, 4);
   assert.ok(result.messages.every((m) => m.authorId === ME));
+});
+
+/* ------------------------------------------------------------------ */
+/* Threads                                                             */
+/* ------------------------------------------------------------------ */
+
+const THREAD = '777777777777777777';
+
+test('a message posted in a thread is attributed to the channel the thread hangs off', () => {
+  // Discord hands back the thread's own id on the message and the parent only
+  // in a `threads` array beside it. Without reading that array, a thread message
+  // belongs to an id the user was never offered and cannot have picked.
+  const parents = search.parentsFrom({ threads: [{ id: THREAD, parent_id: CHANNEL }] });
+  const message = search.normalise(raw(1, { channel_id: THREAD }), {
+    guildId: '888',
+    channelNameFor: (id) => (id === CHANNEL ? 'general' : ''),
+  }, parents);
+
+  assert.equal(message.channelId, THREAD, 'the delete still has to go to the thread');
+  assert.equal(message.parentId, CHANNEL);
+  assert.equal(message.channelName, 'general', 'named after the channel the user picked');
+});
+
+test('a message outside any thread carries no parent', () => {
+  const message = search.normalise(raw(1), {}, search.parentsFrom({}));
+  assert.equal(message.parentId, null);
+});
+
+test('narrowing to a channel keeps what was written in its threads', async () => {
+  // The count on the review screen is the number this whole product is built
+  // around, and it silently omitted every thread reply in the chosen channel.
+  const inChannel = raw(1);
+  const inThread = raw(2, { channel_id: THREAD });
+  const handler = () => ({
+    status: 200,
+    body: {
+      total_results: 2,
+      threads: [{ id: THREAD, parent_id: CHANNEL }],
+      messages: [[{ ...inChannel, hit: true }], [{ ...inThread, hit: true }]],
+    },
+  });
+
+  const finder = search.createFinder(clientWith({ search: handler }), noSleep);
+  const result = await finder.find({
+    scope: { guildId: '888', channelIds: [CHANNEL] },
+    authorId: ME,
+  });
+
+  assert.equal(result.messages.length, 2, 'both came back from the search');
+  const kept = filter.apply(result.messages, { channelIds: [CHANNEL] });
+  assert.equal(kept.length, 2, 'the thread reply is part of the job, not silently dropped');
+  assert.ok(kept.some((m) => m.channelId === THREAD));
+});
+
+test('history paging walks backwards from the oldest of each page', async () => {
+  // Pinned deliberately. `before` taking page[0] (the newest) re-requests the
+  // same window for ever, and every pass appends the same messages again, so a
+  // 40 message channel becomes a delete queue of hundreds of duplicates. The
+  // whole suite stayed green through exactly that mutation.
+  const all = corpus(250);
+  const cursors = [];
+  const history = (params) => {
+    cursors.push(params.before || null);
+    let pool = all;
+    if (params.before) pool = pool.filter((m) => BigInt(m.id) < BigInt(params.before));
+    return pool.slice(0, params.limit);
+  };
+
+  const finder = search.createFinder(clientWith({ search: () => {}, history }), noSleep);
+  const result = await finder.find({ scope: { channelId: CHANNEL }, authorId: ME, strategy: 'history' });
+
+  const ids = result.messages.map((m) => m.id);
+  assert.equal(new Set(ids).size, ids.length, 'no message is collected twice');
+  assert.equal(ids.length, all.length, 'and the whole channel is reached');
+  // Strictly descending cursors are what proves the window actually moved.
+  const walked = cursors.filter(Boolean).map(BigInt);
+  for (let i = 1; i < walked.length; i++) {
+    assert.ok(walked[i] < walked[i - 1], `cursor ${i} did not move backwards`);
+  }
 });

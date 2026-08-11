@@ -189,3 +189,25 @@ test('a link inside a longer sentence still counts as a link', () => {
   assert.equal(filter.hasLink({ content: 'discord.com is not a link without a scheme' }), false);
   assert.equal(filter.hasLink({ content: '' }), false);
 });
+
+test('a channel restriction covers that channel\'s threads', () => {
+  // A thread message carries the thread's id, and threads are never in the
+  // picker, so matching on channelId alone dropped every thread reply in a
+  // channel the user had explicitly chosen. Nothing said anything was missing:
+  // the count on the review screen was simply too low.
+  const inChannel = { id: '1', channelId: 'C', parentId: null, type: 0, content: 'a', attachments: [] };
+  const inThread = { id: '2', channelId: 'T', parentId: 'C', type: 0, content: 'b', attachments: [] };
+  const elsewhere = { id: '3', channelId: 'X', parentId: null, type: 0, content: 'c', attachments: [] };
+  const inOtherThread = { id: '4', channelId: 'T2', parentId: 'X', type: 0, content: 'd', attachments: [] };
+
+  const kept = filter.apply([inChannel, inThread, elsewhere, inOtherThread], { channelIds: ['C'] });
+
+  assert.deepEqual(kept.map((m) => m.id), ['1', '2']);
+});
+
+test('a channel restriction still excludes threads of channels that were not picked', () => {
+  // The point of widening the check is to stop under-counting, not to let
+  // anything in. A parent nobody picked is still out.
+  const inOtherThread = { id: '4', channelId: 'T2', parentId: 'X', type: 0, content: 'd', attachments: [] };
+  assert.equal(filter.apply([inOtherThread], { channelIds: ['C'] }).length, 0);
+});

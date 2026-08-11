@@ -125,7 +125,13 @@ CL.filter = (function () {
 
     if (f.channelIds && f.channelIds.length) {
       const allowed = new Set(f.channelIds.map(String));
-      tests.push((m) => allowed.has(String(m.channelId)));
+      // A thread's messages carry the thread id, and threads are never in the
+      // picker, so matching on channelId alone quietly dropped everything
+      // written in a thread of a channel the user had picked. The count is the
+      // one number this whole product is built around, so it silently
+      // understated the job. Parent counts as the channel; the check still
+      // requires the message to belong to something that was picked.
+      tests.push((m) => allowed.has(String(m.channelId)) || allowed.has(String(m.parentId || '')));
     }
 
     return function matches(message) {

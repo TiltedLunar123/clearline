@@ -76,13 +76,41 @@ CL.search = (function () {
    * message shapes Discord returns it is looking at. Search results, history
    * results and the object returned by a PATCH all differ slightly.
    */
-  function normalise(raw, context) {
+  /**
+   * Where a message counts as living, for naming and for scoping.
+   *
+   * A message posted in a thread carries the thread's id, not the channel the
+   * user picked, and threads are never in the picker. So a search narrowed to
+   * #general dropped everything written in #general's threads, and a forum
+   * channel, which holds no messages directly and was offered in the picker,
+   * could only ever report "Nothing matched". Neither said anything was missing.
+   *
+   * Discord answers a search with a `threads` array carrying each thread's
+   * `parent_id`, so the mapping is in the response already and does not cost a
+   * request. The thread id is still what gets deleted; this is only the channel
+   * the message belongs to.
+   */
+  function parentsFrom(body) {
+    const map = new Map();
+    for (const t of (body && body.threads) || []) {
+      if (t && t.id && t.parent_id) map.set(String(t.id), String(t.parent_id));
+    }
+    return map;
+  }
+
+  function normalise(raw, context, parents) {
     const ctx = context || {};
     const author = raw.author || {};
+    const channelId = String(raw.channel_id || ctx.channelId || '');
+    const parentId = parents && parents.get(channelId) ? parents.get(channelId) : null;
+    // Named after the parent when there is one, because "#general" is what the
+    // user picked and what they expect to read in the table.
+    const nameOf = ctx.channelNameFor ? ctx.channelNameFor(parentId || channelId) : ctx.channelName || '';
     return {
       id: String(raw.id),
-      channelId: String(raw.channel_id || ctx.channelId || ''),
-      channelName: ctx.channelNameFor ? ctx.channelNameFor(String(raw.channel_id || '')) : ctx.channelName || '',
+      channelId,
+      parentId,
+      channelName: nameOf,
       guildId: raw.guild_id ? String(raw.guild_id) : ctx.guildId || null,
       guildName: ctx.guildName || null,
       timestamp: raw.timestamp || null,
@@ -185,6 +213,7 @@ CL.search = (function () {
         const page = groups.map((group) => hitOf(group, authorId)).filter(Boolean);
         if (page.length === 0) break;
 
+        const parents = parentsFrom(body);
         for (const raw of page) {
           const id = String(raw.id);
           if (seen.has(id)) continue;
@@ -193,7 +222,7 @@ CL.search = (function () {
           // check is nothing next to the cost of being wrong once.
           if (String((raw.author || {}).id) !== String(authorId)) continue;
           seen.add(id);
-          out.push(normalise(raw, scope));
+          out.push(normalise(raw, scope, parents));
         }
 
         if (onProgress) {
@@ -327,6 +356,7 @@ CL.search = (function () {
   return {
     createFinder,
     normalise,
+    parentsFrom,
     hitOf,
     indexWaitMs,
     SEARCH_PAGE,
