@@ -260,3 +260,49 @@ test('a reset with no remaining count does not close a lane that was never full'
   assert.ok(waited >= rl.MIN_READ_DELAY_MS, `should still owe the read floor, waited ${waited}`);
   assert.ok(waited < 1000, `should not have stalled for the window, waited ${waited}`);
 });
+
+test('a halt is recoverable, because the message it throws says to start again', async () => {
+  // The halt is right while the mistake is in progress and wrong for the rest of
+  // the page's life. Nothing called reset(), so "wait a few minutes and start
+  // again" named a recovery that could not happen: every later request in that
+  // tab short-circuited on the latch before reaching the network, including the
+  // Connect that a user would try next.
+  const clock = fakeClock();
+  const limiter = rl.createLimiter({ now: clock.now, sleep: clock.sleep });
+  const tooMany = async () => fakeResponse(429, { 'retry-after': 1 }, { retry_after: 1 });
+
+  await assert.rejects(
+    () => limiter.run('DELETE /channels/1/messages', tooMany, { write: true }),
+    (err) => err.code === 'RATE_LIMIT_HALT'
+  );
+  assert.equal(limiter.status().halted, true);
+
+  // Still latched for anything that does not deliberately clear it.
+  await assert.rejects(
+    () => limiter.run('GET /users/@me', async () => fakeResponse(200, okHeaders())),
+    (err) => err.code === 'RATE_LIMIT_HALT'
+  );
+
+  limiter.reset();
+  assert.equal(limiter.status().halted, false);
+  const response = await limiter.run('GET /users/@me', async () => fakeResponse(200, okHeaders()));
+  assert.equal(response.status, 200, 'the tab works again after a deliberate restart');
+});
+
+test('recovering from a halt still owes the write floor', async () => {
+  // reset() deliberately keeps lastDispatchAt. The moment after a halt is when
+  // pacing matters most, so coming back must not hand out a free burst.
+  const clock = fakeClock();
+  const limiter = rl.createLimiter({ now: clock.now, sleep: clock.sleep });
+  const tooMany = async () => fakeResponse(429, { 'retry-after': 1 }, { retry_after: 1 });
+
+  await assert.rejects(() => limiter.run('DELETE /c/1/m', tooMany, { write: true }), () => true);
+  limiter.reset();
+
+  const before = clock.now();
+  await limiter.run('DELETE /c/1/m', async () => fakeResponse(200, okHeaders()), { write: true });
+  assert.ok(
+    clock.now() - before >= rl.MIN_WRITE_DELAY_MS,
+    `the first write after a reset waited ${clock.now() - before}ms`
+  );
+});

@@ -182,7 +182,23 @@ test('a replacement longer than Discord allows is refused up front', () => {
 });
 
 test('an unknown action is refused', () => {
-  assert.throws(() => job.createJob({ client: fakeClient(), messages: [], action: 'burn' }));
+  // Asserted on the message, not just on "it threw". An unknown action is
+  // treated as an edit further down, so with no editContent this used to throw
+  // CONTENT_EMPTY and pass for the wrong reason: deleting the allow-list check
+  // entirely left the suite green while "burn" quietly became edit-then-delete.
+  assert.throws(
+    () => job.createJob({ client: fakeClient(), messages: [], action: 'burn', editContent: 'x' }),
+    (err) => /unknown action/i.test(err.message)
+  );
+});
+
+test('every action the allow-list names is actually accepted', () => {
+  for (const action of job.ACTIONS) {
+    assert.doesNotThrow(
+      () => job.createJob({ client: fakeClient(), messages: [], action, editContent: 'x' }),
+      `${action} should be a usable action`
+    );
+  }
 });
 
 test('a system message is skipped without being attempted', async () => {

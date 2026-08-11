@@ -216,6 +216,28 @@ async function textOf(cdp, session, selector) {
   );
 }
 
+/**
+ * Whether a user could actually see and click this, not whether it exists.
+ *
+ * The distinction is load bearing here and used to hide a real bug. `textOf`
+ * reads textContent, which an element inside a `display:none` ancestor still
+ * has, and CDP's `.click()` fires on a hidden element quite happily. So the
+ * stand-down notice and the reclaim button both passed their checks while
+ * sitting inside a card that connect() had hidden for good: the notice was
+ * unreadable and the only control that could undo a stand-down was unclickable.
+ * offsetParent is null for anything display:none, itself or inherited.
+ */
+async function isVisible(cdp, session, selector) {
+  return cdp.evaluate(
+    session,
+    `(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      if (!el) return false;
+      return el.offsetParent !== null && !el.disabled;
+    })()`
+  );
+}
+
 async function main() {
   const { dir, extensionId } = await buildTestVariant();
   const { server, port: filePort } = await serveDir(path.join(ROOT, 'test-pages'));
@@ -360,10 +382,8 @@ async function main() {
     check('one tab', 'a second app tab refuses to run alongside the first',
       /already open in another tab/i.test(blocked || ''), `status said ${JSON.stringify(blocked)}`);
 
-    const takeoverOffered = await cdp.evaluate(
-      second.session,
-      "!document.getElementById('takeover').classList.contains('hidden')"
-    );
+    // Reachability, not just the absence of a class. See isVisible.
+    const takeoverOffered = await isVisible(cdp, second.session, '#takeover');
     check('one tab', 'taking over is offered rather than being a dead end', takeoverOffered === true);
 
     const stillBlank = await textOf(cdp, second.session, '#account');
@@ -382,6 +402,16 @@ async function main() {
     ).catch(() => '<never told>');
     check('one tab', 'taking over stops the tab it replaced',
       /took over/i.test(supersededMsg), `first tab said ${JSON.stringify(supersededMsg)}`);
+
+    // The tab being stopped has already connected, so its connect card is gone.
+    // Both of these used to live inside that card, which meant the notice was
+    // written where nobody could read it and the one control wired to a path
+    // that can undo a stand-down could not be clicked. A tab that has stopped
+    // should say so, on screen, and offer the way back.
+    check('one tab', 'a stopped tab shows its notice where it can actually be read',
+      (await isVisible(cdp, app.session, '#status')) === true);
+    check('one tab', 'a stopped tab still offers a reachable way to take the queue back',
+      (await isVisible(cdp, app.session, '#takeover')) === true);
 
     // Disabling the buttons is not the same as stopping. The code that runs
     // afterwards used to turn them straight back on, so this drives the two
@@ -485,7 +515,11 @@ async function main() {
     await closeTab(cdp, rival);
 
     // The first tab takes the queue back, which is a deliberate click and the
-    // documented way out of "another tab has it".
+    // documented way out of "another tab has it". Checked as reachable before
+    // it is clicked, because a programmatic click works on a hidden button and
+    // that is exactly how this path stayed green while being impossible.
+    check('one tab', 'the reclaim control is reachable before it is clicked',
+      (await isVisible(cdp, reclaimer.session, '#takeover')) === true);
     await cdp.evaluate(reclaimer.session, "document.getElementById('takeover').click()");
     await sleep(2000);
 
@@ -559,10 +593,22 @@ async function main() {
       `completed in ${Date.now() - before429}ms, which is faster than the 1s Discord asked for`);
     check('failures', '429 retried rather than giving up', meHits >= 2, `/users/@me was hit ${meHits} times`);
 
-    // The token must never be written to storage.
-    const stored = await cdp.evaluate(sw, 'chrome.storage.local.get(null).then(o => JSON.stringify(o))');
+    // The token must never be written to storage. Both areas, because the only
+    // one the extension actually writes is `session` (it remembers the app tab
+    // id there), so checking `local` alone asserted that an area nothing touches
+    // stays empty: true no matter what the code did, including if it had started
+    // writing the token to session the line before.
+    const stored = await cdp.evaluate(
+      sw,
+      `Promise.all([
+        chrome.storage.local.get(null),
+        chrome.storage.session.get(null),
+      ]).then(([local, session]) => JSON.stringify({ local, session }))`
+    );
     check('failures', 'token is never written to extension storage',
       !String(stored).includes(EXPECTED_TOKEN), `storage contained ${stored}`);
+    check('failures', 'the storage check is looking at an area that is actually written',
+      /appTabId/.test(String(stored)), `storage was ${stored}, so the assertion above proves nothing`);
 
     /* ---------------- group: operations ---------------- */
 
