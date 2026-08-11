@@ -11,6 +11,20 @@
   with an English plural rule bolted on, numbers use your locale's separators, and the
   box that asks you to type a count back accepts the number exactly as the sentence
   above it prints it.
+- The report says how many messages were never attempted, names each failure by
+  time, channel and text rather than by raw id, and says how many more there are
+  when the list is longer than fifty. There is a Search again button.
+- The review table goes past its first 300 rows, shift-click picks a range, and
+  each row links to the message in Discord so you can see its context before
+  deciding to keep it.
+- Closing the tab during a run asks first, and a run expected to take more than a
+  few minutes says the tab has to stay open.
+- The tab title shows how far a run has got, so it can be left in the background.
+- Enter runs the search, focus follows the step you are on, and the run announces
+  its progress to a screen reader.
+- The search shows elapsed time, and says how much it has read on the slower path
+  that walks a channel directly, which previously sat on an unchanging line for
+  minutes.
 
 ### Fixed
 
@@ -46,23 +60,6 @@
   review screen with a partial set of results.
 - Double clicking Connect starts one connection, and two quick clicks on the
   toolbar icon open one tab.
-
-### Added
-
-- The report says how many messages were never attempted, names each failure by
-  time, channel and text rather than by raw id, and says how many more there are
-  when the list is longer than fifty. There is a Search again button.
-- The review table goes past its first 300 rows, shift-click picks a range, and
-  each row links to the message in Discord so you can see its context before
-  deciding to keep it.
-- Closing the tab during a run asks first, and a run expected to take more than a
-  few minutes says the tab has to stay open.
-- The tab title shows how far a run has got, so it can be left in the background.
-- Enter runs the search, focus follows the step you are on, and the run announces
-  its progress to a screen reader.
-- The search shows elapsed time, and says how much it has read on the slower path
-  that walks a channel directly, which previously sat on an unchanging line for
-  minutes.
 
 ### Changed
 
