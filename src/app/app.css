@@ -344,8 +344,11 @@ button:disabled {
   border-bottom: 0;
 }
 
+/* The three narrow columns. The channel name wrapped mid-word once the table
+   got taller, which reads as two channels rather than one. */
 .results td:first-child,
-.results td:nth-child(2) {
+.results td:nth-child(2),
+.results td:nth-child(3) {
   white-space: nowrap;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
