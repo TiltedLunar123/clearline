@@ -42,7 +42,26 @@
    * the "tabs" permission; only the privileged fields are withheld, and this
    * needs none of them.
    */
-  async function openApp() {
+  /**
+   * Serialised for the same reason claims are.
+   *
+   * Reading the remembered tab id and writing a new one are two awaits with a
+   * gap between them, so two toolbar clicks close together both read "no tab"
+   * and both create one. That is exactly the duplicate this function exists to
+   * prevent, and a duplicate app tab is a second limiter.
+   */
+  let opens = Promise.resolve();
+
+  function openApp() {
+    const result = opens.then(() => resolveOpen());
+    opens = result.then(
+      () => {},
+      () => {}
+    );
+    return result;
+  }
+
+  async function resolveOpen() {
     const stored = await CL.api.storage.session.get('appTabId');
     if (typeof stored.appTabId === 'number') {
       try {
@@ -162,16 +181,26 @@
     const tabs = await CL.api.tabs.query({ url: DISCORD_MATCHES });
     if (tabs.length === 0) return { ok: false, reason: 'no-tab' };
 
+    // Two different failures used to collapse into one answer, and the wrong
+    // one. A tab that replies `ok:false` is signed out. A tab that throws has no
+    // listener at all, which is what every already-open Discord tab looks like
+    // after an install or an update, because neither browser injects content
+    // scripts retroactively and this extension takes no scripting permission to
+    // do it itself. Reporting both as "not signed in" meant the first thing a
+    // new user ever saw was advice that could not work: they were signed in, and
+    // the fix was to reload the tab, which nothing told them.
+    let answered = false;
     for (const tab of tabs) {
       try {
         const reply = await CL.api.tabs.sendMessage(tab.id, { type: 'clearline:read-token' });
         if (reply && reply.ok) return { ok: true, token: reply.token };
+        answered = true;
       } catch {
-        // A tab still loading has no listener yet. Try the next one before
-        // telling the user to open Discord, since most people have several.
+        // A tab still loading has no listener yet either. Try the next one
+        // before deciding, since most people have several open.
       }
     }
-    return { ok: false, reason: 'not-logged-in' };
+    return { ok: false, reason: answered ? 'not-logged-in' : 'needs-reload' };
   }
 
   CL.api.runtime.onMessage.addListener((message, sender, sendResponse) => {
