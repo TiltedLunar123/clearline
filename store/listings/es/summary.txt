@@ -1,0 +1,1 @@
+Busca, exporta y borra en masa tus propios mensajes de Discord. Tu token nunca sale del navegador.

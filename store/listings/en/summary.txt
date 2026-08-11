@@ -1,0 +1,1 @@
+Search, export and bulk delete your own Discord messages. Your token never leaves the browser.

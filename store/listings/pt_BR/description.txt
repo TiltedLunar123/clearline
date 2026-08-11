@@ -1,0 +1,76 @@
+O Clearline encontra as mensagens que você escreveu no Discord, mostra elas para você e
+deixa você salvar ou remover.
+
+O Discord não oferece nenhum jeito de apagar mais de uma mensagem por vez. O Clearline
+passa por elas para você, com cuidado, e mostra exatamente o que vai mexer antes de
+mexer em qualquer coisa.
+
+COMO FUNCIONA
+
+Abra o Discord em uma aba, entre na sua conta e clique no ícone do Clearline. São cinco
+passos, uma tela por vez.
+
+1. Conectar. O Clearline lê sua sessão da aba do Discord que você já tem aberta.
+2. Onde. Escolha um servidor, alguns canais dele ou uma conversa privada.
+3. Filtrar. Filtre por texto ou por um padrão, por intervalo de datas, por ter anexo,
+   link ou prévia de link, e escolha se quer deixar as mensagens fixadas em paz.
+4. Revisar. Veja a contagem e as mensagens em si. Desmarque o que quiser manter. Salve
+   uma cópia em HTML, JSON ou CSV.
+5. Agir. Apague, sobrescreva o texto, ou sobrescreva e depois apague. Acompanhe,
+   pause ou interrompa.
+
+CUIDADOSO POR PADRÃO
+
+Não dá para chegar ao botão de apagar sem antes ver uma contagem e as mensagens por
+trás dela. Antes de começar você recebe uma frase direta dizendo quantas mensagens, em
+que lugar, com que filtro, quanto tempo deve levar e que não dá para desfazer. Runs
+acima de cem mensagens pedem que você digite o número de volta. A cópia é montada e
+entregue ao seu navegador antes da primeira exclusão, então se ela for falhar, falha
+enquanto as mensagens ainda existem.
+
+A contagem só inclui mensagens que o Discord realmente deixa você apagar. Avisos de
+entrada e outras mensagens de sistema são atribuídos a você e aparecem nos resultados,
+mas ninguém consegue apagá-los, então o Clearline os nomeia à parte e deixa intactos em
+vez de prometer mais do que consegue entregar.
+
+No fim você recebe um relatório que separa o que falhou do que foi deixado de lado, e
+oferece repetir as falhas.
+
+NO RITMO CERTO PARA SUA CONTA SOBREVIVER
+
+Esta é a parte que mais importa e a mais fácil de errar.
+
+Toda requisição passa por uma fila única, uma de cada vez, com um intervalo entre
+escritas que não dá para diminuir. As respostas de limite de taxa são lidas e
+respeitadas. Quatro seguidas param a execução, porque continuar gerando essas respostas
+é o que faz um IP ser bloqueado por uma hora.
+
+Só uma aba do Clearline funciona por vez, já que uma segunda aba seria uma segunda fila
+e o Discord veria o dobro do ritmo. A segunda avisa isso e oferece assumir o controle.
+
+SEU TOKEN
+
+O Discord não tem como autorizar um aplicativo a ler ou apagar seu próprio histórico de
+mensagens, então ferramentas como esta trabalham com a sessão que seu navegador já tem.
+Ser franco sobre isso importa mais do que disfarçar.
+
+O Clearline lê sua sessão de uma aba aberta do Discord, só quando você clica em
+Conectar. Ela fica na memória daquela aba, nunca é gravada em armazenamento e some
+quando você fecha a aba. O único site que a extensão alcança é o discord.com. Não tem
+conta, não tem servidor, não tem análise de uso nem telemetria.
+
+A extensão pede uma única permissão, armazenamento, usada para lembrar um número de aba.
+
+ANTES DE USAR
+
+Automatizar uma conta de usuário vai contra os termos de serviço do Discord, e tem gente
+que já sofreu punição por isso. O Clearline se controla muito mais que as alternativas,
+o que reduz as chances sem eliminá-las. Se perder a conta seria um problema sério,
+exporte primeiro e decida se a exclusão vale a pena.
+
+Existe um único link na extensão, para uma página do Buy Me a Coffee, no rodapé da
+janela. É opcional, é um link e nada mais, e nada é pedido àquele site a menos que você
+clique.
+
+O Clearline é gratuito e de código aberto sob a licença MIT. Não tem afiliação, apoio
+nem ligação com a Discord Inc.

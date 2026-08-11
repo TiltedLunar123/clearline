@@ -1,0 +1,83 @@
+Clearline findet die Nachrichten, die du auf Discord geschrieben hast, zeigt sie dir und
+lässt dich sie sichern oder entfernen.
+
+Discord bietet keine Möglichkeit, mehr als eine Nachricht auf einmal zu löschen.
+Clearline arbeitet sie für dich ab, sorgfältig, und zeigt dir genau, was es anfassen
+wird, bevor es irgendetwas anfasst.
+
+SO FUNKTIONIERT ES
+
+Öffne Discord in einem Tab, melde dich an und klicke auf das Clearline-Symbol. Es geht
+in fünf Schritten, immer ein Bildschirm auf einmal.
+
+1. Verbinden. Clearline liest deine Sitzung aus dem Discord-Tab, den du ohnehin offen
+   hast.
+2. Wo. Wähle einen Server, einzelne Kanäle davon oder eine Direktnachricht.
+3. Filtern. Filtere nach Text oder Muster, nach Zeitraum, danach ob eine Nachricht
+   einen Anhang, einen Link oder eine Linkvorschau hat, und entscheide, ob angepinnte
+   Nachrichten in Ruhe bleiben.
+4. Prüfen. Sieh dir die Anzahl und die Nachrichten selbst an. Hake ab, was du behalten
+   willst. Sichere eine Kopie als HTML, JSON oder CSV.
+5. Ausführen. Löschen, den Text überschreiben, oder überschreiben und dann löschen. Sieh
+   zu, pausiere oder brich ab.
+
+VON HAUS AUS VORSICHTIG
+
+Der Löschknopf ist nicht erreichbar, ohne vorher eine Anzahl und die dazugehörigen
+Nachrichten gesehen zu haben. Vor dem Start steht ein klarer Satz da: wie viele
+Nachrichten, an welchem Ort, passend worauf, wie lange es ungefähr dauert, und dass es
+sich nicht rückgängig machen lässt. Ab hundert Nachrichten musst du die Zahl abtippen.
+Die Kopie wird vor der ersten Löschung erstellt und an deinen Browser übergeben, nicht
+nebenher, damit sie scheitert, solange die Nachrichten noch da sind.
+
+Die Anzahl umfasst nur Nachrichten, die Discord dich auch wirklich löschen lässt.
+Beitrittshinweise und ähnliche Systemmeldungen werden dir zugeschrieben und tauchen in
+den Ergebnissen auf, aber niemand kann sie löschen. Clearline benennt sie deshalb
+gesondert und lässt sie in Ruhe, statt mehr zu versprechen, als es halten kann.
+
+Danach bekommst du einen Bericht, der Fehlschläge von Übersprungenem trennt und anbietet,
+die Fehlschläge zu wiederholen.
+
+IN EINEM TEMPO, DAS DEIN KONTO ÜBERSTEHT
+
+Das ist der wichtigste Teil und der, den man am leichtesten falsch macht.
+
+Jede Anfrage läuft durch eine einzige Warteschlange, eine nach der anderen, mit einem
+Abstand zwischen Schreibvorgängen, den du nicht verringern kannst. Antworten zur
+Ratenbegrenzung werden gelesen und eingehalten. Vier hintereinander stoppen den
+Durchlauf, denn weiter welche zu erzeugen ist genau das, was eine IP-Adresse für eine
+Stunde sperren lässt.
+
+Es arbeitet immer nur ein Clearline-Tab, weil ein zweiter Tab eine zweite Warteschlange
+wäre und Discord das doppelte Tempo sähe. Der zweite sagt dir das und bietet an zu
+übernehmen.
+
+DEIN TOKEN
+
+Discord hat keine Möglichkeit, einer App das Lesen oder Löschen deines eigenen
+Nachrichtenverlaufs zu erlauben, also arbeiten Werkzeuge wie dieses mit der Sitzung, die
+dein Browser ohnehin hält. Das offen zu sagen ist wichtiger, als darüber hinwegzugehen.
+
+Clearline liest deine Sitzung aus einem offenen Discord-Tab, und nur dann, wenn du auf
+Verbinden klickst. Sie bleibt im Speicher dieses Tabs, wird nie in den Speicher
+geschrieben und ist weg, sobald du den Tab schließt. Die einzige Seite, die die
+Erweiterung erreichen kann, ist discord.com. Kein Konto, kein Server, keine Analyse,
+keine Telemetrie.
+
+Die Erweiterung fordert eine einzige Berechtigung an, Speicher, und merkt sich damit eine
+einzelne Tab-Nummer.
+
+BEVOR DU ES BENUTZT
+
+Ein Nutzerkonto zu automatisieren verstößt gegen Discords Nutzungsbedingungen, und es
+gibt Leute, deren Konten dafür belangt wurden. Clearline bremst sich weit stärker als die
+Alternativen, was die Wahrscheinlichkeit senkt, aber nicht beseitigt. Wenn der Verlust
+des Kontos ein ernstes Problem wäre, exportiere erst und überlege dann, ob das Löschen es
+wert ist.
+
+Es gibt einen einzigen Link in der Erweiterung, zu einer Buy-Me-a-Coffee-Seite, unten im
+Fenster. Er ist optional, er ist ein Link und nichts weiter, und von dieser Seite wird
+nichts angefordert, solange du nicht klickst.
+
+Clearline ist kostenlos und quelloffen unter der MIT-Lizenz. Nicht verbunden mit,
+unterstützt von oder in Beziehung zu Discord Inc.

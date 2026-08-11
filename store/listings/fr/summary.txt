@@ -1,0 +1,1 @@
+Recherchez, exportez et supprimez en masse vos messages Discord. Votre jeton ne quitte jamais le navigateur.

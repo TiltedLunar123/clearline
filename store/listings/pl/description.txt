@@ -1,0 +1,76 @@
+Clearline znajduje wiadomości, które napisałeś na Discordzie, pokazuje ci je i pozwala je
+zapisać albo usunąć.
+
+Discord nie daje żadnego sposobu na usunięcie więcej niż jednej wiadomości naraz.
+Clearline przechodzi je za ciebie, ostrożnie, i pokazuje dokładnie, czego zamierza
+dotknąć, zanim czegokolwiek dotknie.
+
+JAK TO DZIAŁA
+
+Otwórz Discorda w karcie, zaloguj się i kliknij ikonę Clearline. Idzie to w pięciu
+krokach, po jednym ekranie naraz.
+
+1. Połącz. Clearline czyta twoją sesję z karty Discorda, którą i tak masz otwartą.
+2. Gdzie. Wybierz serwer, kilka jego kanałów albo rozmowę prywatną.
+3. Zawęź. Filtruj po tekście lub wzorcu, po zakresie dat, po tym czy wiadomość ma
+   załącznik, link albo podgląd linku, i zdecyduj, czy zostawić przypięte w spokoju.
+4. Sprawdź. Zobacz liczbę i same wiadomości. Odznacz to, co chcesz zachować. Zapisz
+   kopię w HTML, JSON albo CSV.
+5. Działaj. Usuń je, nadpisz tekst, albo nadpisz i potem usuń. Patrz, jak idzie,
+   wstrzymaj albo zatrzymaj.
+
+OSTROŻNY DOMYŚLNIE
+
+Do przycisku usuwania nie da się dojść bez wcześniejszego zobaczenia liczby i samych
+wiadomości. Przed startem dostajesz jedno jasne zdanie: ile wiadomości, w jakim miejscu,
+pasujących do czego, ile to mniej więcej potrwa i że nie da się tego cofnąć. Przy ponad
+stu wiadomościach trzeba wpisać tę liczbę z powrotem. Kopia jest przygotowywana i
+przekazywana przeglądarce przed pierwszym usunięciem, więc jeśli ma się nie udać, nie
+uda się, póki wiadomości jeszcze istnieją.
+
+Liczba obejmuje tylko wiadomości, które Discord rzeczywiście pozwoli ci usunąć.
+Powiadomienia o dołączeniu i inne wiadomości systemowe są przypisane tobie i wracają w
+wynikach, ale nikt nie może ich usunąć, więc Clearline wymienia je osobno i zostawia w
+spokoju, zamiast obiecywać więcej, niż jest w stanie dowieźć.
+
+Na koniec dostajesz raport, który oddziela to, co się nie udało, od tego, co pominięto, i
+proponuje ponowienie nieudanych.
+
+W TEMPIE, KTÓRE TWOJE KONTO PRZETRWA
+
+To najważniejsza część i ta, którą najłatwiej zepsuć.
+
+Każde żądanie idzie przez jedną kolejkę, po jednym naraz, z odstępem między zapisami,
+którego nie da się zmniejszyć. Odpowiedzi o ograniczeniu tempa są odczytywane i
+respektowane. Cztery pod rząd zatrzymują zadanie, bo dalsze ich generowanie jest właśnie
+tym, co kończy się blokadą adresu IP na godzinę.
+
+Naraz działa tylko jedna karta Clearline, bo druga byłaby drugą kolejką i Discord
+zobaczyłby dwa razy większe tempo. Druga karta mówi ci o tym i proponuje przejęcie.
+
+TWÓJ TOKEN
+
+Discord nie ma sposobu, by upoważnić aplikację do czytania albo usuwania twojej własnej
+historii wiadomości, więc narzędzia takie jak to pracują na sesji, którą przeglądarka i
+tak trzyma. Powiedzenie tego wprost znaczy więcej niż omijanie tematu.
+
+Clearline czyta twoją sesję z otwartej karty Discorda, i tylko wtedy, gdy klikniesz
+Połącz. Zostaje w pamięci tej karty, nigdy nie trafia do pamięci trwałej i znika, gdy ją
+zamkniesz. Jedyna witryna, do której rozszerzenie sięga, to discord.com. Nie ma konta,
+serwera, analityki ani telemetrii.
+
+Rozszerzenie prosi o jedno uprawnienie, pamięć, i używa go do zapamiętania numeru karty.
+
+ZANIM ZACZNIESZ
+
+Automatyzowanie konta użytkownika jest niezgodne z regulaminem Discorda i zdarza się, że
+konta obrywają za to karę. Clearline hamuje się znacznie bardziej niż alternatywy, co
+zmniejsza ryzyko, ale go nie usuwa. Jeśli utrata konta byłaby poważnym problemem,
+najpierw wyeksportuj i zastanów się, czy usuwanie jest tego warte.
+
+W rozszerzeniu jest jeden link, do strony Buy Me a Coffee, na dole okna. Jest opcjonalny,
+jest linkiem i niczym więcej, i nic nie jest z tej strony pobierane, dopóki go nie
+klikniesz.
+
+Clearline jest darmowy i ma otwarty kod na licencji MIT. Bez powiązania, poparcia ani
+związku z Discord Inc.

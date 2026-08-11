@@ -1,0 +1,76 @@
+Clearline, Discord'da yazdığın mesajları bulur, sana gösterir ve saklamana ya da
+kaldırmana izin verir.
+
+Discord'da bir seferde birden fazla mesajı silmenin hiçbir yolu yok. Clearline bunları
+senin yerine, dikkatle tek tek geçer ve hiçbir şeye dokunmadan önce tam olarak neye
+dokunacağını gösterir.
+
+NASIL ÇALIŞIR
+
+Bir sekmede Discord'u aç, giriş yap ve Clearline simgesine tıkla. Beş adımda, her seferde
+tek ekran olarak ilerler.
+
+1. Bağlan. Clearline oturumunu, zaten açık olan Discord sekmenden okur.
+2. Nerede. Bir sunucu, onun bazı kanalları ya da bir özel mesaj seç.
+3. Daralt. Metne ya da bir kalıba, tarih aralığına, mesajın eki, bağlantısı veya bağlantı
+   önizlemesi olup olmadığına göre filtrele ve sabitlenmiş mesajlara dokunulup
+   dokunulmayacağına karar ver.
+4. Gözden geçir. Sayıyı ve mesajların kendisini gör. Saklamak istediklerinin işaretini
+   kaldır. HTML, JSON veya CSV olarak bir kopya kaydet.
+5. Uygula. Sil, metnin üzerine yaz, ya da üzerine yazıp sonra sil. İlerlemeyi izle,
+   duraklat veya durdur.
+
+VARSAYILAN OLARAK TEMKİNLİ
+
+Önce bir sayıyı ve arkasındaki mesajları görmeden silme düğmesine ulaşılamaz. Başlamadan
+önce sade bir cümle görürsün: kaç mesaj, hangi yerde, neyle eşleşen, aşağı yukarı ne
+kadar süreceği ve geri alınamayacağı. Yüzün üzerindeki işlemlerde sayıyı geri yazman
+istenir. Kopya, ilk silmeden önce hazırlanıp tarayıcına teslim edilir; yani başarısız
+olacaksa mesajlar hâlâ dururken olur.
+
+Sayıya yalnızca Discord'un gerçekten silmene izin vereceği mesajlar dahildir. Katılma
+bildirimleri ve benzeri sistem mesajları sana atfedilir ve sonuçlarda görünür ama kimse
+onları silemez; bu yüzden Clearline onları ayrıca adlandırır ve elinden geleninden
+fazlasını vaat etmek yerine dokunmadan bırakır.
+
+Sonunda, başarısız olanları atlananlardan ayıran ve başarısızları tekrar denemeyi öneren
+bir rapor alırsın.
+
+HESABININ DAYANACAĞI BİR HIZDA
+
+Bu, en çok önem taşıyan ve en kolay yanlış yapılan kısım.
+
+Her istek tek bir kuyruktan, teker teker geçer ve yazma işlemleri arasında düşüremeyeceğin
+bir gecikme vardır. Hız sınırı yanıtları okunur ve uygulanır. Üst üste dört tanesi işlemi
+durdurur, çünkü bunları üretmeye devam etmek tam olarak bir IP adresinin bir saatliğine
+engellenmesine yol açan şeydir.
+
+Aynı anda yalnızca bir Clearline sekmesi çalışır, çünkü ikinci sekme ikinci bir kuyruk
+olur ve Discord iki katı hız görür. İkinci sekme bunu söyler ve devralmayı önerir.
+
+JETONUN
+
+Discord'un, bir uygulamaya kendi mesaj geçmişini okuma ya da silme yetkisi vermenin bir
+yolu yok; bu yüzden bunun gibi araçlar tarayıcının zaten elinde tuttuğu oturumla çalışır.
+Bunu açıkça söylemek, üstünü örtmekten daha önemli.
+
+Clearline oturumunu açık bir Discord sekmesinden, yalnızca Bağlan'a tıkladığında okur. O
+sekmenin belleğinde kalır, hiçbir zaman depolamaya yazılmaz ve sekmeyi kapattığında yok
+olur. Uzantının ulaşabildiği tek site discord.com. Hesap yok, sunucu yok, analiz yok,
+telemetri yok.
+
+Uzantı tek bir izin ister, depolama, ve onu tek bir sekme numarasını hatırlamak için
+kullanır.
+
+KULLANMADAN ÖNCE
+
+Bir kullanıcı hesabını otomatikleştirmek Discord'un hizmet şartlarına aykırıdır ve bu
+yüzden hesabına yaptırım uygulanan insanlar var. Clearline kendini alternatiflerden çok
+daha fazla sınırlar; bu ihtimali düşürür ama ortadan kaldırmaz. Hesabı kaybetmek ciddi
+bir sorun olacaksa, önce dışa aktar ve silmenin buna değip değmediğine karar ver.
+
+Uzantıda tek bir bağlantı var, pencerenin altında bir Buy Me a Coffee sayfasına. İsteğe
+bağlı, sadece bir bağlantı ve tıklamadığın sürece o siteden hiçbir şey istenmez.
+
+Clearline ücretsiz ve MIT lisansıyla açık kaynaktır. Discord Inc. ile bağlantılı,
+tarafından onaylanmış ya da ilişkili değildir.

@@ -1,0 +1,1 @@
+Cerca, esporta ed elimina in blocco i tuoi messaggi di Discord. Il tuo token non lascia mai il browser.

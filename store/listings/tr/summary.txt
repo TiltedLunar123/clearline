@@ -1,0 +1,1 @@
+Kendi Discord mesajlarını ara, dışa aktar ve toplu sil. Jetonun tarayıcıdan asla çıkmaz.

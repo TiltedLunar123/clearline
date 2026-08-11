@@ -4,6 +4,20 @@ Paste-ready listing text for every language the extension ships in, for both
 stores. The English original and all the review answers stay in
 [LISTING.md](LISTING.md); this file is only the translations.
 
+## One file per field
+
+If you would rather not select text out of this document, `npm run listings`
+writes every field to its own plain file:
+
+```
+store/listings/<locale>/name.txt
+store/listings/<locale>/summary.txt
+store/listings/<locale>/description.txt
+```
+
+Open one, select all, paste. Those files are generated from this one, so edit
+here and regenerate rather than editing them.
+
 ## How to use this
 
 **Chrome Web Store.** Item, then the language dropdown at the top of the

@@ -1,0 +1,80 @@
+Clearline finds the messages you wrote on Discord, shows them to you, and lets you
+save or remove them.
+
+Discord gives you no way to delete more than one message at a time. Clearline works
+through them for you, carefully, and shows you exactly what it is about to touch
+before it touches anything.
+
+HOW IT WORKS
+
+Open Discord in a tab and sign in, then click the Clearline icon. It goes in five
+steps, one screen at a time.
+
+1. Connect. Clearline reads your session from the Discord tab you already have open.
+2. Where. Pick a server, some of its channels, or a direct message.
+3. Narrow. Filter by text or a pattern, a date range, whether a message has an
+   attachment, a link or an embed, and whether to leave pinned messages alone.
+4. Review. See the count and the messages themselves. Untick anything you want to
+   keep. Save a copy as HTML, JSON or CSV.
+5. Act. Delete them, overwrite the text, or overwrite and then delete. Watch it run,
+   pause it, or stop it.
+
+CAREFUL BY DEFAULT
+
+The delete button cannot be reached without first seeing a count and the messages
+behind it. Before a run starts you get a plain sentence saying how many messages, in
+which place, matching what, roughly how long it will take, and that it cannot be
+undone. Runs over a hundred messages ask you to type the count back. A copy is built
+and handed to your browser before the first deletion rather than alongside it, so if
+building the export is going to fail it fails while the messages still exist. Where
+your browser puts it after that is between you and your browser: Clearline does not
+take the downloads permission, so it cannot watch the save itself.
+
+The count only includes messages Discord will actually let you delete. Join notices
+and similar system messages are attributed to you and come back in search results,
+but nobody can delete them, so Clearline names them separately and leaves them alone
+instead of promising more than it can deliver.
+
+Afterwards you get a report that separates what failed from what was skipped, and
+offers to retry the failures.
+
+PACED SO YOUR ACCOUNT SURVIVES
+
+This is the part that matters most and the part that is easiest to get wrong.
+
+Every request goes through one queue, one at a time, with a delay between writes that
+you cannot lower. Rate limit responses are read and honoured. Four in a row stop the
+run, because continuing to generate them is what gets an IP address blocked for an
+hour.
+
+Only one Clearline tab works at a time, since a second tab would be a second queue
+and Discord would see twice the rate. A second tab tells you so and offers to take
+over.
+
+YOUR TOKEN
+
+Discord has no way to authorise an app to read or delete your own message history, so
+tools like this work from the session your browser already holds. Being plain about
+that matters more than glossing over it.
+
+Clearline reads your session from an open Discord tab, only when you click Connect.
+It stays in that tab's memory, is never written to storage, and is gone when you
+close the tab. The only site the extension can reach is discord.com. There is no
+account, no server, no analytics and no telemetry.
+
+The extension asks for one permission, storage, which it uses to remember a single
+tab number.
+
+BEFORE YOU USE IT
+
+Automating a user account is against Discord's terms of service, and people do get
+actioned for it. Clearline paces itself far more carefully than the alternatives,
+which lowers the odds without removing them. If losing the account would be a serious
+problem, export first and decide whether the deletion is worth it.
+
+There is one link in the extension, to a Buy Me a Coffee page, at the bottom of the
+window. It is optional, it is a link and nothing more, and nothing is requested from
+that site unless you click it.
+
+Clearline is free and open source under the MIT licence. It is not affiliated with,
+endorsed by, or connected to Discord Inc.

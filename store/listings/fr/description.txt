@@ -1,0 +1,81 @@
+Clearline retrouve les messages que vous avez écrits sur Discord, vous les montre, et
+vous laisse les enregistrer ou les supprimer.
+
+Discord ne propose aucun moyen de supprimer plus d'un message à la fois. Clearline les
+traite pour vous, avec précaution, et vous montre exactement ce qu'il s'apprête à
+toucher avant de toucher quoi que ce soit.
+
+COMMENT ÇA MARCHE
+
+Ouvrez Discord dans un onglet, connectez-vous, puis cliquez sur l'icône Clearline. Cela
+se fait en cinq étapes, un écran à la fois.
+
+1. Connexion. Clearline lit votre session depuis l'onglet Discord que vous avez déjà
+   ouvert.
+2. Où. Choisissez un serveur, certains de ses salons, ou un message privé.
+3. Filtrer. Filtrez par texte ou par motif, par plage de dates, selon qu'un message
+   contient une pièce jointe, un lien ou un aperçu, et choisissez de laisser ou non les
+   messages épinglés tranquilles.
+4. Vérifier. Voyez le nombre et les messages eux-mêmes. Décochez ce que vous voulez
+   garder. Enregistrez une copie en HTML, JSON ou CSV.
+5. Agir. Supprimez-les, remplacez le texte, ou remplacez puis supprimez. Suivez
+   l'exécution, mettez-la en pause ou arrêtez-la.
+
+PRUDENT PAR DÉFAUT
+
+Le bouton de suppression est inaccessible tant que vous n'avez pas vu un décompte et les
+messages qui vont avec. Avant le démarrage, une phrase claire indique combien de
+messages, à quel endroit, correspondant à quoi, combien de temps cela prendra environ,
+et que c'est irréversible. Au-delà de cent messages, il faut retaper le nombre. La copie
+est constituée et remise à votre navigateur avant la première suppression, donc si elle
+doit échouer, elle échoue pendant que les messages existent encore.
+
+Le décompte ne compte que les messages que Discord vous laissera réellement supprimer.
+Les avis d'arrivée et autres messages système vous sont attribués et remontent dans les
+résultats, mais personne ne peut les supprimer : Clearline les nomme à part et les
+laisse intacts plutôt que de promettre plus qu'il ne peut tenir.
+
+À la fin, un rapport sépare ce qui a échoué de ce qui a été laissé de côté, et propose
+de réessayer les échecs.
+
+À UN RYTHME QUE VOTRE COMPTE SUPPORTE
+
+C'est la partie la plus importante, et la plus facile à rater.
+
+Chaque requête passe par une file unique, une à la fois, avec un délai entre écritures
+que vous ne pouvez pas réduire. Les réponses de limitation sont lues et respectées.
+Quatre d'affilée arrêtent l'exécution, car continuer à en provoquer est précisément ce
+qui fait bloquer une adresse IP pendant une heure.
+
+Un seul onglet Clearline fonctionne à la fois, puisqu'un deuxième onglet serait une
+deuxième file et Discord verrait un rythme doublé. Le second vous le dit et propose de
+prendre la main.
+
+VOTRE JETON
+
+Discord n'offre aucun moyen d'autoriser une application à lire ou supprimer votre propre
+historique, donc les outils de ce type travaillent à partir de la session que votre
+navigateur détient déjà. Le dire franchement compte davantage que de l'esquiver.
+
+Clearline lit votre session depuis un onglet Discord ouvert, uniquement quand vous
+cliquez sur Connexion. Elle reste dans la mémoire de cet onglet, n'est jamais écrite
+dans le stockage, et disparaît à la fermeture. Le seul site que l'extension peut
+atteindre est discord.com. Pas de compte, pas de serveur, pas de statistiques, pas de
+télémétrie.
+
+L'extension demande une seule permission, le stockage, pour retenir un numéro d'onglet.
+
+AVANT DE L'UTILISER
+
+Automatiser un compte utilisateur va à l'encontre des conditions d'utilisation de
+Discord, et des comptes ont déjà été sanctionnés pour cela. Clearline se limite bien
+davantage que les alternatives, ce qui réduit le risque sans le supprimer. Si perdre le
+compte serait un vrai problème, exportez d'abord et demandez-vous si la suppression en
+vaut la peine.
+
+Il y a un seul lien dans l'extension, vers une page Buy Me a Coffee, en bas de la
+fenêtre. Il est facultatif, c'est un lien et rien de plus, et rien n'est demandé à ce
+site tant que vous ne cliquez pas.
+
+Clearline est gratuit et open source sous licence MIT. Sans affiliation, approbation ni
+lien avec Discord Inc.

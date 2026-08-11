@@ -40,6 +40,7 @@ npm run all       # all three
 npm run zip       # release gate, then store-ready zips into release/
 npm run shots     # store screenshots into store/screenshots/
 npm run shots -- de   # and the same screens in any shipped locale
+npm run listings  # split the translated store copy into one file per field
 ```
 
 Screenshots are captured by driving the built extension through its five steps
@@ -48,7 +49,9 @@ software rather than promises about it. Nothing in that path touches an account.
 
 Store listing copy, permission justifications and the review answers both stores
 ask for live in [store/LISTING.md](store/LISTING.md), with the translated listing
-text in [store/LISTING-TRANSLATIONS.md](store/LISTING-TRANSLATIONS.md).
+text in [store/LISTING-TRANSLATIONS.md](store/LISTING-TRANSLATIONS.md). Run
+`npm run listings` to split that into `store/listings/<locale>/{name,summary,description}.txt`,
+which is the shape a store form wants: open one, select all, paste.
 
 ## Languages
 

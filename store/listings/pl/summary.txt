@@ -1,0 +1,1 @@
+Wyszukuj, eksportuj i masowo usuwaj własne wiadomości z Discorda. Token nie opuszcza przeglądarki.
