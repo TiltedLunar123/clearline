@@ -1,5 +1,72 @@
 # Changelog
 
+## 1.2.0
+
+### Fixed
+
+- A tab that another tab stopped now says so where you can read it, and keeps the
+  button that takes the queue back. Both of those lived inside the connect panel,
+  which disappears for good once you are connected, so a stopped tab looked
+  perfectly healthy while its Search and Start buttons were greyed out, with no
+  explanation on screen and no way back short of reloading and searching again.
+- Being rate limited no longer kills the tab for good. Four rate limit responses in
+  a row stop the run, which is deliberate, but the message says to wait a few
+  minutes and start again and nothing was capable of starting again: every later
+  search, run, reconnect and channel list failed instantly with that same message
+  until the tab was reloaded. Clicking Connect, Search or Start is what clears it
+  now. The first request afterwards still waits the full delay.
+- If your Discord session expires partway through, there is a Reconnect button
+  instead of a dead end. The session is dropped on any 401 and the only Connect
+  button is long gone by then, so a run that lost its session had no way forward
+  and the retry button failed on every message.
+- Messages you wrote in a channel's threads are counted. A thread message carries
+  the thread's own id and threads are not in the channel list, so narrowing to a
+  channel quietly left out every reply written in its threads, and a forum channel
+  could only ever report that nothing matched.
+- Times in the review table are shown in your timezone. They were Discord's UTC
+  times with the marker cut off, so a row could show a date outside the range named
+  in the summary directly above it.
+- If the channel list fails to load, Clearline says so and asks you to pick the
+  server again, rather than carrying on with the last server's channels and
+  labelling every result with the wrong channel or none at all.
+- The first thing a new user sees is the right advice. An already-open Discord tab
+  cannot be reached until it is reloaded, which is normal and expected after any
+  install or update, and the message said to sign in instead.
+- A takeover landing during a search no longer walks the stopped tab forward to the
+  review screen with a partial set of results.
+- Double clicking Connect starts one connection, and two quick clicks on the
+  toolbar icon open one tab.
+
+### Added
+
+- The report says how many messages were never attempted, names each failure by
+  time, channel and text rather than by raw id, and says how many more there are
+  when the list is longer than fifty. There is a Search again button.
+- The review table goes past its first 300 rows, shift-click picks a range, and
+  each row links to the message in Discord so you can see its context before
+  deciding to keep it.
+- Closing the tab during a run asks first, and a run expected to take more than a
+  few minutes says the tab has to stay open.
+- The tab title shows how far a run has got, so it can be left in the background.
+- Enter runs the search, focus follows the step you are on, and the run announces
+  its progress to a screen reader.
+- The search shows elapsed time, and says how much it has read on the slower path
+  that walks a channel directly, which previously sat on an unchanging line for
+  minutes.
+
+### Changed
+
+- The confirmation box accepts the number exactly as it is printed above it. It
+  said "1,234" and would only take "1234".
+- `npm run zip` runs the release gate before it writes the packages. The two
+  archives actually uploaded to the stores were the one output nothing checked.
+- The release gate closes five holes it was only claiming to cover: shipped CSS was
+  never scanned for outside hosts, `eval` was only looked for in the background
+  script, a network call written inside a template substitution was invisible to
+  it, four manifest keys could widen the extension's reach without being noticed,
+  and the version check compared a value with itself and could never fail.
+- The packages carry only the icons the extension actually loads.
+
 ## 1.1.0
 
 ### Fixed

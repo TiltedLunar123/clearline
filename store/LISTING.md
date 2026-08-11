@@ -118,9 +118,11 @@ CAREFUL BY DEFAULT
 The delete button cannot be reached without first seeing a count and the messages
 behind it. Before a run starts you get a plain sentence saying how many messages, in
 which place, matching what, roughly how long it will take, and that it cannot be
-undone. Runs over a hundred messages ask you to type the count back. A copy is saved
-before the first deletion rather than alongside it, so if the export is going to fail
-it fails while the messages still exist.
+undone. Runs over a hundred messages ask you to type the count back. A copy is built
+and handed to your browser before the first deletion rather than alongside it, so if
+building the export is going to fail it fails while the messages still exist. Where
+your browser puts it after that is between you and your browser: Clearline does not
+take the downloads permission, so it cannot watch the save itself.
 
 The count only includes messages Discord will actually let you delete. Join notices
 and similar system messages are attributed to you and come back in search results,

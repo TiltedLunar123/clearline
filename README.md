@@ -33,11 +33,11 @@ Then load `dist/chrome` as an unpacked extension, or `dist/firefox` via
 icon.
 
 ```bash
-npm test          # 126 unit tests
+npm test          # 135 unit tests
 npm run check     # build plus the release gate
-npm run e2e       # 48 checks against a real browser and a mocked Discord
+npm run e2e       # 52 checks against a real browser and a mocked Discord
 npm run all       # all three
-npm run zip       # store-ready zips into release/
+npm run zip       # release gate, then store-ready zips into release/
 npm run shots     # store screenshots into store/screenshots/
 ```
 
@@ -114,7 +114,18 @@ A few decisions that are deliberate rather than accidental:
 - **Only one Clearline tab works at a time.** The queue that paces requests lives in
   the page, so a second tab would be a second queue and Discord would see twice the
   rate. A second tab says so and offers to take over, and taking over stops the tab
-  it replaced.
+  it replaced. A tab that has been stopped says so somewhere it can be read and
+  keeps the control that takes the queue back, because a stop you cannot see and
+  cannot undo is indistinguishable from the tool being broken.
+- **Stopping is not giving up.** Four rate limit responses in a row halt the run
+  rather than continuing to generate them, and clicking Connect, Search or Start
+  afterwards is what clears that halt. The first request after one still owes the
+  full write delay, so coming back cannot turn into a burst.
+- **A channel includes its threads.** A message written in a thread carries the
+  thread's id rather than the channel it hangs off, and threads are not in the
+  picker, so matching on that id alone leaves thread replies out of the count shown
+  before a run. The parent comes back in the same search response, so picking
+  #general covers what you wrote in its threads.
 - **Every message is checked as yours three times** before anything touches it: the
   search asks Discord to filter by author, the answer is checked rather than
   trusted, and the run checks again immediately before the call. Search results

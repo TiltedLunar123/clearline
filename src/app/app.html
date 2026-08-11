@@ -217,6 +217,14 @@
           <input type="checkbox" id="backup" checked />
           <span>Download an HTML copy before starting</span>
         </label>
+        <!-- Said plainly, because the copy is the only record that will exist.
+             Clearline takes no downloads permission, so it can promise the file
+             was built and handed over and cannot promise it was written. -->
+        <p class="hint tight">
+          The copy is handed to your browser before the first deletion. Check it arrived before
+          you start: Clearline does not take the downloads permission, so it cannot see where your
+          browser put it.
+        </p>
 
         <div class="preflight" id="preflight"></div>
 
