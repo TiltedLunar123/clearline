@@ -90,7 +90,7 @@ CL.filter = (function () {
         try {
           re = new RegExp(f.contains, f.caseSensitive ? '' : 'i');
         } catch (err) {
-          throw Object.assign(new Error(`That is not a valid pattern: ${err.message}`), {
+          throw Object.assign(new Error(CL.i18n.t('errBadPattern', [err.message])), {
             code: 'BAD_PATTERN',
           });
         }

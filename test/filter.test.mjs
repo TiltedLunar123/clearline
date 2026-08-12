@@ -214,3 +214,26 @@ test('a channel restriction still excludes threads of channels that were not pic
   const inOtherThread = { id: '4', channelId: 'T2', parentId: 'X', type: 0, content: 'd', attachments: [] };
   assert.equal(filter.apply([inOtherThread], { channelIds: ['C'] }).length, 0);
 });
+
+test('a broken pattern is explained in the reader language', () => {
+  // Built from the message store like every other sentence the app shows, so it
+  // translates. This one was an English literal, thrown straight into the status
+  // line under the box, in an app that otherwise ships in eleven languages.
+  const marker = '<<reason>>';
+  const template = ctx.CL.i18n.t('errBadPattern', [marker]);
+  const prefix = template.split(marker)[0];
+  assert.ok(prefix && prefix !== 'errBadPattern', 'the store has to carry this sentence');
+
+  let thrown = null;
+  try {
+    filter.compile({ contains: '(unclosed', useRegex: true });
+  } catch (err) {
+    thrown = err;
+  }
+  assert.ok(thrown, 'a pattern that does not compile has to be refused');
+  assert.equal(thrown.code, 'BAD_PATTERN');
+  assert.ok(
+    thrown.message.startsWith(prefix),
+    `message was ${JSON.stringify(thrown.message)}, which did not come from the store`
+  );
+});

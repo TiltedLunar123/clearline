@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "The search failed."
   },
+  "errBadPattern": {
+    "message": "That is not a valid pattern: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord is building the search index for this server. Waiting..."
   },

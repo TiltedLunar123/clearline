@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "Arama başarısız oldu."
   },
+  "errBadPattern": {
+    "message": "Bu geçerli bir desen değil: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord bu sunucunun arama dizinini oluşturuyor. Bekleniyor..."
   },

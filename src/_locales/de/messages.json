@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "Die Suche ist fehlgeschlagen."
   },
+  "errBadPattern": {
+    "message": "Das ist kein gültiges Muster: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord baut gerade den Suchindex für diesen Server. Warten..."
   },

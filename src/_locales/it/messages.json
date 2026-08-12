@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "La ricerca non è riuscita."
   },
+  "errBadPattern": {
+    "message": "Questo schema non è valido: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord sta costruendo l'indice di ricerca di questo server. Attendo..."
   },

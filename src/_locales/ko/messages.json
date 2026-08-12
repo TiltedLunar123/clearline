@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "검색에 실패했습니다."
   },
+  "errBadPattern": {
+    "message": "올바른 패턴이 아닙니다: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord가 이 서버의 검색 색인을 만들고 있습니다. 기다리는 중..."
   },

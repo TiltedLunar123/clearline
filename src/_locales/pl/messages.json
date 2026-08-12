@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "Wyszukiwanie się nie powiodło."
   },
+  "errBadPattern": {
+    "message": "To nie jest prawidłowy wzorzec: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord buduje indeks wyszukiwania tego serwera. Czekam..."
   },

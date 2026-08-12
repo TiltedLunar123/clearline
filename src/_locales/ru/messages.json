@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "Поиск не удался."
   },
+  "errBadPattern": {
+    "message": "Это недопустимый шаблон: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord строит поисковый индекс для этого сервера. Жду..."
   },

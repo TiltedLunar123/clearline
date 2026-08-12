@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "La búsqueda ha fallado."
   },
+  "errBadPattern": {
+    "message": "Ese patrón no es válido: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord está creando el índice de búsqueda de este servidor. Esperando..."
   },

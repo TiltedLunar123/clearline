@@ -246,6 +246,15 @@
   "errSearchFailed": {
     "message": "検索に失敗しました。"
   },
+  "errBadPattern": {
+    "message": "これは有効なパターンではありません: $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1",
+        "example": "Unterminated group"
+      }
+    }
+  },
   "searchIndexing": {
     "message": "Discord がこのサーバーの検索インデックスを作成しています。お待ちください..."
   },
