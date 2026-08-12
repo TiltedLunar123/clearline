@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ nie mogą zostać zmienione przez nikogo, ponieważ Discord na to nie pozwala w przypadku powiadomień o dołączeniu i podobnych. Zostają nietknięte.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "Tego nie da się cofnąć."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord nie pozwala usuwać tego rodzaju wiadomości"
+  },
+  "reasonUneditable": {
+    "message": "Discord nie pozwala zmieniać tego rodzaju wiadomości"
   },
   "durationUnderMinute": {
     "message": "poniżej minuty"

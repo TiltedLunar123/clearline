@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ は誰も変更できません。Discord が参加通知などに対してそれを許可していないためです。そのまま残されます。",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "これは取り消せません。"
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord はこの種類のメッセージの削除を許可していません"
+  },
+  "reasonUneditable": {
+    "message": "Discord はこの種類のメッセージの変更を許可していません"
   },
   "durationUnderMinute": {
     "message": "1 分未満"

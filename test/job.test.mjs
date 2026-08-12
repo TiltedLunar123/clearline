@@ -408,3 +408,58 @@ test('failures carry the message so they can be retried', async () => {
   assert.equal(result.failures[0].message.id, idAt(2));
   assert.equal(result.failures[0].reason, 'gateway blew up');
 });
+
+test('an edit run leaves alone the message types Discord will not let it change', async () => {
+  // The type guard was applied to delete and edit-then-delete and skipped for
+  // edit, so an edit-only run spent a paced write on a join notice Discord
+  // always refuses. That refusal comes back as a plain 400, which lands in the
+  // failure pile rather than the skip pile, blames the wrong thing, and counts
+  // toward the consecutive-failure limit that halts the whole run.
+  const client = fakeClient();
+  const result = await job
+    .createJob({
+      client,
+      messages: [msg(1), msg(2, { type: 7 }), msg(3)],
+      action: 'edit',
+      editContent: 'gone',
+    })
+    .start();
+
+  assert.equal(result.done, 2);
+  assert.equal(result.skipped, 1);
+  assert.equal(result.failed, 0);
+  assert.equal(client.calls.length, 2, 'the join notice must never reach the API');
+  assert.equal(
+    client.calls.some((c) => c.messageId === idAt(2)),
+    false
+  );
+});
+
+test('an edit run says a message could not be changed, not that it could not be deleted', async () => {
+  const result = await job
+    .createJob({
+      client: fakeClient(),
+      messages: [msg(1, { type: 7 })],
+      action: 'edit',
+      editContent: 'gone',
+    })
+    .start();
+
+  assert.equal(result.skips.length, 1);
+  assert.equal(result.skips[0].reason, ctx.CL.i18n.t('reasonUneditable'));
+  assert.notEqual(result.skips[0].reason, ctx.CL.i18n.t('reasonUndeletable'));
+});
+
+test('overwrite then delete still reports the refusal as a delete refusal', async () => {
+  // This one does try to delete, so the existing wording is the accurate one.
+  const result = await job
+    .createJob({
+      client: fakeClient(),
+      messages: [msg(1, { type: 7 })],
+      action: 'edit-then-delete',
+      editContent: 'gone',
+    })
+    .start();
+
+  assert.equal(result.skips[0].reason, ctx.CL.i18n.t('reasonUndeletable'));
+});

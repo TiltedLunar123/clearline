@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ cannot be changed by anyone, because Discord does not allow it for join notices and similar. They are left alone.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "This cannot be undone."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord does not allow deleting this kind of message"
+  },
+  "reasonUneditable": {
+    "message": "Discord does not allow changing this kind of message"
   },
   "durationUnderMinute": {
     "message": "under a minute"

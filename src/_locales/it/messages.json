@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ non possono essere modificati da nessuno, perché Discord non lo consente per gli avvisi di ingresso e simili. Restano come sono.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "Non si può annullare."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord non permette di eliminare questo tipo di messaggio"
+  },
+  "reasonUneditable": {
+    "message": "Discord non permette di modificare questo tipo di messaggio"
   },
   "durationUnderMinute": {
     "message": "meno di un minuto"

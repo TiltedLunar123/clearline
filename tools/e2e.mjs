@@ -828,6 +828,27 @@ async function main() {
     check('operations', 'the pre-flight says it cannot be undone',
       /cannot be undone/.test(preflight || ''), `pre-flight said ${JSON.stringify(preflight)}`);
 
+    // Overwriting refuses the same message types deleting does, so it has to
+    // count them the same way. It used to promise all six and then spend a
+    // paced write finding out Discord would not change the join notice.
+    await cdp.evaluate(
+      ops.session,
+      "document.querySelector('input[name=action][value=edit]').click()"
+    );
+    await sleep(200);
+    const editPreflight = await textOf(cdp, ops.session, '#preflight');
+    check('operations', 'overwriting counts only what can actually be changed',
+      /overwrite the text of 5 messages/i.test(editPreflight || ''),
+      `pre-flight said ${JSON.stringify(editPreflight)}`);
+    check('operations', 'overwriting says the join notice is left alone too',
+      /1 message cannot be changed/.test(editPreflight || ''),
+      `pre-flight said ${JSON.stringify(editPreflight)}`);
+    await cdp.evaluate(
+      ops.session,
+      "document.querySelector('input[name=action][value=delete]').click()"
+    );
+    await sleep(200);
+
     // A big run must refuse to start until the count is typed back. Driven by
     // swapping in a fabricated result set rather than mocking 150 real deletes,
     // with the genuine one stashed so the run below is still the real thing.
@@ -837,7 +858,14 @@ async function main() {
         const cl = window.__clearline;
         cl.stashed = cl.state.results;
         cl.state.results = Array.from({length: 150}, (_, i) => ({
-          id: String(900000000000000000 + i), channelId: ${JSON.stringify(OPS_CHANNEL)},
+          // BigInt for the same reason the guild fixtures use it: these ids are
+          // past Number.MAX_SAFE_INTEGER, so plain addition made all 150 the
+          // same snowflake. And an author, because the job refuses anything it
+          // cannot confirm the account wrote, which is correct and meant this
+          // fabricated set could never actually run.
+          id: String(900000000000000000n + BigInt(i)),
+          channelId: ${JSON.stringify(OPS_CHANNEL)},
+          authorId: ${JSON.stringify(ACCOUNT.id)},
           type: 0, content: 'x', attachments: [], timestamp: '2024-03-01T12:00:00.000Z'
         }));
         cl.renderPreflight();
@@ -856,12 +884,62 @@ async function main() {
       /type 150/i.test(refused || '') && deleted.length === 0,
       `status said ${JSON.stringify(refused)}, ${deleted.length} deletes had already fired`);
 
+    // And then accepts the number it just asked for.
+    //
+    // Only the refusal was ever driven, so the comparison behind it was free to
+    // be wrong in the other direction and no gate would notice: changing it to
+    // String(affected + 1) made every run over a hundred messages impossible to
+    // start and left the whole suite green. That is the product's main path.
+    // The count is typed exactly as the label prints it, separators and all,
+    // because the label is grouped by locale and the box is not.
+    const typedBack = await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const label = document.getElementById('confirm-label').textContent;
+        const shown = (label.match(/[0-9][0-9.,\\u00a0\\u202f ]*/) || [''])[0].trim();
+        const box = document.getElementById('confirm');
+        box.value = shown;
+        return shown;
+      })()`
+    );
+    await cdp.evaluate(ops.session, "document.getElementById('backup').checked = false");
+    await cdp.evaluate(ops.session, "document.getElementById('start').click()");
+    // Waiting on a real delete reaching the mock, not on the counter: the
+    // counter is painted once before the first request goes out, so it would
+    // read "0 of 150" whether the run started or was refused.
+    const acceptedRun = await waitFor(
+      'the confirmed run to reach the API',
+      async () => (deleted.length > 0 ? true : null),
+      { timeout: 20000 }
+    ).catch(() => false);
+    check('operations', 'typing the count back is what lets a large run start',
+      acceptedRun === true,
+      `typed ${JSON.stringify(typedBack)}, run status said ${JSON.stringify(await textOf(cdp, ops.session, '#run-status'))}`);
+
+    // Stop it again: this fabricated set is not the run this suite measures.
+    await cdp.evaluate(ops.session, "document.getElementById('run-cancel').click()");
+    await waitFor(
+      'the cancelled run to report',
+      async () =>
+        (await cdp.evaluate(
+          ops.session,
+          "document.getElementById('run-report').classList.contains('hidden')"
+        )) === false
+          ? true
+          : null,
+      { timeout: 20000 }
+    ).catch(() => null);
+    deleted.length = 0;
+
     // Back to the real six, and actually run it.
     await cdp.evaluate(
       ops.session,
       `(() => {
         const cl = window.__clearline;
         cl.state.results = cl.stashed;
+        // The fabricated run above set this, and it is what keeps Start
+        // disabled after a run so a stale result set cannot be run twice.
+        cl.state.ran = false;
         cl.renderReview();
         cl.renderPreflight();
         return cl.state.results.length;

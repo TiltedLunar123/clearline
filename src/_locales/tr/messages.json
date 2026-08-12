@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ kimse tarafından değiştirilemez, çünkü Discord katılma bildirimleri ve benzerleri için buna izin vermiyor. Oldukları gibi bırakılır.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "Bu geri alınamaz."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord bu tür mesajların silinmesine izin vermiyor"
+  },
+  "reasonUneditable": {
+    "message": "Discord bu tür bir mesajın değiştirilmesine izin vermiyor"
   },
   "durationUnderMinute": {
     "message": "bir dakikadan az"

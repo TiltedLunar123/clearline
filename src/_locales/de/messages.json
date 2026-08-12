@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ können von niemandem geändert werden, weil Discord das für Beitrittshinweise und Ähnliches nicht erlaubt. Sie bleiben unangetastet.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "Das lässt sich nicht rückgängig machen."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord erlaubt das Löschen dieser Art von Nachricht nicht"
+  },
+  "reasonUneditable": {
+    "message": "Discord erlaubt es nicht, diese Art von Nachricht zu ändern"
   },
   "durationUnderMinute": {
     "message": "unter einer Minute"

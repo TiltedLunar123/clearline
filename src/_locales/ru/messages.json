@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ никто не может изменить, потому что Discord не позволяет это для уведомлений о входе и подобных. Они остаются нетронутыми.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "Это нельзя отменить."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord не позволяет удалять такие сообщения"
+  },
+  "reasonUneditable": {
+    "message": "Discord не позволяет изменять сообщения такого типа"
   },
   "durationUnderMinute": {
     "message": "меньше минуты"

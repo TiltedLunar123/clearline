@@ -226,9 +226,21 @@ CL.job = (function () {
         // Checked here rather than filtered out earlier so the reason survives
         // into the report. A user who selected 400 messages and saw 380 deleted
         // is owed an answer for the other 20.
-        if (action !== 'edit' && !CL.filter.isDeletable(message)) {
+        //
+        // Applied to editing too, not just to deleting. The same message types
+        // are refused for both, because a join notice is Discord narrating
+        // rather than something the account wrote: there is nothing to change
+        // and nothing to remove. Skipping this check on the edit path spent a
+        // paced write on a message Discord always refuses, and it refuses with
+        // a plain 400, which lands in the failure pile instead of the skip
+        // pile, blames the wrong thing, and counts toward the consecutive
+        // failure limit that halts the whole run.
+        if (!CL.filter.isDeletable(message)) {
           state.skipped++;
-          skips.push({ message, reason: CL.i18n.t('reasonUndeletable') });
+          skips.push({
+            message,
+            reason: CL.i18n.t(action === 'edit' ? 'reasonUneditable' : 'reasonUndeletable'),
+          });
           state.index++;
           recomputeEta();
           emit();

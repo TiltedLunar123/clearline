@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ ne peuvent être modifiés par personne, car Discord ne l'autorise pas pour les avis d'arrivée et similaires. Ils sont laissés tels quels.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "C'est irréversible."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord n'autorise pas la suppression de ce type de message"
+  },
+  "reasonUneditable": {
+    "message": "Discord n'autorise pas la modification de ce type de message"
   },
   "durationUnderMinute": {
     "message": "moins d'une minute"

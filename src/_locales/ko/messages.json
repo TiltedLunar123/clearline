@@ -627,6 +627,15 @@
       }
     }
   },
+  "preflightUneditable": {
+    "message": "$COUNT$ 은(는) 누구도 변경할 수 없습니다. Discord가 입장 알림 등에 대해 이를 허용하지 않기 때문입니다. 그대로 남습니다.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3 messages"
+      }
+    }
+  },
   "preflightNoUndo": {
     "message": "이것은 되돌릴 수 없습니다."
   },
@@ -799,6 +808,9 @@
   },
   "reasonUndeletable": {
     "message": "Discord가 이런 종류의 메시지 삭제를 허용하지 않음"
+  },
+  "reasonUneditable": {
+    "message": "Discord는 이런 종류의 메시지 변경을 허용하지 않습니다"
   },
   "durationUnderMinute": {
     "message": "1분 미만"

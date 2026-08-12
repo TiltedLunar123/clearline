@@ -1046,7 +1046,11 @@
     const action = chosenAction();
     const total = selected().length;
     const deletable = deletableCount();
-    const affected = action === 'edit' ? total : deletable;
+    // The same for all three actions. Discord refuses the same message types
+    // either way, so an edit run counting them in promised a number it could
+    // not deliver, and then suppressed the line that would have explained the
+    // shortfall because that line was tied to deleting.
+    const affected = deletable;
     const writes = action === 'edit-then-delete' ? 2 : 1;
     const estimate = CL.job.estimateMs(affected, writes, null);
 
@@ -1072,8 +1076,12 @@
     if (estimate > 5 * 60 * 1000) {
       lines.push(t('preflightKeepOpen'));
     }
-    if (action !== 'edit' && deletable < total) {
-      lines.push(t('preflightUndeletable', [count(total - deletable)]));
+    if (deletable < total) {
+      lines.push(
+        t(action === 'edit' ? 'preflightUneditable' : 'preflightUndeletable', [
+          count(total - deletable),
+        ])
+      );
     }
     if (action !== 'edit') lines.push(t('preflightNoUndo'));
 
@@ -1238,7 +1246,10 @@
     if (state.superseded || state.job) return;
 
     const action = chosenAction();
-    const affected = action === 'edit' ? selected().length : deletableCount();
+    // The same count renderPreflight put on screen. The number the user is asked
+    // to type back has to be the number they were just shown, so this cannot
+    // work out "affected" a second way.
+    const affected = deletableCount();
 
     const typed = $('confirm').value.replace(/[\s,._]/g, '');
     if (affected > CONFIRM_ABOVE && action !== 'edit' && typed !== String(affected)) {
