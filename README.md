@@ -121,10 +121,11 @@ A few decisions that are deliberate rather than accidental:
   export is going to fail, it fails while the messages still exist. Where the browser
   puts the file after that is between you and the browser: Clearline does not take
   the downloads permission, so it cannot watch the save itself.
-- **The count only includes what can actually be deleted.** Join notices and similar
+- **The count only includes what the run can actually do.** Join notices and similar
   system messages are attributed to you and come back in search results, but Discord
-  refuses to delete them. Counting them would promise more than the run can deliver,
-  so they are named separately and left alone.
+  refuses to delete them, and refuses to edit them for the same reason. Counting them
+  would promise more than the run can deliver, so they are named separately and left
+  alone, whichever of the three actions is chosen.
 - **Failures are separated from skips.** A message that was already gone is a
   success. A channel you can no longer write to is a skip. Everything else is a
   failure you can retry from the report.
@@ -154,10 +155,16 @@ A few decisions that are deliberate rather than accidental:
 ## Exports
 
 HTML is a self-contained document with no external references and every value
-escaped. JSON carries a small header plus the raw messages. CSV is RFC 4180, and
-every cell is neutralised against spreadsheet formula injection, including the
-leading-tab variant, because message content is text other people wrote and a
-spreadsheet will happily run it.
+escaped, written in whatever language the browser is set to. JSON carries a small
+header plus the raw messages. CSV is RFC 4180 and opens with a byte order mark so
+a spreadsheet reads it as UTF-8, and every cell is neutralised against
+spreadsheet formula injection, including the leading-tab variant, because message
+content is text other people wrote and a spreadsheet will happily run it. Its
+header row stays in English, since those are column names other software reads.
+
+The report a run leaves behind saves to HTML too. It is the only account of what
+happened, a run can take hours, and the messages it describes are gone, so it
+should not depend on the tab staying open.
 
 ## Risk
 

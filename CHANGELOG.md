@@ -1,5 +1,59 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+
+- The run report can be saved. What a run did lived only in the tab it ran in,
+  and a run can take hours: which messages were left alone and why, which failed
+  and with what, how many were never reached. Closing the tab lost all of it, and
+  there was nothing to go back and check, because the messages it describes had
+  been deleted. The saved file also lists every entry rather than stopping at the
+  fifty shown on screen.
+- The HTML export is written in your language. Its headings, its edited and
+  pinned marks and the document language itself follow the browser, in all
+  eleven languages Clearline speaks. The CSV header row stays in English on
+  purpose, because it is a set of column names other software reads.
+
+### Fixed
+
+- A reconnect checks whose account the session belongs to. A session expiring
+  and somebody signing in as a different account are very often the same event,
+  and everything keeping Clearline to your own messages is pinned to the account
+  it connected as: the author filter the search sends, the check on Discord's
+  answer, and the last guard before a delete. With a different account's session
+  behind that, all three agreed and the deletes went out as the other account.
+  On a server where that account can moderate, Discord carries them out, while
+  the account panel and every sentence on screen still name the first one.
+- The review screen describes the search that produced it. Nothing stops you
+  going Back while a search is still running, and a whole server can take
+  minutes, so choosing a different server part way through left the results of
+  the first search labelled with the second server: the sentence directly above
+  the Start button named the wrong place while the queue held the right
+  messages, and the channel column went blank at the same time, in the table and
+  in the copy you are told is the only record you will have.
+- Messages written in a voice channel's text chat, a stage channel, or a thread
+  under a media channel now say which channel they came from. Those are not
+  offered as places to search, which is correct, and the same shortened list was
+  being used to name every result, so a scattering of rows arrived with no
+  location at all and nothing to say anything was missing.
+- The CSV export opens as UTF-8 in a spreadsheet. Excel on Windows reads a .csv
+  with the system codepage unless the file says otherwise, so accents and emoji,
+  which is to say most Discord messages, came out as mojibake.
+- Overwriting counts only what it can actually change. Discord refuses the same
+  message types for editing as for deleting, so "Overwrite the text only"
+  promised a number it could not deliver, hid the line explaining the shortfall,
+  and then spent a full paced request per refused message. Ten of those in a row
+  would have halted the whole run.
+- Starting a second search no longer shows the first one's figures. The counter
+  kept whatever the last search left in it, so a fresh search opened claiming a
+  count from the run before, or the words about stopping from a search you had
+  cancelled.
+- A search pattern that does not compile is explained in your language rather
+  than in English.
+- A reconnect landing after another tab has taken over no longer overwrites the
+  notice saying this tab stopped.
+
 ## 1.2.0
 
 ### Added
