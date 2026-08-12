@@ -1155,6 +1155,118 @@ async function main() {
       `counter went from ${JSON.stringify(staleCounter)} to ${JSON.stringify(freshCounter)}`);
 
     await closeTab(cdp, scopeTab);
+
+    /* ---------------- group: big sets ---------------- */
+
+    // Everything past the render limit.
+    //
+    // No fixture anywhere else builds more than six rows, so the whole of this
+    // was dead ground: the limit itself, the Show more button, and the line
+    // that says how many of the messages you cannot see are still in the run.
+    // That line is load bearing. The rows past 300 are not on screen and are
+    // still queued for deletion, so it is the only thing telling anyone they
+    // exist, and it could be made to report the wrong number, or Show more
+    // made to append nothing, with every gate still green.
+    const bigTab = await openTab(cdp, appUrl);
+    await mockApi(cdp, bigTab.session, operationsMock([]));
+    await sleep(400);
+    await cdp.evaluate(bigTab.session, "document.getElementById('connect').click()");
+    await waitFor('the where step', async () =>
+      (await cdp.evaluate(bigTab.session, "!document.getElementById('step-where').classList.contains('hidden')")) === true
+    ).catch(() => null);
+
+    const bigState = async (expression) =>
+      JSON.parse(await cdp.evaluate(bigTab.session, `JSON.stringify(${expression})`));
+
+    await cdp.evaluate(
+      bigTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.results = Array.from({length: 400}, (_, i) => ({
+          id: String(910000000000000000n + BigInt(i)),
+          channelId: ${JSON.stringify(OPS_CHANNEL)},
+          authorId: ${JSON.stringify(ACCOUNT.id)},
+          channelName: 'general',
+          type: 0, content: 'row ' + i, attachments: [],
+          timestamp: '2024-03-01T12:00:00.000Z',
+        }));
+        cl.state.excluded = new Set();
+        cl.state.shown = 0;
+        cl.state.resultScopeLabel = 'g0 / all channels';
+        cl.renderReview();
+        cl.goTo('review');
+      })()`
+    );
+
+    const firstPage = await bigState(`{
+      rows: document.querySelectorAll('#results-body tr').length,
+      note: document.getElementById('results-note').textContent,
+      more: document.getElementById('show-more').textContent,
+      moreHidden: document.getElementById('show-more').classList.contains('hidden'),
+    }`);
+    check('big sets', 'a huge result set renders only its first page',
+      firstPage.rows === 300, `rendered ${firstPage.rows} rows`);
+    check('big sets', 'the rest are offered rather than silently dropped',
+      firstPage.moreHidden === false && /100/.test(firstPage.more),
+      `Show more said ${JSON.stringify(firstPage.more)}, hidden ${firstPage.moreHidden}`);
+    check('big sets', 'the note says how many unseen messages are in the run',
+      /300/.test(firstPage.note) && /400/.test(firstPage.note) && /100/.test(firstPage.note),
+      `note said ${JSON.stringify(firstPage.note)}`);
+
+    // Take everything out of the run. The unseen count has to follow, and this
+    // is the mutation the note's own comment says was once shipped: asserting
+    // the rows past the limit "stay selected" rather than counting them.
+    await cdp.evaluate(bigTab.session, "document.getElementById('pick-all').click()");
+    await sleep(200);
+    const noneOn = await bigState(`{
+      note: document.getElementById('results-note').textContent,
+      heading: document.getElementById('review-heading').textContent,
+      nextDisabled: document.getElementById('review-next').disabled,
+    }`);
+    check('big sets', 'clearing the selection clears the unseen count with it',
+      /Of the other 100, 0 are selected/.test(noneOn.note),
+      `note said ${JSON.stringify(noneOn.note)}`);
+    check('big sets', 'nothing selected means nothing to continue to',
+      noneOn.nextDisabled === true, `heading said ${JSON.stringify(noneOn.heading)}`);
+
+    await cdp.evaluate(bigTab.session, "document.getElementById('pick-all').click()");
+    await sleep(200);
+
+    // One visible row spared. The unseen count must not move, and the heading
+    // must count the whole set rather than the rendered part of it.
+    await cdp.evaluate(
+      bigTab.session,
+      "document.querySelectorAll('#results-body input[type=checkbox]')[0].click()"
+    );
+    await sleep(200);
+    const oneOff = await bigState(`{
+      note: document.getElementById('results-note').textContent,
+      heading: document.getElementById('review-heading').textContent,
+    }`);
+    check('big sets', 'sparing a visible row does not change the unseen count',
+      /Of the other 100, 100 are selected/.test(oneOff.note),
+      `note said ${JSON.stringify(oneOff.note)}`);
+    check('big sets', 'the heading counts the whole set, not the rendered part',
+      /399/.test(oneOff.heading) && /400/.test(oneOff.heading),
+      `heading said ${JSON.stringify(oneOff.heading)}`);
+
+    await cdp.evaluate(bigTab.session, "document.getElementById('show-more').click()");
+    await sleep(300);
+    const secondPage = await bigState(`{
+      rows: document.querySelectorAll('#results-body tr').length,
+      moreHidden: document.getElementById('show-more').classList.contains('hidden'),
+      lastRow: (document.querySelectorAll('#results-body tr')[399] || {}).textContent || '',
+      stillSpared: document.querySelectorAll('#results-body tr.off').length,
+    }`);
+    check('big sets', 'Show more actually appends the rest',
+      secondPage.rows === 400 && /row 399/.test(secondPage.lastRow),
+      `rendered ${secondPage.rows} rows, last was ${JSON.stringify(secondPage.lastRow)}`);
+    check('big sets', 'Show more takes itself away once there is no more',
+      secondPage.moreHidden === true);
+    check('big sets', 'appending rows keeps the row that was spared spared',
+      secondPage.stillSpared === 1, `${secondPage.stillSpared} rows were marked spared`);
+
+    await closeTab(cdp, bigTab);
   } finally {
     server.close();
     await shutdown(session);
