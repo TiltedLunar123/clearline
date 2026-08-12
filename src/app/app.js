@@ -27,6 +27,11 @@
     guilds: [],
     dms: [],
     channels: [],
+    /**
+     * Every channel of the loaded server by id, including the ones the picker
+     * does not offer, purely so a result can be told where it came from.
+     */
+    channelNames: new Map(),
     /** Which guild `channels` actually belongs to, or null if the load failed. */
     channelsFor: null,
     scope: null,
@@ -580,6 +585,16 @@
     clearHalt();
     try {
       const channels = await client.guildChannels(guildId);
+      // Named from the whole list, offered from the part of it worth searching.
+      // These are two different questions and the filtered list was answering
+      // both. A whole-server search returns whatever the account wrote anywhere,
+      // including the text chat inside a voice channel, a stage channel and a
+      // thread under a media channel, none of which belong in a picker of places
+      // to search. Looking their names up in the picker's list found nothing, so
+      // those rows arrived with no channel at all: blank cells scattered through
+      // the review table on the last screen before an irreversible delete, and
+      // blank channels in the export, with nothing to say anything was missing.
+      state.channelNames = new Map(channels.map((c) => [String(c.id), c.name]));
       state.channels = channels
         .filter((c) => TEXTY.indexOf(Number(c.type)) !== -1)
         .sort((a, b) => (a.position || 0) - (b.position || 0));
@@ -597,6 +612,7 @@
       // channelNameFor over that list, so every row in the review table and
       // every row of an export got a blank or a wrong channel name.
       state.channels = [];
+      state.channelNames = new Map();
       state.channelsFor = null;
       fillSelect(select, [], t('optChannelsFailed'));
       say($('where-status'), (err && err.message) || t('errChannelsFailed'), 'error');
@@ -639,7 +655,7 @@
       // back with an empty channel name: blank cells in the review table, on the
       // last screen before an irreversible delete, and blank channels in the
       // copy the user is told is the only record they will have.
-      const channelNames = new Map(state.channels.map((c) => [c.id, c.name]));
+      const channelNames = new Map(state.channelNames);
 
       state.scope = {
         guildId,

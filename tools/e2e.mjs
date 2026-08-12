@@ -988,11 +988,21 @@ async function main() {
       scopeTab.session,
       `JSON.stringify({
         name: window.__clearline.state.scope.channelNameFor(${JSON.stringify(OPS_CHANNEL)}),
-        channels: window.__clearline.state.channels.map((c) => c.id + ':' + c.name),
+        voice: window.__clearline.state.scope.channelNameFor('400000000000000002'),
+        offered: Array.from(document.getElementById('channel-select').options).map((o) => o.textContent),
       })`
     );
     check('scope', 'a committed scope carries the channel names it was built from',
       JSON.parse(committedName).name === 'general', `scope reported ${committedName}`);
+
+    // A whole-server search returns what the account wrote in places the picker
+    // has no business offering as somewhere to search: the text chat inside a
+    // voice channel, a stage, a thread under a media channel. Those rows still
+    // have to be able to say where they came from.
+    check('scope', 'a channel the picker does not offer can still be named',
+      JSON.parse(committedName).voice === 'voice-room' &&
+        !JSON.parse(committedName).offered.some((o) => o.includes('voice-room')),
+      `scope reported ${committedName}`);
 
     await cdp.evaluate(scopeTab.session, "document.getElementById('search').click()");
     await sleep(600);
