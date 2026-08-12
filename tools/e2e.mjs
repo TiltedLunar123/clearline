@@ -100,8 +100,19 @@ const ACCOUNT = { id: '111111111111111111', username: 'fixture', discriminator: 
  * as.
  */
 const OTHER_ACCOUNT = { id: '999999999999999999', username: 'somebody-else', discriminator: '0' };
-const GUILDS = Array.from({ length: 7 }, (_, i) => ({ id: String(200000000000000000 + i), name: `g${i}` }));
-const DMS = Array.from({ length: 3 }, (_, i) => ({ id: String(300000000000000000 + i), type: 1 }));
+// BigInt, because a snowflake is past Number.MAX_SAFE_INTEGER: `200000000000000000
+// + i` rounds back to the same float for every i, so these fixtures were seven
+// guilds and three conversations that all shared one id. Nothing asserted on the
+// later ones, so it never showed, and a mock keyed on the second guild's id
+// answered requests for the first.
+const GUILDS = Array.from({ length: 7 }, (_, i) => ({
+  id: String(200000000000000000n + BigInt(i)),
+  name: `g${i}`,
+}));
+const DMS = Array.from({ length: 3 }, (_, i) => ({
+  id: String(300000000000000000n + BigInt(i)),
+  type: 1,
+}));
 
 /** Healthy rate limit headers, so the limiter has something real to absorb. */
 const OK_HEADERS = {
@@ -901,6 +912,146 @@ async function main() {
     check('operations', 'the run took at least as long as the pacing requires',
       Date.now() - startedAt >= 4 * 900,
       `finished in ${Date.now() - startedAt}ms, which is faster than five paced writes can be`);
+
+    await closeTab(cdp, ops);
+
+    /* ---------------- group: scope ---------------- */
+
+    // A search that outlives the choice that started it.
+    //
+    // Nothing disables Back while a search pages, and a server-wide search can
+    // page for minutes, so the picker is free to move underneath a running
+    // search. Everything the review and run screens say about the results has
+    // to describe the search that produced them. It used to be read back off
+    // live state at render time, which meant a set of server A's messages could
+    // be presented, counted and confirmed as server B, with the channel column
+    // blank because the name lookup had been replaced too. The sentence above
+    // the Start button is the last thing between a person and an irreversible
+    // delete, so it naming the wrong server is the worst failure this app has.
+    const OTHER_GUILD = GUILDS[1].id;
+    const scopeTab = await openTab(cdp, appUrl);
+    const scopeDeleted = [];
+    const opsResolve = operationsMock(scopeDeleted);
+    await mockApi(cdp, scopeTab.session, (method, pathname) => {
+      const path = pathname.split('?')[0];
+      if (path === `/api/v9/guilds/${OTHER_GUILD}/channels`) {
+        return {
+          body: [{ id: '400000000000000009', name: 'other-room', type: 0, position: 0 }],
+          headers: OK_HEADERS,
+        };
+      }
+      // Slow enough that the swap below lands while the search is still in
+      // flight, which is the whole point of the check.
+      if (path === `/api/v9/guilds/${OPS_GUILD}/messages/search`) {
+        return { ...opsResolve(method, pathname), delayMs: 4000 };
+      }
+      return opsResolve(method, pathname);
+    });
+    await sleep(400);
+
+    await cdp.evaluate(scopeTab.session, "document.getElementById('connect').click()");
+    await waitFor('the where step', async () =>
+      (await cdp.evaluate(scopeTab.session, "!document.getElementById('step-where').classList.contains('hidden')")) === true
+    ).catch(() => null);
+
+    const pickGuild = (id) =>
+      cdp.evaluate(
+        scopeTab.session,
+        `(() => {
+          const s = document.getElementById('guild-select');
+          s.value = ${JSON.stringify(id)};
+          s.dispatchEvent(new Event('change'));
+        })()`
+      );
+    const waitForChannel = (label) =>
+      waitFor(
+        `channels containing ${label}`,
+        async () => {
+          const labels = await cdp.evaluate(
+            scopeTab.session,
+            "Array.from(document.getElementById('channel-select').options).map(o => o.textContent).join(',')"
+          );
+          return labels && labels.includes(label) ? labels : null;
+        },
+        { timeout: 10000 }
+      ).catch(() => '<never loaded>');
+
+    await pickGuild(OPS_GUILD);
+    await waitForChannel('#general');
+    await cdp.evaluate(scopeTab.session, "document.getElementById('where-next').click()");
+    await sleep(200);
+
+    // The scope carries its own copy of the channel names, taken when it was
+    // committed. Checked here, before anything has had a chance to move, so a
+    // failure further down cannot be blamed on the swap.
+    const committedName = await cdp.evaluate(
+      scopeTab.session,
+      `JSON.stringify({
+        name: window.__clearline.state.scope.channelNameFor(${JSON.stringify(OPS_CHANNEL)}),
+        channels: window.__clearline.state.channels.map((c) => c.id + ':' + c.name),
+      })`
+    );
+    check('scope', 'a committed scope carries the channel names it was built from',
+      JSON.parse(committedName).name === 'general', `scope reported ${committedName}`);
+
+    await cdp.evaluate(scopeTab.session, "document.getElementById('search').click()");
+    await sleep(600);
+
+    // Change your mind while it is still paging.
+    //
+    // The swap is applied to state directly rather than by driving the picker,
+    // and only because driving it is not deterministic here: everything shares
+    // one limiter queue, so a real second channel load sits behind the search
+    // request this check deliberately made slow, and it lands on the far side
+    // of the thing under test. These two writes are exactly what loadChannels
+    // and commitScope perform, so the hazard reproduced is the real one; only
+    // the timing is made reliable.
+    await cdp.evaluate(scopeTab.session, "document.getElementById('filter-back').click()");
+    await sleep(150);
+    await cdp.evaluate(
+      scopeTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.channels = [{ id: '400000000000000009', name: 'other-room', type: 0, position: 0 }];
+        cl.state.channelsFor = ${JSON.stringify(OTHER_GUILD)};
+        cl.state.scopeLabel = 'g1 / all channels';
+      })()`
+    );
+
+    const scopeHeading = await waitFor(
+      'the review step after the swap',
+      async () => {
+        const value = await textOf(cdp, scopeTab.session, '#review-heading');
+        return value && /matched/.test(value) ? value : null;
+      },
+      { timeout: 30000 }
+    ).catch(async () => `<never got there: ${await textOf(cdp, scopeTab.session, '#filter-status')}>`);
+    check('scope', 'a search still lands after the picker moved', /6 messages matched/.test(scopeHeading),
+      `heading said ${JSON.stringify(scopeHeading)}`);
+
+    const scopeSummary = await textOf(cdp, scopeTab.session, '#review-summary');
+    check('scope', 'the review names the server that was actually searched',
+      /\bg0\b/.test(scopeSummary || '') && !/\bg1\b/.test(scopeSummary || ''),
+      `summary said ${JSON.stringify(scopeSummary)}`);
+
+    const channelCells = JSON.parse(
+      await cdp.evaluate(
+        scopeTab.session,
+        "JSON.stringify(Array.from(document.querySelectorAll('#results-body tr')).map(r => r.children[2].textContent))"
+      )
+    );
+    check('scope', 'every row still knows which channel it came from',
+      channelCells.length === 6 && channelCells.every((c) => c === '#general'),
+      `channel column was ${JSON.stringify(channelCells)}`);
+
+    await cdp.evaluate(scopeTab.session, "document.getElementById('review-next').click()");
+    await sleep(250);
+    const scopePreflight = await textOf(cdp, scopeTab.session, '#preflight');
+    check('scope', 'the sentence above Start names the server that was actually searched',
+      /\bg0\b/.test(scopePreflight || '') && !/\bg1\b/.test(scopePreflight || ''),
+      `pre-flight said ${JSON.stringify(scopePreflight)}`);
+
+    await closeTab(cdp, scopeTab);
   } finally {
     server.close();
     await shutdown(session);

@@ -31,6 +31,17 @@
     channelsFor: null,
     scope: null,
     scopeLabel: '',
+    /**
+     * The scope the result set on screen was actually searched under.
+     *
+     * Separate from `scope` because the picker keeps moving while a search
+     * runs. Nothing disables the Back button, so a server-wide search that
+     * pages for minutes can outlive the choice that started it, and every
+     * sentence describing the results has to name the search that produced
+     * them rather than whatever the picker says by the time they arrive.
+     */
+    resultScope: null,
+    resultScopeLabel: '',
     tabId: null,
     superseded: false,
     connecting: false,
@@ -195,7 +206,7 @@
   function metaFor() {
     return {
       account: state.me ? state.me.username : '',
-      scope: state.scopeLabel,
+      scope: state.resultScopeLabel,
       generatedAt: Date.now(),
       filterSummary: CL.filter.describe(state.filters),
       total: selected().length,
@@ -620,14 +631,21 @@
         .filter((c) => channelIds.indexOf(c.id) !== -1)
         .map((c) => `#${c.name}`);
 
+      // Copied here, not looked up later. This closure is called once per
+      // message as the results arrive, which can be minutes after the scope was
+      // committed, and it used to read `state.channels` live. Nothing stops the
+      // user going Back mid-search and picking another server, and doing so
+      // replaces that array, so every message normalised after the swap came
+      // back with an empty channel name: blank cells in the review table, on the
+      // last screen before an irreversible delete, and blank channels in the
+      // copy the user is told is the only record they will have.
+      const channelNames = new Map(state.channels.map((c) => [c.id, c.name]));
+
       state.scope = {
         guildId,
         guildName: guild ? guild.name : t('serverFallback'),
         channelIds,
-        channelNameFor: (id) => {
-          const found = state.channels.find((c) => c.id === id);
-          return found ? found.name : '';
-        },
+        channelNameFor: (id) => channelNames.get(id) || '',
       };
       state.scopeLabel =
         (guild ? guild.name : t('serverFallback')) +
@@ -705,6 +723,16 @@
       return;
     }
 
+    // Taken before the first request and used for everything the review and run
+    // screens say about these results. The picker stays live while a search
+    // pages, so reading the label back off `state` when the results land let a
+    // search of server A be presented, counted and confirmed as server B: the
+    // sentence directly above the Start button named the wrong server while the
+    // queue held the right one, and that sentence is the last thing standing
+    // between a person and an irreversible delete.
+    const scope = state.scope;
+    const scopeLabel = state.scopeLabel;
+
     state.filters = filters;
     state.stopSearch = false;
     button.disabled = true;
@@ -721,7 +749,7 @@
 
     try {
       const found = await finder.find({
-        scope: state.scope,
+        scope,
         authorId: state.me.id,
         minId: bounds.minId,
         maxId: bounds.maxId,
@@ -757,6 +785,8 @@
       if (state.superseded) return;
 
       state.results = CL.filter.apply(found.messages, filters);
+      state.resultScope = scope;
+      state.resultScopeLabel = scopeLabel;
       state.excluded = new Set();
       state.shown = MAX_ROWS;
       state.ran = false;
@@ -837,8 +867,8 @@
 
     $('review-heading').textContent = headingFor(total, picked);
     $('review-summary').textContent = total
-      ? t('reviewSummary', [CL.filter.describe(state.filters), state.scopeLabel])
-      : t('reviewNoMatch', [state.scopeLabel, CL.filter.describe(state.filters)]);
+      ? t('reviewSummary', [CL.filter.describe(state.filters), state.resultScopeLabel])
+      : t('reviewNoMatch', [state.resultScopeLabel, CL.filter.describe(state.filters)]);
 
     const truncated = $('review-truncated');
     if (state.truncated) {
@@ -1011,11 +1041,11 @@
     const lines = [];
     lines.push(
       CL.filter.isEmpty(state.filters)
-        ? t('preflightAll', [verb, count(affected), state.scopeLabel])
+        ? t('preflightAll', [verb, count(affected), state.resultScopeLabel])
         : t('preflightFiltered', [
             verb,
             count(affected),
-            state.scopeLabel,
+            state.resultScopeLabel,
             CL.filter.describe(state.filters),
           ])
     );
