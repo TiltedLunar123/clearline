@@ -50,8 +50,7 @@ async function main() {
 
   const problems = [];
   const rows = [];
-
-  await fs.mkdir(OUT, { recursive: true });
+  const ready = [];
 
   for (const section of translations.split('\n## ').slice(1)) {
     const heading = section.split('\n')[0].trim();
@@ -80,19 +79,41 @@ async function main() {
     }
     if (!fields.name || !fields.summary || !fields.description) continue;
 
+    ready.push({ locale, language, fields });
+    rows.push({ locale, language, ...Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.length])) });
+  }
+
+  /*
+   * Nothing touches the disk until every locale has passed.
+   *
+   * Each field used to be written as it was parsed and the length limits were
+   * reported at the very end, so a summary that had grown past the limit
+   * replaced the good file and only then failed. Worse, the prune below removes
+   * any directory this run did not emit, and a section that failed to parse
+   * emits nothing, so a typo in one heading deleted that language's listing
+   * copy on the way past. It is all regenerated from LISTING-TRANSLATIONS.md,
+   * so nothing is lost for good, but a tool that fails should leave what it
+   * found alone.
+   */
+  if (problems.length) {
+    console.error('\nProblems:\n' + problems.map((p) => `  x ${p}`).join('\n') + '\n');
+    console.error('Nothing was written.');
+    process.exit(1);
+  }
+
+  await fs.mkdir(OUT, { recursive: true });
+  for (const { locale, fields } of ready) {
     const dir = path.join(OUT, locale);
     await fs.mkdir(dir, { recursive: true });
     for (const [field, value] of Object.entries(fields)) {
       await fs.writeFile(path.join(dir, `${field}.txt`), value + '\n', 'utf8');
     }
-
-    rows.push({ locale, language, ...Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.length])) });
   }
 
   // Stale locales are pruned one at a time rather than by clearing the whole
   // folder first. On Windows, removing a directory a shell is sitting in fails
   // with EBUSY, and that turns "I renamed a section" into a broken tool.
-  const wanted = new Set(rows.map((r) => r.locale));
+  const wanted = new Set(ready.map((r) => r.locale));
   for (const entry of await fs.readdir(OUT, { withFileTypes: true })) {
     if (!entry.isDirectory() || wanted.has(entry.name)) continue;
     await fs.rm(path.join(OUT, entry.name), { recursive: true, force: true });
@@ -138,11 +159,6 @@ async function main() {
     console.log(`  ${r.locale.padEnd(6)} ${String(r.name).padStart(4)}  ${String(r.summary).padStart(4)}  ${String(r.description).padStart(6)}  ${r.language}`);
   }
   console.log(`\n${rows.length} listings -> ${path.relative(ROOT, OUT)}`);
-
-  if (problems.length) {
-    console.error('\nProblems:\n' + problems.map((p) => `  x ${p}`).join('\n') + '\n');
-    process.exit(1);
-  }
 }
 
 main().catch((err) => {
