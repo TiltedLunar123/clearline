@@ -8,19 +8,33 @@ Chrome and Firefox, MV3, no build dependencies and no third party code.
 
 > Not affiliated with, endorsed by, or connected to Discord Inc.
 
+![The review screen: 12 matched messages listed with timestamp, channel and text, each one checkable, above the save-a-copy panel](store/screenshots/4-review.png)
+
 ## What it does
 
 Five steps, in order, one screen at a time.
 
-1. **Connect.** Reads your session from an open discord.com tab.
-2. **Where.** Pick a server, optionally narrowing to particular channels, or pick a
-   direct message.
-3. **Narrow.** Filter by text or a pattern, a date range, whether a message has an
-   attachment, a link or an embed, and whether to leave pinned messages alone.
-4. **Review.** See the count and the actual messages before anything happens, and
-   save a copy in HTML, JSON or CSV.
-5. **Act.** Delete them, overwrite the text and then delete them, or only overwrite
-   the text. Watch it run, pause it, or stop it.
+**1. Connect.** Reads your session from an open discord.com tab.
+
+![The connect screen, reading the session from an open Discord tab](store/screenshots/1-connect.png)
+
+**2. Where.** Pick a server, optionally narrowing to particular channels, or pick a
+direct message.
+
+![The where screen: a server or a direct message, a server dropdown, and a multi-select channel list that searches the whole server if left untouched](store/screenshots/2-where.png)
+
+**3. Narrow.** Filter by text or a pattern, a date range, whether a message has an
+attachment, a link or an embed, and whether to leave pinned messages alone.
+
+![The narrow screen with a contains box, date range, attachment and link filters, and a leave-pinned-alone checkbox](store/screenshots/3-narrow.png)
+
+**4. Review.** See the count and the actual messages before anything happens, and
+save a copy in HTML, JSON or CSV.
+
+**5. Act.** Delete them, overwrite the text and then delete them, or only overwrite
+the text. Watch it run, pause it, or stop it.
+
+![The act screen: delete, overwrite-then-delete or overwrite-only, above a pre-flight notice naming 12 messages, where they are, what they match, that it takes under a minute, and that it cannot be undone](store/screenshots/5-act.png)
 
 ## Running it
 
