@@ -18,6 +18,18 @@ CL.exporter = (function () {
     'id,timestamp,edited,guild,channel,author,content,attachments,embeds,pinned';
 
   /**
+   * Byte order mark, so a spreadsheet reads the file as UTF-8.
+   *
+   * Excel on Windows opens a .csv with the system ANSI codepage unless the file
+   * says otherwise, and this one is full of Discord messages: accents, emoji,
+   * every script people actually chat in. Without the mark a backup taken
+   * immediately before an irreversible delete opens as mojibake in the one
+   * program most people take a CSV to. The mark costs three bytes and every
+   * parser worth using either strips it or ignores it.
+   */
+  const BOM = '﻿';
+
+  /**
    * Escape for HTML text and attribute contexts.
    *
    * Ampersand first, or the entities we write for the other characters get
@@ -120,7 +132,7 @@ CL.exporter = (function () {
         ].join(',')
       );
     }
-    return lines.join('\r\n') + (lines.length ? '\r\n' : '');
+    return BOM + lines.join('\r\n') + (lines.length ? '\r\n' : '');
   }
 
   /** Readable rather than exact. Nobody reading an export wants 4823710 bytes. */

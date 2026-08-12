@@ -33,6 +33,8 @@ function msg(overrides = {}) {
   };
 }
 
+const CSV_HEADER = 'id,timestamp,edited,guild,channel,author,content,attachments,embeds,pinned';
+
 function csvRows(csv) {
   // Split only on CRLF that are not inside quotes. Enough for these tests.
   const rows = [];
@@ -86,7 +88,7 @@ test('CSV row count matches message count plus the header', () => {
   const messages = [msg({ id: '1' }), msg({ id: '2' }), msg({ id: '3' })];
   const rows = csvRows(exp.toCSV(messages));
   assert.equal(rows.length, 4);
-  assert.equal(rows[0], 'id,timestamp,edited,guild,channel,author,content,attachments,embeds,pinned');
+  assert.equal(rows[0].replace('﻿', ''), CSV_HEADER);
 });
 
 test('CSV renders a null field as empty, not the string "null"', () => {
@@ -217,7 +219,7 @@ test('empty message array produces valid output from all three exporters', () =>
 
   const rows = csvRows(csv);
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].split(',')[0], 'id');
+  assert.equal(rows[0].replace('﻿', '').split(',')[0], 'id');
 
   assert.match(html, /<!doctype html>/);
   assert.match(html, /<\/html>/);
@@ -268,4 +270,22 @@ test('attachment sizes read as sizes rather than raw byte counts', () => {
   );
   assert.match(html, /big\.png \(2\.0 MB\)/);
   assert.doesNotMatch(html, /2097152/);
+});
+
+test('CSV opens as UTF-8 in a spreadsheet rather than as mojibake', () => {
+  // Excel on Windows reads a .csv with the system ANSI codepage unless the file
+  // opens with a byte order mark, and Discord messages are full of accents and
+  // emoji. Without it, "cafe" with an accent and every emoji in an export come
+  // out as garbage in the one place people take these files to read them.
+  const csv = exp.toCSV([msg({ content: 'café ❤' })]);
+  assert.equal(csv.charCodeAt(0), 0xfeff, 'the file has to start with a byte order mark');
+  // Exactly one, and only at the very start: a mark anywhere else is data.
+  assert.equal(csv.indexOf('﻿', 1), -1);
+  assert.match(csv, /café ❤/);
+});
+
+test('the byte order mark does not become part of the first column', () => {
+  const rows = csvRows(exp.toCSV([msg()]));
+  assert.equal(rows[0].replace('﻿', ''), CSV_HEADER);
+  assert.equal(rows.length, 2);
 });
