@@ -762,6 +762,14 @@
     const startedAt = Date.now();
     $('search-fill').style.width = '0%';
     $('search-elapsed').textContent = '';
+    // Reset with the other two. The counter kept whatever the last search left
+    // in it, so a second search opened the progress panel already claiming
+    // "Found 1,250 messages of about 8,400" from the run before, or the words
+    // "Stopping after the request in flight" while it was in fact starting. It
+    // is wrong for at least one round trip, and far longer while Discord builds
+    // a search index, which is the case where somebody is most likely to be
+    // staring at it wondering whether anything is happening.
+    $('search-counter').textContent = t('searching');
 
     try {
       const found = await finder.find({

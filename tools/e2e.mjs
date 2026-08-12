@@ -1139,6 +1139,21 @@ async function main() {
       /\bg0\b/.test(scopePreflight || '') && !/\bg1\b/.test(scopePreflight || ''),
       `pre-flight said ${JSON.stringify(scopePreflight)}`);
 
+    // A second search must not open showing the first one's numbers. This is
+    // the tab where that is easy to see, because the search mock here is slow
+    // on purpose, which is also the case where it used to be wrong for longest.
+    await cdp.evaluate(scopeTab.session, "document.getElementById('run-back').click()");
+    await sleep(150);
+    await cdp.evaluate(scopeTab.session, "document.getElementById('review-back').click()");
+    await sleep(150);
+    const staleCounter = await textOf(cdp, scopeTab.session, '#search-counter');
+    await cdp.evaluate(scopeTab.session, "document.getElementById('search').click()");
+    await sleep(250);
+    const freshCounter = await textOf(cdp, scopeTab.session, '#search-counter');
+    check('scope', 'a second search does not open showing the first one figures',
+      /\d/.test(staleCounter || '') && !/\d/.test(freshCounter || ''),
+      `counter went from ${JSON.stringify(staleCounter)} to ${JSON.stringify(freshCounter)}`);
+
     await closeTab(cdp, scopeTab);
   } finally {
     server.close();
