@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Discord oturumu okunamadı."
   },
+  "errDifferentAccount": {
+    "message": "O Discord sekmesinde artık başka bir hesap açık. Yukarıda görünen hesapla yeniden giriş yap ya da baştan başlamak için bu sekmeyi yenile."
+  },
   "errGeneric": {
     "message": "Bir şeyler ters gitti."
   },

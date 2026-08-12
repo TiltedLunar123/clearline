@@ -463,6 +463,20 @@
    * been hidden for the rest of the page's life, and running the full connect
    * again would walk the user back to the first step and throw away the result
    * set they are halfway through acting on. This is the token half alone.
+   *
+   * The token half alone is not enough, though, which is the whole reason for
+   * the identity check below. The reason a session expired is often that
+   * somebody signed in again, and the account they signed in as does not have
+   * to be the one this tab connected with: an alt, or the next person on a
+   * shared machine. Everything that keeps this tool to the user's own messages
+   * is pinned to `state.me.id` captured at connect: the author filter the
+   * search sends, the check on the answer, and the last guard in job.js in
+   * front of the delete call. Installing a different account's token behind
+   * that leaves all three comparing against an id the credential no longer
+   * belongs to, so they agree the messages are "yours" and the requests go out
+   * as somebody else. On a server where the new account can moderate, that is
+   * this tool deleting another person's messages, which is the one outcome the
+   * whole design exists to make impossible.
    */
   async function reconnect() {
     if (state.superseded || state.connecting) return;
@@ -472,18 +486,41 @@
     say($('status'), t('statusReconnecting'));
     try {
       const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
+      // Checked after the await, like every other network path here. A takeover
+      // landing inside this round trip used to be overwritten by the tail of
+      // this function: the stand-down notice lives in #status, and the success
+      // line below is written to the same element, so a stopped tab ended up
+      // reading "Reconnected" with Search and Start greyed out and nothing left
+      // on screen to explain why.
+      if (state.superseded) return;
       if (!reply || !reply.ok) {
         say($('status'), tokenProblem(reply && reply.reason), 'error');
         return;
       }
       client.setToken(reply.token);
+
+      // Asked, not assumed. Only when there is an identity to protect: before a
+      // connect has ever succeeded there is nothing pinned to contradict.
+      if (state.me) {
+        const me = await client.me();
+        if (state.superseded) return;
+        if (String(me.id) !== String(state.me.id)) {
+          client.setToken(null);
+          say($('status'), t('errDifferentAccount'), 'error');
+          return;
+        }
+      }
+
       say($('status'), t('statusReconnected'));
       hide(button);
       syncTabActions();
     } catch (err) {
-      say($('status'), (err && err.message) || t('errGeneric'), 'error');
+      if (!state.superseded) say($('status'), (err && err.message) || t('errGeneric'), 'error');
     } finally {
-      button.disabled = false;
+      // Not unconditionally false, for the same reason Connect and Search are
+      // not: a tab superseded mid-reconnect would otherwise hand a control back
+      // at the moment it was supposed to have stopped.
+      button.disabled = state.superseded;
     }
   }
 

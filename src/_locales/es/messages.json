@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "No se pudo leer la sesión de Discord."
   },
+  "errDifferentAccount": {
+    "message": "Esa pestaña de Discord ha iniciado sesión con otra cuenta. Vuelve a iniciar sesión con la cuenta que aparece arriba, o recarga esta pestaña para empezar de nuevo."
+  },
   "errGeneric": {
     "message": "Algo ha salido mal."
   },

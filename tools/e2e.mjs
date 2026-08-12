@@ -90,6 +90,16 @@ async function buildTestVariant() {
 /* ------------------------------------------------------------------ */
 
 const ACCOUNT = { id: '111111111111111111', username: 'fixture', discriminator: '0' };
+
+/**
+ * Somebody else, for the reconnect check.
+ *
+ * A session expiring and somebody signing in as a different account are very
+ * often the same event, so a reconnect has to establish who the token it just
+ * read belongs to rather than assume it is still the account the tab connected
+ * as.
+ */
+const OTHER_ACCOUNT = { id: '999999999999999999', username: 'somebody-else', discriminator: '0' };
 const GUILDS = Array.from({ length: 7 }, (_, i) => ({ id: String(200000000000000000 + i), name: `g${i}` }));
 const DMS = Array.from({ length: 3 }, (_, i) => ({ id: String(300000000000000000 + i), type: 1 }));
 
@@ -559,6 +569,85 @@ async function main() {
     check('failures', '401 tells the user to reconnect', /reconnect/i.test(status401), `status said ${JSON.stringify(status401)}`);
 
     await closeTab(cdp, app401);
+
+    // A reconnect must establish whose token it just installed.
+    //
+    // The whole "your own messages only" guarantee is pinned to the account id
+    // captured at connect: it is the author filter the search sends, the check
+    // on Discord's answer, and the last guard in front of the delete call. A
+    // reconnect that installs a credential belonging to somebody else leaves
+    // all three comparing against an id the token no longer matches, so they
+    // agree and the requests go out as the other account. The realistic way in
+    // is the ordinary one: the session expired because somebody signed in
+    // again, as an alt or as the next person at the machine.
+    const appSwap = await openTab(cdp, appUrl);
+    let whoami = ACCOUNT;
+    await mockApi(cdp, appSwap.session, (method, pathname) => {
+      // Expiring the channel list is what drops the token and puts Reconnect on
+      // screen, which is how a real user reaches this button at all.
+      if (/^\/api\/v9\/guilds\/\d+\/channels/.test(pathname)) {
+        return { status: 401, body: { message: '401: Unauthorized' } };
+      }
+      if (pathname.startsWith('/api/v9/users/@me/guilds')) return { body: GUILDS, headers: OK_HEADERS };
+      if (pathname.startsWith('/api/v9/users/@me/channels')) return { body: DMS, headers: OK_HEADERS };
+      if (pathname.startsWith('/api/v9/users/@me')) return { body: whoami, headers: OK_HEADERS };
+      return { status: 404, body: {} };
+    });
+    await sleep(300);
+    await cdp.evaluate(appSwap.session, "document.getElementById('connect').click()");
+    await waitFor('the where step before the swap', async () =>
+      (await cdp.evaluate(appSwap.session, "!document.getElementById('step-where').classList.contains('hidden')")) === true
+    ).catch(() => null);
+
+    await cdp.evaluate(
+      appSwap.session,
+      `(() => {
+        const s = document.getElementById('guild-select');
+        s.value = ${JSON.stringify(GUILDS[0].id)};
+        s.dispatchEvent(new Event('change'));
+      })()`
+    );
+    const reconnectOffered = await waitFor(
+      'the reconnect button after a 401',
+      async () => ((await isVisible(cdp, appSwap.session, '#reconnect')) === true ? true : null),
+      { timeout: 10000 }
+    ).catch(() => false);
+    check('failures', 'a dropped session puts Reconnect where it can be clicked', reconnectOffered === true);
+
+    // Somebody signs discord.com back in as a different account.
+    whoami = OTHER_ACCOUNT;
+    await cdp.evaluate(appSwap.session, "document.getElementById('reconnect').click()");
+    const swapStatus = await waitFor(
+      'a verdict on the reconnect',
+      async () => {
+        const value = await textOf(cdp, appSwap.session, '#status');
+        return value && !/again\.\.\.$/.test(value) ? value : null;
+      },
+      { timeout: 15000 }
+    ).catch(() => '<no message>');
+
+    check('failures', 'a reconnect refuses a token belonging to a different account',
+      /different account/i.test(swapStatus || ''),
+      `status said ${JSON.stringify(swapStatus)}, so the tab accepted somebody else's credential`);
+
+    const swapState = JSON.parse(
+      await cdp.evaluate(
+        appSwap.session,
+        `JSON.stringify({
+          me: window.__clearline.state.me && window.__clearline.state.me.id,
+          shown: document.getElementById('account').textContent,
+          stillOffered: document.getElementById('reconnect').offsetParent !== null,
+        })`
+      )
+    );
+    check('failures', 'a refused reconnect leaves the pinned account alone',
+      swapState.me === ACCOUNT.id && swapState.shown === ACCOUNT.username,
+      `state.me was ${JSON.stringify(swapState.me)} and the panel showed ${JSON.stringify(swapState.shown)}`);
+    check('failures', 'a refused reconnect leaves the way back on screen',
+      swapState.stillOffered === true,
+      'the tab has no token and no Reconnect button, which is a dead end');
+
+    await closeTab(cdp, appSwap);
 
     // 429: the client must back off and then succeed, without the user seeing
     // an error. This is the path that protects the account.

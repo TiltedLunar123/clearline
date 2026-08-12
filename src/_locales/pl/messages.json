@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Nie udało się odczytać sesji Discorda."
   },
+  "errDifferentAccount": {
+    "message": "Ta karta Discorda jest teraz zalogowana na innym koncie. Zaloguj się ponownie na konto pokazane powyżej albo odśwież tę kartę, aby zacząć od nowa."
+  },
   "errGeneric": {
     "message": "Coś poszło nie tak."
   },

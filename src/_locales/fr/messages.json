@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Impossible de lire la session Discord."
   },
+  "errDifferentAccount": {
+    "message": "Cet onglet Discord est maintenant connecté avec un autre compte. Reconnectez-vous avec le compte indiqué ci-dessus, ou rechargez cet onglet pour recommencer."
+  },
   "errGeneric": {
     "message": "Quelque chose s'est mal passé."
   },

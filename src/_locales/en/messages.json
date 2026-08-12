@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Could not read the Discord session."
   },
+  "errDifferentAccount": {
+    "message": "That Discord tab is signed in as a different account now. Sign back in as the account shown above, or reload this tab to start again."
+  },
   "errGeneric": {
     "message": "Something went wrong."
   },

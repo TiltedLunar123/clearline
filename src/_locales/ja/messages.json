@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Discord のセッションを読み取れませんでした。"
   },
+  "errDifferentAccount": {
+    "message": "その Discord タブは別のアカウントでログインしています。上に表示されているアカウントでログインし直すか、このタブを再読み込みして最初からやり直してください。"
+  },
   "errGeneric": {
     "message": "問題が発生しました。"
   },

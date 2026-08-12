@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Não foi possível ler a sessão do Discord."
   },
+  "errDifferentAccount": {
+    "message": "Aquela aba do Discord está conectada com outra conta agora. Entre novamente com a conta mostrada acima, ou recarregue esta aba para começar de novo."
+  },
   "errGeneric": {
     "message": "Alguma coisa deu errado."
   },

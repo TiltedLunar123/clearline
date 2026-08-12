@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Non sono riuscito a leggere la sessione di Discord."
   },
+  "errDifferentAccount": {
+    "message": "Quella scheda di Discord ora ha effettuato l'accesso con un altro account. Accedi di nuovo con l'account mostrato sopra, oppure ricarica questa scheda per ricominciare."
+  },
   "errGeneric": {
     "message": "Qualcosa è andato storto."
   },

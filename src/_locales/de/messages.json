@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Die Discord-Sitzung konnte nicht gelesen werden."
   },
+  "errDifferentAccount": {
+    "message": "In diesem Discord-Tab ist jetzt ein anderes Konto angemeldet. Melde dich wieder mit dem oben angezeigten Konto an, oder lade diesen Tab neu, um von vorn zu beginnen."
+  },
   "errGeneric": {
     "message": "Etwas ist schiefgelaufen."
   },

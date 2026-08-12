@@ -84,6 +84,9 @@
   "errNoSession": {
     "message": "Discord 세션을 읽지 못했습니다."
   },
+  "errDifferentAccount": {
+    "message": "해당 Discord 탭은 이제 다른 계정으로 로그인되어 있습니다. 위에 표시된 계정으로 다시 로그인하거나, 이 탭을 새로 고쳐 처음부터 시작하세요."
+  },
   "errGeneric": {
     "message": "문제가 발생했습니다."
   },
