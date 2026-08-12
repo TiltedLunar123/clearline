@@ -1143,9 +1143,19 @@
     const box = $('run-report');
     box.textContent = '';
 
+    /*
+     * The same report, in the shape a file wants.
+     *
+     * Filled as the sentences are built for the screen rather than rebuilt
+     * afterwards, so the file cannot say something different from the page. It
+     * is the reason the strings go into an object here instead of straight into
+     * a text node.
+     */
+    const doc = { headline: '', error: null, lines: [], sections: [] };
+
     const headline = document.createElement('p');
     headline.className = 'headline';
-    headline.textContent = t(
+    doc.headline = t(
       summary.status === 'done'
         ? 'reportFinished'
         : summary.status === 'cancelled'
@@ -1153,12 +1163,14 @@
           : 'reportHalted',
       [count(summary.done)]
     );
+    headline.textContent = doc.headline;
     box.appendChild(headline);
 
     if (summary.error) {
       const why = document.createElement('p');
       why.className = 'error';
       why.textContent = summary.error;
+      doc.error = summary.error;
       box.appendChild(why);
     }
 
@@ -1169,6 +1181,7 @@
     if (summary.remaining > 0) {
       const left = document.createElement('p');
       left.textContent = plural('reportRemaining', summary.remaining);
+      doc.lines.push(left.textContent);
       box.appendChild(left);
     }
 
@@ -1181,6 +1194,21 @@
       const sum = document.createElement('summary');
       sum.textContent = t(label, [count(list.length)]);
       details.appendChild(sum);
+      // The file gets the whole list. The fifty on screen are a reading limit,
+      // not a record of what happened, and the file is the record.
+      doc.sections.push({
+        title: sum.textContent,
+        entries: list.map((entry) => {
+          const m = entry.message || {};
+          return {
+            when: localStamp(m.timestamp),
+            where: m.channelName ? `#${m.channelName}` : '',
+            text: m.content || '',
+            reason: entry.reason,
+            id: m.id || '',
+          };
+        }),
+      });
       const ul = document.createElement('ul');
       for (const entry of list.slice(0, 50)) {
         const li = document.createElement('li');
@@ -1222,6 +1250,34 @@
       });
       buttons.appendChild(retry);
     }
+
+    /*
+     * Keep the report.
+     *
+     * What a run did lives only in this box, and a run can take hours. Which
+     * messages were left alone and why, which failed and with what, how many
+     * were never reached: close the tab and it is gone, and there is nothing to
+     * go back and look at, because the messages it is about have been deleted.
+     * The list on screen also stops at fifty; the file does not.
+     */
+    const save = document.createElement('button');
+    save.className = 'ghost';
+    save.type = 'button';
+    save.textContent = t('reportSave');
+    save.addEventListener('click', () => {
+      try {
+        const meta = metaFor();
+        download(
+          CL.exporter.reportToHTML(doc, meta),
+          CL.exporter.filenameFor(meta, 'html', 'report'),
+          'text/html'
+        );
+        say($('run-status'), t('saved'));
+      } catch (err) {
+        say($('run-status'), (err && err.message) || t('errSaveFailed'), 'error');
+      }
+    });
+    buttons.appendChild(save);
 
     // The preflight tells the user to search again and then offers nothing that
     // does it, so the route was Back, Back, Search. Several passes over one

@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "削除は取り消せません。ここで保存したものが、手元に残る唯一の記録になります。"
   },
+  "exportTitle": {
+    "message": "Clearline のエクスポート"
+  },
+  "exportWhere": {
+    "message": "場所"
+  },
+  "exportCount": {
+    "message": "メッセージ数"
+  },
+  "exportFilter": {
+    "message": "絞り込み"
+  },
+  "exportWhen": {
+    "message": "保存日時"
+  },
+  "exportEdited": {
+    "message": "編集済み"
+  },
+  "exportPinned": {
+    "message": "ピン留め"
+  },
   "downloadHtml": {
     "message": "HTML でダウンロード"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "もう一度検索"
+  },
+  "reportTitle": {
+    "message": "Clearline の実行レポート"
+  },
+  "reportSave": {
+    "message": "このレポートを保存"
   },
   "reasonNotYours": {
     "message": "このアカウントが書いたものだと確認できませんでした"

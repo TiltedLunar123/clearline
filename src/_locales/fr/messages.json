@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "La suppression est définitive. Ce que vous gardez ici sera la seule trace qu'il vous restera."
   },
+  "exportTitle": {
+    "message": "Export Clearline"
+  },
+  "exportWhere": {
+    "message": "Où"
+  },
+  "exportCount": {
+    "message": "Messages"
+  },
+  "exportFilter": {
+    "message": "Filtre"
+  },
+  "exportWhen": {
+    "message": "Enregistré"
+  },
+  "exportEdited": {
+    "message": "modifié"
+  },
+  "exportPinned": {
+    "message": "épinglé"
+  },
   "downloadHtml": {
     "message": "Télécharger en HTML"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Relancer une recherche"
+  },
+  "reportTitle": {
+    "message": "Rapport d'exécution Clearline"
+  },
+  "reportSave": {
+    "message": "Enregistrer ce rapport"
   },
   "reasonNotYours": {
     "message": "Non confirmé comme écrit par ce compte"

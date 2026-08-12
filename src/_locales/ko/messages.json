@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "삭제는 되돌릴 수 없습니다. 여기서 남겨 두는 것이 손에 남는 유일한 기록이 됩니다."
   },
+  "exportTitle": {
+    "message": "Clearline 내보내기"
+  },
+  "exportWhere": {
+    "message": "위치"
+  },
+  "exportCount": {
+    "message": "메시지"
+  },
+  "exportFilter": {
+    "message": "필터"
+  },
+  "exportWhen": {
+    "message": "저장 시각"
+  },
+  "exportEdited": {
+    "message": "수정됨"
+  },
+  "exportPinned": {
+    "message": "고정됨"
+  },
   "downloadHtml": {
     "message": "HTML 내려받기"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "다시 검색"
+  },
+  "reportTitle": {
+    "message": "Clearline 실행 보고서"
+  },
+  "reportSave": {
+    "message": "이 보고서 저장"
   },
   "reasonNotYours": {
     "message": "이 계정이 쓴 것으로 확인되지 않음"

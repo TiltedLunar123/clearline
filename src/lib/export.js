@@ -10,6 +10,11 @@
  * before it is serialised. HTML is the safer human-readable path and still
  * escapes every interpolated value, because an export is something people open
  * in a browser.
+ *
+ * The HTML document is written in the reader's language. It is the record that
+ * outlives the messages, and an app that speaks eleven languages handing back an
+ * English document is the one place that stopped being true. CSV stays as it is:
+ * its header row is a column contract other software reads, not prose.
  */
 CL.exporter = (function () {
   'use strict';
@@ -145,35 +150,37 @@ CL.exporter = (function () {
     return (n / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
+  /** Shared by both documents this file produces, so they look like one tool. */
+  const SHARED_CSS = [
+    'body{margin:0;padding:1.5rem;background:#1e1f22;color:#dbdee1;font:14px/1.5 system-ui,sans-serif}',
+    'header{border-bottom:1px solid #3f4147;padding-bottom:1rem;margin-bottom:1.5rem}',
+    'header h1{margin:0 0 0.5rem;font-size:1.25rem;color:#f2f3f5}',
+    'header dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:0.25rem 1rem}',
+    'header dt{color:#949ba4}header dd{margin:0}',
+    'article{background:#2b2d31;border:1px solid #3f4147;border-radius:8px;padding:1rem;margin:0 0 0.75rem}',
+    '.meta{color:#949ba4;font-size:0.85rem;margin-bottom:0.5rem}',
+    '.meta .mark{display:inline-block;margin-left:0.5rem;color:#f0b232}',
+    '.content{white-space:pre-wrap;word-break:break-word;margin:0.5rem 0 0}',
+  ].join('\n');
+
   function toHTML(messages, meta) {
     const m = meta || {};
     const rows = messages || [];
     const exported = isoOf(m.generatedAt);
 
+    const t = CL.i18n.t;
+
     const parts = [];
     parts.push('<!doctype html>');
-    parts.push('<html lang="en">');
+    // The locale the reader's browser actually chose, not the one this file was
+    // written in. It drives hyphenation, quote marks, and how a screen reader
+    // pronounces the whole document.
+    parts.push('<html lang="' + escapeHtml(CL.i18n.language()) + '">');
     parts.push('<head>');
     parts.push('<meta charset="utf-8">');
-    parts.push('<title>' + escapeHtml('Clearline export') + '</title>');
+    parts.push('<title>' + escapeHtml(t('exportTitle')) + '</title>');
     parts.push('<style>');
-    parts.push(
-      'body{margin:0;padding:1.5rem;background:#1e1f22;color:#dbdee1;' +
-        'font:14px/1.5 system-ui,sans-serif}'
-    );
-    parts.push(
-      'header{border-bottom:1px solid #3f4147;padding-bottom:1rem;margin-bottom:1.5rem}'
-    );
-    parts.push('header h1{margin:0 0 0.5rem;font-size:1.25rem;color:#f2f3f5}');
-    parts.push('header dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:0.25rem 1rem}');
-    parts.push('header dt{color:#949ba4}header dd{margin:0}');
-    parts.push(
-      'article{background:#2b2d31;border:1px solid #3f4147;border-radius:8px;' +
-        'padding:1rem;margin:0 0 0.75rem}'
-    );
-    parts.push('.meta{color:#949ba4;font-size:0.85rem;margin-bottom:0.5rem}');
-    parts.push('.meta .mark{display:inline-block;margin-left:0.5rem;color:#f0b232}');
-    parts.push('.content{white-space:pre-wrap;word-break:break-word;margin:0.5rem 0 0}');
+    parts.push(SHARED_CSS);
     parts.push(
       'ul.attachments{margin:0.5rem 0 0;padding-left:1.25rem;color:#b5bac1;font-size:0.9rem}'
     );
@@ -181,19 +188,19 @@ CL.exporter = (function () {
     parts.push('</head>');
     parts.push('<body>');
     parts.push('<header>');
-    parts.push('<h1>' + escapeHtml('Clearline export') + '</h1>');
+    parts.push('<h1>' + escapeHtml(t('exportTitle')) + '</h1>');
     parts.push('<dl>');
-    parts.push('<dt>' + escapeHtml('Account') + '</dt><dd>' + escapeHtml(cellText(m.account)) + '</dd>');
-    parts.push('<dt>' + escapeHtml('Scope') + '</dt><dd>' + escapeHtml(cellText(m.scope)) + '</dd>');
-    parts.push('<dt>' + escapeHtml('Messages') + '</dt><dd>' + escapeHtml(cellText(m.total)) + '</dd>');
+    parts.push('<dt>' + escapeHtml(t('labelAccount')) + '</dt><dd>' + escapeHtml(cellText(m.account)) + '</dd>');
+    parts.push('<dt>' + escapeHtml(t('exportWhere')) + '</dt><dd>' + escapeHtml(cellText(m.scope)) + '</dd>');
+    parts.push('<dt>' + escapeHtml(t('exportCount')) + '</dt><dd>' + escapeHtml(cellText(m.total)) + '</dd>');
     parts.push(
       '<dt>' +
-        escapeHtml('Filter') +
+        escapeHtml(t('exportFilter')) +
         '</dt><dd>' +
         escapeHtml(cellText(m.filterSummary)) +
         '</dd>'
     );
-    parts.push('<dt>' + escapeHtml('Exported') + '</dt><dd>' + escapeHtml(exported) + '</dd>');
+    parts.push('<dt>' + escapeHtml(t('exportWhen')) + '</dt><dd>' + escapeHtml(exported) + '</dd>');
     parts.push('</dl>');
     parts.push('</header>');
 
@@ -209,8 +216,8 @@ CL.exporter = (function () {
       parts.push('<div class="meta">');
       parts.push('<strong>' + escapeHtml(author) + '</strong>');
       parts.push(' <time>' + escapeHtml(ts) + '</time>');
-      if (edited) parts.push('<span class="mark">' + escapeHtml('edited') + '</span>');
-      if (pinned) parts.push('<span class="mark">' + escapeHtml('pinned') + '</span>');
+      if (edited) parts.push('<span class="mark">' + escapeHtml(t('exportEdited')) + '</span>');
+      if (pinned) parts.push('<span class="mark">' + escapeHtml(t('exportPinned')) + '</span>');
       parts.push('</div>');
       parts.push('<div class="content">' + escapeHtml(content) + '</div>');
 
@@ -236,13 +243,88 @@ CL.exporter = (function () {
   }
 
   /**
+   * The run report as a file.
+   *
+   * What a run did is only ever on screen, and a run can take hours: which
+   * messages were left alone and why, which failed and with what error, how
+   * many were never reached at all. Close the tab and that is gone, and unlike
+   * an ordinary lost page there is nothing to go back and look at, because the
+   * messages it describes have been deleted.
+   *
+   * Every string arrives already translated. The app builds these sentences for
+   * the screen, and rebuilding them here would mean a second set of message
+   * keys saying the same things, free to drift from the first.
+   */
+  function reportToHTML(report, meta) {
+    const r = report || {};
+    const m = meta || {};
+    const t = CL.i18n.t;
+
+    const parts = [];
+    parts.push('<!doctype html>');
+    parts.push('<html lang="' + escapeHtml(CL.i18n.language()) + '">');
+    parts.push('<head>');
+    parts.push('<meta charset="utf-8">');
+    parts.push('<title>' + escapeHtml(t('reportTitle')) + '</title>');
+    parts.push('<style>');
+    parts.push(SHARED_CSS);
+    parts.push('h2{font-size:1rem;color:#f2f3f5;margin:1.5rem 0 0.5rem}');
+    parts.push('.headline{font-size:1.05rem;color:#f2f3f5;margin:0 0 0.5rem}');
+    parts.push('.error{color:#f08a80;margin:0 0 0.5rem}');
+    parts.push('.reason{color:#f0b232}');
+    parts.push('</style>');
+    parts.push('</head>');
+    parts.push('<body>');
+    parts.push('<header>');
+    parts.push('<h1>' + escapeHtml(t('reportTitle')) + '</h1>');
+    parts.push('<dl>');
+    parts.push('<dt>' + escapeHtml(t('labelAccount')) + '</dt><dd>' + escapeHtml(cellText(m.account)) + '</dd>');
+    parts.push('<dt>' + escapeHtml(t('exportWhere')) + '</dt><dd>' + escapeHtml(cellText(m.scope)) + '</dd>');
+    parts.push('<dt>' + escapeHtml(t('exportFilter')) + '</dt><dd>' + escapeHtml(cellText(m.filterSummary)) + '</dd>');
+    parts.push('<dt>' + escapeHtml(t('exportWhen')) + '</dt><dd>' + escapeHtml(isoOf(m.generatedAt)) + '</dd>');
+    parts.push('</dl>');
+    parts.push('</header>');
+
+    parts.push('<p class="headline">' + escapeHtml(cellText(r.headline)) + '</p>');
+    if (r.error) parts.push('<p class="error">' + escapeHtml(cellText(r.error)) + '</p>');
+    for (const line of r.lines || []) {
+      parts.push('<p>' + escapeHtml(cellText(line)) + '</p>');
+    }
+
+    for (const section of r.sections || []) {
+      const entries = (section && section.entries) || [];
+      if (!entries.length) continue;
+      parts.push('<h2>' + escapeHtml(cellText(section.title)) + '</h2>');
+      for (const entry of entries) {
+        const e = entry || {};
+        parts.push('<article>');
+        parts.push('<div class="meta">');
+        parts.push('<time>' + escapeHtml(cellText(e.when)) + '</time>');
+        if (e.where) parts.push(' <span>' + escapeHtml(cellText(e.where)) + '</span>');
+        if (e.id) parts.push(' <span>' + escapeHtml(cellText(e.id)) + '</span>');
+        parts.push('</div>');
+        if (e.text) parts.push('<div class="content">' + escapeHtml(cellText(e.text)) + '</div>');
+        parts.push('<p class="reason">' + escapeHtml(cellText(e.reason)) + '</p>');
+        parts.push('</article>');
+      }
+    }
+
+    parts.push('</body>');
+    parts.push('</html>');
+    return parts.join('\n');
+  }
+
+  /**
    * Safe download name from scope and export time.
    *
    * Only a-z, 0-9 and hyphen survive. Everything else becomes a hyphen so a
    * scope like "My Server / #general" turns into a path-safe slug without
    * inventing host-looking fragments.
+   *
+   * `tag` distinguishes one kind of file from another in a downloads folder
+   * that will hold several of them from the same run.
    */
-  function filenameFor(meta, ext) {
+  function filenameFor(meta, ext, tag) {
     const m = meta || {};
     let slug = String(m.scope || '')
       .toLowerCase()
@@ -267,10 +349,11 @@ CL.exporter = (function () {
       pad(d.getUTCSeconds());
 
     const bits = ['clearline'];
+    if (tag) bits.push(String(tag));
     if (slug) bits.push(slug);
     bits.push(stamp);
     return bits.join('-') + '.' + String(ext || 'txt');
   }
 
-  return { toJSON, toCSV, toHTML, filenameFor };
+  return { toJSON, toCSV, toHTML, reportToHTML, filenameFor };
 })();

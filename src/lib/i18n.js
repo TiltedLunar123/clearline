@@ -123,5 +123,20 @@ CL.i18n = (function () {
     document.documentElement.lang = api.getUILanguage();
   }
 
-  return { t, plural, num, list, has, apply };
+  /**
+   * The locale the browser actually picked.
+   *
+   * Wanted by anything that builds a document rather than the page: an export
+   * needs it on `<html lang>` for hyphenation, quote marks and how a screen
+   * reader pronounces it, and has no DOM of its own to read it back from.
+   */
+  function language() {
+    try {
+      return api.getUILanguage() || 'en';
+    } catch {
+      return 'en';
+    }
+  }
+
+  return { t, plural, num, list, has, apply, language };
 })();

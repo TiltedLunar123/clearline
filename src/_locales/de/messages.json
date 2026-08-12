@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "Löschen lässt sich nicht rückgängig machen. Was du hier behältst, ist die einzige Aufzeichnung, die dir bleibt."
   },
+  "exportTitle": {
+    "message": "Clearline-Export"
+  },
+  "exportWhere": {
+    "message": "Wo"
+  },
+  "exportCount": {
+    "message": "Nachrichten"
+  },
+  "exportFilter": {
+    "message": "Filter"
+  },
+  "exportWhen": {
+    "message": "Gespeichert"
+  },
+  "exportEdited": {
+    "message": "bearbeitet"
+  },
+  "exportPinned": {
+    "message": "angepinnt"
+  },
   "downloadHtml": {
     "message": "Als HTML laden"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Erneut suchen"
+  },
+  "reportTitle": {
+    "message": "Clearline-Laufbericht"
+  },
+  "reportSave": {
+    "message": "Diesen Bericht speichern"
   },
   "reasonNotYours": {
     "message": "Nicht bestätigt, dass dieses Konto sie geschrieben hat"

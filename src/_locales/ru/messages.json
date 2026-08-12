@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "Удаление нельзя отменить. То, что вы сохраните здесь, будет единственной записью, которая у вас останется."
   },
+  "exportTitle": {
+    "message": "Экспорт Clearline"
+  },
+  "exportWhere": {
+    "message": "Где"
+  },
+  "exportCount": {
+    "message": "Сообщения"
+  },
+  "exportFilter": {
+    "message": "Фильтр"
+  },
+  "exportWhen": {
+    "message": "Сохранено"
+  },
+  "exportEdited": {
+    "message": "изменено"
+  },
+  "exportPinned": {
+    "message": "закреплено"
+  },
   "downloadHtml": {
     "message": "Скачать HTML"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Искать заново"
+  },
+  "reportTitle": {
+    "message": "Отчёт о выполнении Clearline"
+  },
+  "reportSave": {
+    "message": "Сохранить этот отчёт"
   },
   "reasonNotYours": {
     "message": "Не подтверждено, что это написал данный аккаунт"

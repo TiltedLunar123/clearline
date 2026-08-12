@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "Apagar não pode ser desfeito. O que você guardar aqui será o único registro que vai ter."
   },
+  "exportTitle": {
+    "message": "Exportação do Clearline"
+  },
+  "exportWhere": {
+    "message": "Onde"
+  },
+  "exportCount": {
+    "message": "Mensagens"
+  },
+  "exportFilter": {
+    "message": "Filtro"
+  },
+  "exportWhen": {
+    "message": "Salvo"
+  },
+  "exportEdited": {
+    "message": "editado"
+  },
+  "exportPinned": {
+    "message": "fixado"
+  },
   "downloadHtml": {
     "message": "Baixar HTML"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Pesquisar de novo"
+  },
+  "reportTitle": {
+    "message": "Relatório de execução do Clearline"
+  },
+  "reportSave": {
+    "message": "Salvar este relatório"
   },
   "reasonNotYours": {
     "message": "Não foi confirmado que esta conta escreveu"

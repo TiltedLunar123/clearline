@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "L'eliminazione non si può annullare. Quello che tieni qui sarà l'unica traccia che ti resta."
   },
+  "exportTitle": {
+    "message": "Esportazione di Clearline"
+  },
+  "exportWhere": {
+    "message": "Dove"
+  },
+  "exportCount": {
+    "message": "Messaggi"
+  },
+  "exportFilter": {
+    "message": "Filtro"
+  },
+  "exportWhen": {
+    "message": "Salvato"
+  },
+  "exportEdited": {
+    "message": "modificato"
+  },
+  "exportPinned": {
+    "message": "fissato"
+  },
   "downloadHtml": {
     "message": "Scarica HTML"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Cerca di nuovo"
+  },
+  "reportTitle": {
+    "message": "Rapporto di esecuzione di Clearline"
+  },
+  "reportSave": {
+    "message": "Salva questo rapporto"
   },
   "reasonNotYours": {
     "message": "Non confermato come scritto da questo account"

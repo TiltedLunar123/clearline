@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "Usunięcia nie da się cofnąć. To, co tu zachowasz, będzie jedynym śladem, jaki ci zostanie."
   },
+  "exportTitle": {
+    "message": "Eksport z Clearline"
+  },
+  "exportWhere": {
+    "message": "Gdzie"
+  },
+  "exportCount": {
+    "message": "Wiadomości"
+  },
+  "exportFilter": {
+    "message": "Filtr"
+  },
+  "exportWhen": {
+    "message": "Zapisano"
+  },
+  "exportEdited": {
+    "message": "edytowano"
+  },
+  "exportPinned": {
+    "message": "przypięto"
+  },
   "downloadHtml": {
     "message": "Pobierz HTML"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Szukaj ponownie"
+  },
+  "reportTitle": {
+    "message": "Raport z przebiegu Clearline"
+  },
+  "reportSave": {
+    "message": "Zapisz ten raport"
   },
   "reasonNotYours": {
     "message": "Nie potwierdzono, że napisało to konto"

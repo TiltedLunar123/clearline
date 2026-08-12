@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "Borrar no se puede deshacer. Lo que guardes aquí será el único registro que tendrás."
   },
+  "exportTitle": {
+    "message": "Exportación de Clearline"
+  },
+  "exportWhere": {
+    "message": "Dónde"
+  },
+  "exportCount": {
+    "message": "Mensajes"
+  },
+  "exportFilter": {
+    "message": "Filtro"
+  },
+  "exportWhen": {
+    "message": "Guardado"
+  },
+  "exportEdited": {
+    "message": "editado"
+  },
+  "exportPinned": {
+    "message": "fijado"
+  },
   "downloadHtml": {
     "message": "Descargar HTML"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Buscar otra vez"
+  },
+  "reportTitle": {
+    "message": "Informe de ejecución de Clearline"
+  },
+  "reportSave": {
+    "message": "Guardar este informe"
   },
   "reasonNotYours": {
     "message": "No se ha confirmado que lo escribiera esta cuenta"

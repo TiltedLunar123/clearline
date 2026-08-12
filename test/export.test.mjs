@@ -173,7 +173,33 @@ test('HTML contains no external URL', () => {
     META
   );
   assert.doesNotMatch(html, /https?:\/\//i);
-  assert.match(html, /^<!doctype html>\n<html lang="en">/);
+  // The locale the browser chose, not the one this file was authored in.
+  assert.match(html, /^<!doctype html>\n<html lang="en-US">/);
+});
+
+test('the export document is written in the reader language', () => {
+  // An app that speaks eleven languages handing back an English document was
+  // the one place that stopped being true, and this document is the record that
+  // outlives the messages it describes.
+  const html = exp.toHTML(
+    [msg({ pinned: true, editedTimestamp: '2024-03-01T11:00:00.000Z' })],
+    META
+  );
+  const keys = [
+    'exportTitle',
+    'exportWhere',
+    'exportCount',
+    'exportFilter',
+    'exportWhen',
+    'exportEdited',
+    'exportPinned',
+    'labelAccount',
+  ];
+  for (const key of keys) {
+    const text = ctx.CL.i18n.t(key);
+    assert.notEqual(text, key, `${key} has to exist in the message store`);
+    assert.ok(html.includes(text), `${key} ("${text}") never made it into the document`);
+  }
 });
 
 test('JSON round-trips through JSON.parse with the message array intact', () => {
@@ -288,4 +314,93 @@ test('the byte order mark does not become part of the first column', () => {
   const rows = csvRows(exp.toCSV([msg()]));
   assert.equal(rows[0].replace('﻿', ''), CSV_HEADER);
   assert.equal(rows.length, 2);
+});
+
+test('the run report becomes a file that outlives the tab', () => {
+  const report = {
+    headline: 'Finished. 5 messages handled.',
+    error: null,
+    lines: ['12 messages were never attempted. Search again to pick them up.'],
+    sections: [
+      {
+        title: '2 left alone',
+        entries: [
+          {
+            when: '2024-03-01 12:30',
+            where: '#general',
+            text: 'joined the server',
+            reason: 'Discord does not allow deleting this kind of message',
+            id: '1234567890123456789',
+          },
+          {
+            when: '2024-03-01 12:31',
+            where: '#general',
+            text: '',
+            reason: 'No permission in that channel',
+            id: '1234567890123456790',
+          },
+        ],
+      },
+    ],
+  };
+  const html = exp.reportToHTML(report, META);
+
+  assert.match(html, /^<!doctype html>/);
+  assert.match(html, /<\/html>$/);
+  assert.ok(html.includes(report.headline));
+  assert.ok(html.includes(report.lines[0]));
+  assert.ok(html.includes('2 left alone'));
+  assert.ok(html.includes('Discord does not allow deleting this kind of message'));
+  assert.ok(html.includes('No permission in that channel'));
+  // The header names the account and where the run was, so the file still means
+  // something a month later in a downloads folder.
+  assert.ok(html.includes(META.account));
+  assert.ok(html.includes(META.scope));
+  assert.ok(html.includes(ctx.CL.i18n.t('reportTitle')));
+});
+
+test('the report file carries every entry, not the fifty the screen shows', () => {
+  const entries = Array.from({ length: 120 }, (_, i) => ({
+    when: '2024-03-01 12:00',
+    where: '#general',
+    text: 'row ' + i,
+    reason: 'nope',
+    id: String(i),
+  }));
+  const html = exp.reportToHTML({ headline: 'x', sections: [{ title: '120 failed', entries }] }, META);
+  assert.ok(html.includes('row 0'));
+  assert.ok(html.includes('row 119'), 'the list on screen stops at fifty; the file must not');
+});
+
+test('a report escapes message text rather than letting it become markup', () => {
+  const html = exp.reportToHTML(
+    {
+      headline: 'done',
+      sections: [
+        {
+          title: '1 failed',
+          entries: [{ when: 'w', where: '#c', text: '<img src=x onerror=alert(1)>', reason: 'r', id: '1' }],
+        },
+      ],
+    },
+    META
+  );
+  assert.doesNotMatch(html, /<img/);
+  assert.match(html, /&lt;img/);
+});
+
+test('a report with nothing to list is still a valid document', () => {
+  const html = exp.reportToHTML({ headline: 'Finished. 0 messages handled.' }, META);
+  assert.match(html, /^<!doctype html>/);
+  assert.match(html, /<\/html>$/);
+  assert.doesNotThrow(() => exp.reportToHTML({}, {}));
+  assert.doesNotThrow(() => exp.reportToHTML(null, null));
+});
+
+test('a report filename does not collide with an export of the same scope', () => {
+  const report = exp.filenameFor(META, 'html', 'report');
+  const plain = exp.filenameFor(META, 'html');
+  assert.notEqual(report, plain);
+  assert.match(report, /^clearline-report-/);
+  assert.match(plain, /^clearline-my-server/);
 });

@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "Silme geri alınamaz. Burada sakladığın şey elinde kalacak tek kayıt olacak."
   },
+  "exportTitle": {
+    "message": "Clearline dışa aktarma"
+  },
+  "exportWhere": {
+    "message": "Nerede"
+  },
+  "exportCount": {
+    "message": "Mesajlar"
+  },
+  "exportFilter": {
+    "message": "Filtre"
+  },
+  "exportWhen": {
+    "message": "Kaydedildi"
+  },
+  "exportEdited": {
+    "message": "düzenlendi"
+  },
+  "exportPinned": {
+    "message": "sabitlendi"
+  },
   "downloadHtml": {
     "message": "HTML indir"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Yeniden ara"
+  },
+  "reportTitle": {
+    "message": "Clearline çalışma raporu"
+  },
+  "reportSave": {
+    "message": "Bu raporu kaydet"
   },
   "reasonNotYours": {
     "message": "Bu hesabın yazdığı doğrulanmadı"

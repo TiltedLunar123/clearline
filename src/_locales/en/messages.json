@@ -329,6 +329,27 @@
   "saveHint": {
     "message": "Deleting cannot be undone. Whatever you keep here is the only record you will have."
   },
+  "exportTitle": {
+    "message": "Clearline export"
+  },
+  "exportWhere": {
+    "message": "Where"
+  },
+  "exportCount": {
+    "message": "Messages"
+  },
+  "exportFilter": {
+    "message": "Filter"
+  },
+  "exportWhen": {
+    "message": "Saved"
+  },
+  "exportEdited": {
+    "message": "edited"
+  },
+  "exportPinned": {
+    "message": "pinned"
+  },
   "downloadHtml": {
     "message": "Download HTML"
   },
@@ -802,6 +823,12 @@
   },
   "reportSearchAgain": {
     "message": "Search again"
+  },
+  "reportTitle": {
+    "message": "Clearline run report"
+  },
+  "reportSave": {
+    "message": "Save this report"
   },
   "reasonNotYours": {
     "message": "Not confirmed as written by this account"

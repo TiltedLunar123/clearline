@@ -991,6 +991,27 @@ async function main() {
       Date.now() - startedAt >= 4 * 900,
       `finished in ${Date.now() - startedAt}ms, which is faster than five paced writes can be`);
 
+    // Keeping the report has to be offered where it can actually be clicked,
+    // not merely present in the markup. A control inside a hidden subtree reads
+    // fine to a programmatic click and to textContent, which is how a stopped
+    // tab once passed this suite with no way back on screen at all.
+    const saveOffered = await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const buttons = Array.from(document.querySelectorAll('#run-report button'));
+        const save = buttons.find((b) => b.textContent === ${JSON.stringify('Save this report')});
+        return JSON.stringify({
+          found: !!save,
+          visible: !!save && save.offsetParent !== null,
+          labels: buttons.map((b) => b.textContent),
+        });
+      })()`
+    );
+    const savedState = JSON.parse(saveOffered);
+    check('operations', 'the report offers to be kept',
+      savedState.found === true && savedState.visible === true,
+      `report buttons were ${JSON.stringify(savedState.labels)}`);
+
     await closeTab(cdp, ops);
 
     /* ---------------- group: scope ---------------- */
