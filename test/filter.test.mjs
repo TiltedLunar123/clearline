@@ -79,8 +79,62 @@ test('only deletable message types survive the deletable filter', () => {
   const matches = filter.compile({ onlyDeletable: true });
   assert.equal(matches(msg({ type: 0 })), true, 'a normal message');
   assert.equal(matches(msg({ type: 19 })), true, 'a reply');
-  assert.equal(matches(msg({ type: 7 })), false, 'a join notice');
-  assert.equal(matches(msg({ type: 6 })), false, 'a pin notice');
+  // These are the account's own trace in a server just as much as anything it
+  // typed, and Discord's own message type table marks every one of them
+  // deletable by their author. Treating them as untouchable left them in place
+  // for good and told the user Discord had forbidden it.
+  assert.equal(matches(msg({ type: 7 })), true, 'a join notice');
+  assert.equal(matches(msg({ type: 6 })), true, 'a pin notice');
+  assert.equal(matches(msg({ type: 18 })), true, 'started a thread');
+  assert.equal(matches(msg({ type: 8 })), true, 'a boost');
+  // And these Discord genuinely refuses from anyone.
+  assert.equal(matches(msg({ type: 3 })), false, 'a call');
+  assert.equal(matches(msg({ type: 4 })), false, 'a channel rename');
+  assert.equal(matches(msg({ type: 21 })), false, 'a thread starter pointer');
+});
+
+test('what can be overwritten is a shorter list than what can be deleted', () => {
+  // Deliberately two lists rather than one. A join notice can be removed but
+  // has no text behind it to replace, and Discord answers that PATCH with a
+  // plain 400: the failure pile rather than the skip pile, blaming the wrong
+  // thing and counting toward the limit that halts a whole run. One predicate
+  // answering both questions had to be as narrow as the stricter of them.
+  for (const type of [0, 19]) {
+    assert.equal(filter.isEditable(msg({ type })), true, `type ${type} is text the user wrote`);
+    assert.equal(filter.isDeletable(msg({ type })), true, `type ${type} is deletable too`);
+  }
+  for (const type of [6, 7, 8, 18]) {
+    assert.equal(filter.isDeletable(msg({ type })), true, `type ${type} can be removed`);
+    assert.equal(filter.isEditable(msg({ type })), false, `type ${type} has nothing to overwrite`);
+  }
+});
+
+test('canAct hands each action the list that action is held to', () => {
+  const notice = msg({ type: 7 });
+  assert.equal(filter.canAct('delete')(notice), true, 'a delete run removes a join notice');
+  assert.equal(filter.canAct('edit')(notice), false, 'an overwrite run cannot');
+  assert.equal(
+    filter.canAct('edit-then-delete')(notice),
+    false,
+    'and neither can one that overwrites first, since the overwrite still has to land'
+  );
+});
+
+test('every type either list names is one Discord agrees about', () => {
+  // Editable is a subset of deletable, and it has to stay one: edit-then-delete
+  // does both to the same message, so anything the edit half accepts the delete
+  // half must accept too.
+  for (const type of filter.EDITABLE_TYPES) {
+    assert.ok(
+      filter.DELETABLE_TYPES.includes(type),
+      `type ${type} can be overwritten but not deleted, which edit-then-delete cannot honour`
+    );
+  }
+  // 24 needs Manage Messages, so it is somebody else's to remove, and 21 is a
+  // pointer at a thread rather than a message. Both stay out.
+  for (const type of [1, 2, 3, 4, 5, 21, 24]) {
+    assert.ok(!filter.DELETABLE_TYPES.includes(type), `type ${type} is not ours to delete`);
+  }
 });
 
 test('a date range is turned into exact instants, not reinterpreted as days', () => {

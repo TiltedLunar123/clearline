@@ -79,6 +79,38 @@ export const STUB_CHROME = {
 };
 
 /**
+ * The same stub wired to a different locale's real message store.
+ *
+ * `uiLanguage` is deliberately separate from the folder. The two disagreeing is
+ * the ordinary case, not an edge one: the extension ships eleven locales and a
+ * browser can be set to any of about fifty, so most users get `_locales/en`
+ * while getUILanguage reports something else entirely. Anything that reads the
+ * browser's answer when it meant the message store's is wrong for all of them.
+ */
+export async function chromeFor(locale, uiLanguage) {
+  const store = JSON.parse(
+    await fs.readFile(path.join(ROOT, 'src', '_locales', locale, 'messages.json'), 'utf8')
+  );
+  return {
+    ...STUB_CHROME,
+    i18n: {
+      getMessage: (key, subs) => {
+        const entry = store[key];
+        if (!entry) return '';
+        const args = subs === undefined ? [] : Array.isArray(subs) ? subs : [subs];
+        let out = entry.message;
+        for (const [name, spec] of Object.entries(entry.placeholders || {})) {
+          const index = Number(String(spec.content).replace('$', '')) - 1;
+          out = out.replace(new RegExp(`\\$${name}\\$`, 'gi'), args[index] ?? '');
+        }
+        return out;
+      },
+      getUILanguage: () => uiLanguage || locale,
+    },
+  };
+}
+
+/**
  * A clock the tests drive by hand.
  *
  * The limiter's whole job is waiting, so real timers would make the suite take

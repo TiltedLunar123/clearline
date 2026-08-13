@@ -7,6 +7,10 @@
     "message": "Search, export and bulk delete your own Discord messages. Your token never leaves the browser.",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "en",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,10 @@
   "exportPinned": {
     "message": "pinned"
   },
+  "exportPartial": {
+    "message": "This is part of the picture rather than all of it: the search was stopped early.",
+    "description": "Shown in a saved export when the search behind it was stopped before it finished."
+  },
   "downloadHtml": {
     "message": "Download HTML"
   },
@@ -640,7 +648,7 @@
     "message": "Leave this tab open while it runs. Closing or reloading it stops the run where it is."
   },
   "preflightUndeletable": {
-    "message": "$COUNT$ cannot be deleted by anyone, because Discord does not allow it for join notices and similar. They are left alone.",
+    "message": "$COUNT$ cannot be removed by anyone, because Discord does not allow it for calls and channel changes. They are left alone.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +776,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$ message was never attempted. Search again to pick them up.",
+    "message": "$COUNT$ message was never attempted.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +785,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$ messages were never attempted. Search again to pick them up.",
+    "message": "$COUNT$ messages were never attempted.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +837,80 @@
   },
   "reportSave": {
     "message": "Save this report"
+  },
+  "rowLeftAlone": {
+    "message": "left alone",
+    "description": "Chip on a review row for a message no action can touch."
+  },
+  "undoSelection": {
+    "message": "Undo that",
+    "description": "Button undoing the last select-all or select-none."
+  },
+  "reportContinue": {
+    "message": "Carry on with the $COUNT$ left",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    },
+    "description": "Button loading the messages a stopped run never reached back into the run screen."
+  },
+  "reportTally": {
+    "message": "$TOTAL$ in the queue: $DONE$ handled, $SKIPPED$ left alone, $FAILED$ failed.",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    },
+    "description": "The run in numbers. Every value is a plain count."
+  },
+  "reportElapsed": {
+    "message": "It took $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    },
+    "description": "How long the run worked for, excluding time it was paused."
+  },
+  "paceWaiting": {
+    "message": "Holding back $SECONDS$s to keep the pace safe.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    },
+    "description": "Shown while the limiter is deliberately holding a request back."
+  },
+  "paceThrottled": {
+    "message": "Discord asked for a pause. Backing off $SECONDS$s.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    },
+    "description": "Shown when Discord has answered 429 and the limiter is backing off."
+  },
+  "searchProgressLabel": {
+    "message": "Search progress",
+    "description": "Accessible name for the search progress bar."
   },
   "reasonNotYours": {
     "message": "Not confirmed as written by this account"

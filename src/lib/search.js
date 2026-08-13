@@ -335,17 +335,27 @@ CL.search = (function () {
       if (strategy === 'history') return runHistory(req);
       if (strategy === 'search') return runSearch(req);
 
+      /*
+       * The fallback covers the search attempt and nothing else.
+       *
+       * The history walk used to sit inside this try, so an error thrown part
+       * way through it landed in a catch whose only recovery is to run the
+       * history walk. A single 500 on page nine hundred of a large DM restarted
+       * the whole read from the newest message, on the shared limiter, with the
+       * on-screen counter dropping back to zero and nothing saying why. A
+       * failure that is not transient simply did the doomed walk twice.
+       */
+      let result = null;
       try {
-        const result = await runSearch(req);
-        if (result.messages.length > 0 || result.truncated) return result;
-        // An empty search on a channel that plainly has history is the shape of
-        // an unindexed channel, so it is worth the second, slower look rather
-        // than telling the user they have no messages when they do.
-        return await runHistory(req);
+        result = await runSearch(req);
       } catch (err) {
         if (err && (err.code === 'RATE_LIMIT_HALT' || err.code === 'UNAUTHORIZED')) throw err;
-        return runHistory(req);
       }
+      if (result && (result.messages.length > 0 || result.truncated)) return result;
+      // An empty search on a channel that plainly has history is the shape of
+      // an unindexed channel, so it is worth the second, slower look rather
+      // than telling the user they have no messages when they do.
+      return runHistory(req);
     }
 
     return { find, runSearch, runHistory };

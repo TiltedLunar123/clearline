@@ -109,6 +109,9 @@ CL.exporter = (function () {
           scope: m.scope,
           filterSummary: m.filterSummary,
           total: m.total,
+          // Whether this is all of it. A stopped search is still a useful file
+          // and a misleading one if it does not say so.
+          partial: !!m.truncated,
         },
         messages: rows,
       },
@@ -140,6 +143,29 @@ CL.exporter = (function () {
     return BOM + lines.join('\r\n') + (lines.length ? '\r\n' : '');
   }
 
+  /**
+   * A Discord instant in the reader's own timezone.
+   *
+   * The screen and the run report both print local time, and this document did
+   * not: it wrote the raw instant, offset and all, so the backup taken moments
+   * before a delete disagreed with the table the user had just read and with
+   * the date range they had typed. Same moment either way; only the label was
+   * different, which is the version that is hardest to notice.
+   *
+   * CSV and JSON keep the raw instant on purpose. They are read by other
+   * software, which wants something unambiguous.
+   */
+  function localStamp(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso).slice(0, 16).replace('T', ' ');
+    const pad = (n) => String(n).padStart(2, '0');
+    return (
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+      `${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
+  }
+
   /** Readable rather than exact. Nobody reading an export wants 4823710 bytes. */
   function formatSize(size) {
     if (size === null || size === undefined || size === '') return '';
@@ -161,6 +187,7 @@ CL.exporter = (function () {
     '.meta{color:#949ba4;font-size:0.85rem;margin-bottom:0.5rem}',
     '.meta .mark{display:inline-block;margin-left:0.5rem;color:#f0b232}',
     '.content{white-space:pre-wrap;word-break:break-word;margin:0.5rem 0 0}',
+    '.partial{margin:1rem 0 0;color:#f0b232}',
   ].join('\n');
 
   function toHTML(messages, meta) {
@@ -202,12 +229,19 @@ CL.exporter = (function () {
     );
     parts.push('<dt>' + escapeHtml(t('exportWhen')) + '</dt><dd>' + escapeHtml(exported) + '</dd>');
     parts.push('</dl>');
+    // Said in the file, not only on the screen it was made from. A stopped
+    // search puts a notice above the results and the copy taken from it looked
+    // like the whole picture, which is the wrong thing to be unsure about later
+    // when it is the only record left of messages that no longer exist.
+    if (m.truncated) {
+      parts.push('<p class="partial">' + escapeHtml(t('exportPartial')) + '</p>');
+    }
     parts.push('</header>');
 
     for (let i = 0; i < rows.length; i++) {
       const msg = rows[i] || {};
       const author = cellText(msg.authorName);
-      const ts = cellText(msg.timestamp);
+      const ts = localStamp(msg.timestamp);
       const content = cellText(msg.content);
       const edited = msg.editedTimestamp != null && msg.editedTimestamp !== '';
       const pinned = !!msg.pinned;
@@ -355,5 +389,5 @@ CL.exporter = (function () {
     return bits.join('-') + '.' + String(ext || 'txt');
   }
 
-  return { toJSON, toCSV, toHTML, reportToHTML, filenameFor };
+  return { toJSON, toCSV, toHTML, reportToHTML, filenameFor, localStamp };
 })();

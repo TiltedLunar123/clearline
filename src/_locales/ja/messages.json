@@ -7,6 +7,10 @@
     "message": "自分の Discord メッセージを検索、書き出し、一括削除。トークンがブラウザーの外に出ることはありません。",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "ja",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,9 @@
   "exportPinned": {
     "message": "ピン留め"
   },
+  "exportPartial": {
+    "message": "これは全体ではなく一部です。検索は途中で停止されました。"
+  },
   "downloadHtml": {
     "message": "HTML でダウンロード"
   },
@@ -640,7 +647,7 @@
     "message": "処理中はこのタブを開いたままにしてください。閉じたり再読み込みしたりすると、その時点で処理が止まります。"
   },
   "preflightUndeletable": {
-    "message": "$COUNT$ は誰にも削除できません。参加通知などについて Discord が削除を許可していないためです。これらはそのまま残ります。",
+    "message": "$COUNT$ は誰にも削除できません。通話やチャンネルの変更について Discord が削除を許可していないためです。これらはそのまま残ります。",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +775,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$ 件はまったく手が付けられていません。もう一度検索して続きを行ってください。",
+    "message": "$COUNT$ 件はまったく手が付けられていません。",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +784,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$ 件はまったく手が付けられていません。もう一度検索して続きを行ってください。",
+    "message": "$COUNT$ 件はまったく手が付けられていません。",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +836,72 @@
   },
   "reportSave": {
     "message": "このレポートを保存"
+  },
+  "rowLeftAlone": {
+    "message": "そのまま"
+  },
+  "undoSelection": {
+    "message": "元に戻す"
+  },
+  "reportContinue": {
+    "message": "残りの $COUNT$ を続ける",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    }
+  },
+  "reportTally": {
+    "message": "キューに $TOTAL$ 件: 処理 $DONE$ 件、そのまま $SKIPPED$ 件、失敗 $FAILED$ 件。",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    }
+  },
+  "reportElapsed": {
+    "message": "$TIME$ かかりました。",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "paceWaiting": {
+    "message": "安全なペースを保つため $SECONDS$ 秒待っています。",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "paceThrottled": {
+    "message": "Discord から待つよう求められました。$SECONDS$ 秒あけます。",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "searchProgressLabel": {
+    "message": "検索の進行状況"
   },
   "reasonNotYours": {
     "message": "このアカウントが書いたものだと確認できませんでした"

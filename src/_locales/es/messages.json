@@ -7,6 +7,10 @@
     "message": "Busca, exporta y borra en masa tus propios mensajes de Discord. Tu token nunca sale del navegador.",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "es",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,9 @@
   "exportPinned": {
     "message": "fijado"
   },
+  "exportPartial": {
+    "message": "Esto es una parte y no todo: la búsqueda se detuvo antes de terminar."
+  },
   "downloadHtml": {
     "message": "Descargar HTML"
   },
@@ -640,7 +647,7 @@
     "message": "Deja esta pestaña abierta mientras se ejecuta. Cerrarla o recargarla detiene la ejecución donde esté."
   },
   "preflightUndeletable": {
-    "message": "$COUNT$ no se pueden borrar de ninguna manera, porque Discord no lo permite para los avisos de entrada y similares. Se dejan intactos.",
+    "message": "$COUNT$ no se pueden borrar de ninguna manera, porque Discord no lo permite para las llamadas y los cambios de canal. Se dejan intactos.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +775,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$ mensaje no se llegó a intentar. Busca otra vez para recuperarlo.",
+    "message": "$COUNT$ mensaje no se llegó a intentar.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +784,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$ mensajes no se llegaron a intentar. Busca otra vez para recuperarlos.",
+    "message": "$COUNT$ mensajes no se llegaron a intentar.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +836,72 @@
   },
   "reportSave": {
     "message": "Guardar este informe"
+  },
+  "rowLeftAlone": {
+    "message": "intacto"
+  },
+  "undoSelection": {
+    "message": "Deshacer eso"
+  },
+  "reportContinue": {
+    "message": "Continuar con $COUNT$ que quedan",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    }
+  },
+  "reportTally": {
+    "message": "$TOTAL$ en la cola: $DONE$ hechos, $SKIPPED$ intactos, $FAILED$ fallidos.",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    }
+  },
+  "reportElapsed": {
+    "message": "Tardó $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "paceWaiting": {
+    "message": "Esperando $SECONDS$ s para mantener un ritmo seguro.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "paceThrottled": {
+    "message": "Discord pidió una pausa. Esperando $SECONDS$ s.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "searchProgressLabel": {
+    "message": "Progreso de la búsqueda"
   },
   "reasonNotYours": {
     "message": "No se ha confirmado que lo escribiera esta cuenta"

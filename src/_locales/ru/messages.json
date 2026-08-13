@@ -7,6 +7,10 @@
     "message": "Поиск, экспорт и массовое удаление своих сообщений в Discord. Токен никогда не покидает браузер.",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "ru",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,9 @@
   "exportPinned": {
     "message": "закреплено"
   },
+  "exportPartial": {
+    "message": "Это часть картины, а не вся: поиск был остановлен досрочно."
+  },
   "downloadHtml": {
     "message": "Скачать HTML"
   },
@@ -640,7 +647,7 @@
     "message": "Оставьте эту вкладку открытой на время работы. Закрытие или перезагрузка останавливает запуск на том месте, где он есть."
   },
   "preflightUndeletable": {
-    "message": "$COUNT$ не может удалить никто, потому что Discord не позволяет этого для уведомлений о входе и подобных. Их не трогают.",
+    "message": "$COUNT$ не может удалить никто, потому что Discord не позволяет этого для звонков и изменений канала. Их не трогают.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +775,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$ сообщение так и не было затронуто. Выполните поиск заново, чтобы вернуться к нему.",
+    "message": "$COUNT$ сообщение так и не было затронуто.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +784,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$ сообщений так и не были затронуты. Выполните поиск заново, чтобы вернуться к ним.",
+    "message": "$COUNT$ сообщений так и не были затронуты.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +836,72 @@
   },
   "reportSave": {
     "message": "Сохранить этот отчёт"
+  },
+  "rowLeftAlone": {
+    "message": "не трогаем"
+  },
+  "undoSelection": {
+    "message": "Отменить"
+  },
+  "reportContinue": {
+    "message": "Продолжить с оставшимися: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    }
+  },
+  "reportTally": {
+    "message": "В очереди $TOTAL$: обработано $DONE$, не тронуто $SKIPPED$, с ошибкой $FAILED$.",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    }
+  },
+  "reportElapsed": {
+    "message": "Заняло $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "paceWaiting": {
+    "message": "Пауза $SECONDS$ с, чтобы темп оставался безопасным.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "paceThrottled": {
+    "message": "Discord попросил паузу. Отступаем на $SECONDS$ с.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "searchProgressLabel": {
+    "message": "Ход поиска"
   },
   "reasonNotYours": {
     "message": "Не подтверждено, что это написал данный аккаунт"
@@ -1033,7 +1106,7 @@
     }
   },
   "reportRemaining_few": {
-    "message": "$COUNT$ сообщения так и не были затронуты. Выполните поиск заново, чтобы вернуться к ним.",
+    "message": "$COUNT$ сообщения так и не были затронуты.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -1042,7 +1115,7 @@
     }
   },
   "reportRemaining_many": {
-    "message": "$COUNT$ сообщений так и не были затронуты. Выполните поиск заново, чтобы вернуться к ним.",
+    "message": "$COUNT$ сообщений так и не были затронуты.",
     "placeholders": {
       "count": {
         "content": "$1",

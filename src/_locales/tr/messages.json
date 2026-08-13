@@ -7,6 +7,10 @@
     "message": "Kendi Discord mesajlarını ara, dışa aktar ve toplu sil. Jetonun tarayıcıdan asla çıkmaz.",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "tr",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,9 @@
   "exportPinned": {
     "message": "sabitlendi"
   },
+  "exportPartial": {
+    "message": "Bu, tablonun tamamı değil bir parçası: arama erken durduruldu."
+  },
   "downloadHtml": {
     "message": "HTML indir"
   },
@@ -640,7 +647,7 @@
     "message": "Çalışırken bu sekmeyi açık bırak. Kapatmak ya da yenilemek işlemi olduğu yerde durdurur."
   },
   "preflightUndeletable": {
-    "message": "$COUNT$ kimse tarafından silinemez, çünkü Discord katılma bildirimleri ve benzerleri için buna izin vermiyor. Onlara dokunulmaz.",
+    "message": "$COUNT$ kimse tarafından silinemez, çünkü Discord aramalar ve kanal değişiklikleri için buna izin vermiyor. Onlara dokunulmaz.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +775,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$ mesaj hiç denenmedi. Onları almak için yeniden ara.",
+    "message": "$COUNT$ mesaj hiç denenmedi.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +784,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$ mesaj hiç denenmedi. Onları almak için yeniden ara.",
+    "message": "$COUNT$ mesaj hiç denenmedi.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +836,72 @@
   },
   "reportSave": {
     "message": "Bu raporu kaydet"
+  },
+  "rowLeftAlone": {
+    "message": "dokunulmadı"
+  },
+  "undoSelection": {
+    "message": "Geri al"
+  },
+  "reportContinue": {
+    "message": "Kalan $COUNT$ ile devam et",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    }
+  },
+  "reportTally": {
+    "message": "Sırada $TOTAL$: $DONE$ tamam, $SKIPPED$ dokunulmadı, $FAILED$ başarısız.",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    }
+  },
+  "reportElapsed": {
+    "message": "$TIME$ sürdü.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "paceWaiting": {
+    "message": "Hızı güvenli tutmak için $SECONDS$ sn bekliyor.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "paceThrottled": {
+    "message": "Discord bir mola istedi. $SECONDS$ sn geri çekiliyor.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "searchProgressLabel": {
+    "message": "Arama ilerlemesi"
   },
   "reasonNotYours": {
     "message": "Bu hesabın yazdığı doğrulanmadı"

@@ -7,6 +7,10 @@
     "message": "Wyszukuj, eksportuj i masowo usuwaj własne wiadomości z Discorda. Twój token nigdy nie opuszcza przeglądarki.",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "pl",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,9 @@
   "exportPinned": {
     "message": "przypięto"
   },
+  "exportPartial": {
+    "message": "To część obrazu, a nie całość: wyszukiwanie zostało zatrzymane wcześniej."
+  },
   "downloadHtml": {
     "message": "Pobierz HTML"
   },
@@ -640,7 +647,7 @@
     "message": "Zostaw tę kartę otwartą na czas pracy. Zamknięcie lub odświeżenie zatrzymuje zadanie w miejscu."
   },
   "preflightUndeletable": {
-    "message": "$COUNT$ nie usunie nikt, bo Discord na to nie pozwala przy powiadomieniach o dołączeniu i podobnych. Zostają nietknięte.",
+    "message": "$COUNT$ nie usunie nikt, bo Discord na to nie pozwala przy połączeniach i zmianach kanału. Zostają nietknięte.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +775,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$ wiadomości w ogóle nie próbowano. Wyszukaj ponownie, aby ją dokończyć.",
+    "message": "$COUNT$ wiadomości w ogóle nie próbowano.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +784,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$ wiadomości w ogóle nie próbowano. Wyszukaj ponownie, aby je dokończyć.",
+    "message": "$COUNT$ wiadomości w ogóle nie próbowano.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +836,72 @@
   },
   "reportSave": {
     "message": "Zapisz ten raport"
+  },
+  "rowLeftAlone": {
+    "message": "nietknięte"
+  },
+  "undoSelection": {
+    "message": "Cofnij"
+  },
+  "reportContinue": {
+    "message": "Kontynuuj z pozostałymi: $COUNT$",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    }
+  },
+  "reportTally": {
+    "message": "$TOTAL$ w kolejce: $DONE$ zrobionych, $SKIPPED$ nietkniętych, $FAILED$ nieudanych.",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    }
+  },
+  "reportElapsed": {
+    "message": "Zajęło to $TIME$.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "paceWaiting": {
+    "message": "Czeka $SECONDS$ s, żeby tempo było bezpieczne.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "paceThrottled": {
+    "message": "Discord poprosił o przerwę. Odczekanie $SECONDS$ s.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "searchProgressLabel": {
+    "message": "Postęp wyszukiwania"
   },
   "reasonNotYours": {
     "message": "Nie potwierdzono, że napisało to konto"
@@ -1033,7 +1106,7 @@
     }
   },
   "reportRemaining_few": {
-    "message": "$COUNT$ wiadomości w ogóle nie próbowano. Wyszukaj ponownie, aby je dokończyć.",
+    "message": "$COUNT$ wiadomości w ogóle nie próbowano.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -1042,7 +1115,7 @@
     }
   },
   "reportRemaining_many": {
-    "message": "$COUNT$ wiadomości w ogóle nie próbowano. Wyszukaj ponownie, aby je dokończyć.",
+    "message": "$COUNT$ wiadomości w ogóle nie próbowano.",
     "placeholders": {
       "count": {
         "content": "$1",

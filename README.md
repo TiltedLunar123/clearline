@@ -47,9 +47,9 @@ Then load `dist/chrome` as an unpacked extension, or `dist/firefox` via
 icon.
 
 ```bash
-npm test          # 135 unit tests
+npm test          # unit tests
 npm run check     # build plus the release gate
-npm run e2e       # 52 checks against a real browser and a mocked Discord
+npm run e2e       # end-to-end checks against a real browser and a mocked Discord
 npm run all       # all three
 npm run zip       # release gate, then store-ready zips into release/
 npm run shots     # store screenshots into store/screenshots/
@@ -76,8 +76,11 @@ falls back to English, so an unlisted language loses nothing.
 Adding one means adding `src/_locales/<code>/messages.json` and nothing else. The
 release gate will refuse the build until that file has every key `en` has, no key
 it does not, an `_other` form for every plural family it uses, the same
-placeholders in every message that takes one, and a name and description inside
-each store's length limit. Those limits are per language, and German runs about a
+placeholders as `en` in every message that takes one, filled from the same
+argument positions, and a name and description inside each store's length limit.
+One key is not a translation: `localeCode` is the file's own language tag, which
+is how the app knows which locale actually answered rather than asking the
+browser what its interface language is. Those limits are per language, and German runs about a
 third longer than English, so it is worth checking the rendered screens with
 `npm run shots -- <code>` rather than only reading the JSON.
 

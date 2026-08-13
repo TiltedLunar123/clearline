@@ -270,6 +270,41 @@ async function readLocales(problems) {
           problems.push(`_locales/${locale} "${key}" declares ${name} but never uses it`);
         }
       }
+
+      /*
+       * Self-consistency is not enough, which is what the two checks above are.
+       * A translated entry carrying no placeholders at all is perfectly
+       * self-consistent, and so is one whose `content` indices have been
+       * permuted while the sentence was reordered. Either way the caller passes
+       * arguments this language quietly drops or puts in the wrong slots, and
+       * the sentence that lands is the one immediately above the Start button:
+       * "You are about to permanently delete messages in ." with no count and
+       * no scope, in a language nobody who reads English will ever see.
+       *
+       * So every entry is also held against the English one. A plural form
+       * English does not have is compared against the family's `_other`, which
+       * is the entry it is a translation of.
+       */
+      const stem = pluralBase(key);
+      const reference = base[key] || (stem ? base[`${stem}_other`] : null);
+      if (locale === 'en' || !reference) continue;
+      const want = reference.placeholders || {};
+      const got = entry.placeholders || {};
+      const names = new Set([...Object.keys(want), ...Object.keys(got)].map((p) => p.toLowerCase()));
+      for (const name of names) {
+        const wantSpec = Object.entries(want).find(([p]) => p.toLowerCase() === name);
+        const gotSpec = Object.entries(got).find(([p]) => p.toLowerCase() === name);
+        if (wantSpec && !gotSpec) {
+          problems.push(`_locales/${locale} "${key}" is missing the placeholder $${name}$ that en fills`);
+        } else if (gotSpec && !wantSpec) {
+          problems.push(`_locales/${locale} "${key}" adds a placeholder $${name}$ that en never fills`);
+        } else if (String(wantSpec[1].content) !== String(gotSpec[1].content)) {
+          problems.push(
+            `_locales/${locale} "${key}" fills $${name}$ from ${gotSpec[1].content}, ` +
+              `but en fills it from ${wantSpec[1].content}`
+          );
+        }
+      }
     }
   }
 
@@ -387,9 +422,14 @@ async function check(base) {
     await walk(dir, async (file) => {
       if (!file.endsWith('.js')) return;
       const where = path.relative(dir, file).split(path.sep).join('/');
-      const code = blankCommentsAndStrings(await fs.readFile(file, 'utf8'));
+      const { code, misreads } = scanSource(await fs.readFile(file, 'utf8'));
       for (const banned of ['importScripts(', 'eval(', 'new Function(']) {
         if (code.includes(banned)) problems.push(`${tag} ${where} uses forbidden "${banned}"`);
+      }
+      // A file the scanner could not read is a file the two scans below did not
+      // really check, and it looks identical to a clean one.
+      for (const m of misreads) {
+        problems.push(`${tag} ${where}:${m.line} could not be scanned: ${m.kind}`);
       }
     });
 
@@ -434,7 +474,16 @@ async function check(base) {
     const text = await fs.readFile(file, 'utf8');
     // Comments and string literals are blanked first, so prose that mentions an
     // API does not fail a file that never calls it.
-    const code = /\.(js|html)$/.test(file) ? blankCommentsAndStrings(text) : text;
+    //
+    // Only JavaScript is scanned this way. HTML is markup with prose in it, and
+    // an apostrophe in a sentence is not an unterminated string, so running the
+    // JS scanner over it produces misreads that mean nothing. Script content
+    // inside app.html is checked separately, by the src-attribute walk above.
+    const scanned = file.endsWith('.js') ? scanSource(text) : { code: text, misreads: [] };
+    const code = scanned.code;
+    for (const m of scanned.misreads) {
+      problems.push(`could not be scanned -> ${rel}:${m.line} ${m.kind}`);
+    }
 
     if (!NETWORK_ALLOWED_FILES.includes(rel)) {
       for (const m of code.matchAll(/\b(fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/g)) {
@@ -522,18 +571,43 @@ const REGEX_KEYWORDS = new Set([
 ]);
 
 /**
+ * Keywords whose parenthesised head is a test rather than a value.
+ *
+ * `f(1) / 2` divides, because the `)` closes a call and a call result is a
+ * value. `if (a) /re/.test(b)` does not, because that `)` closes a condition
+ * and is punctuation. Both end in `)`, so the only way to tell them apart is
+ * to remember what opened the pair.
+ */
+const CONTROL_HEADS = new Set(['if', 'while', 'for', 'switch', 'catch', 'with']);
+
+/** The identifier immediately before `at`, ignoring whitespace. */
+function precedingWord(source, at) {
+  let k = at - 1;
+  while (k >= 0 && /\s/.test(source[k])) k--;
+  const end = k + 1;
+  while (k >= 0 && /[A-Za-z0-9_$]/.test(source[k])) k--;
+  return source.slice(k + 1, end);
+}
+
+/**
  * Decide whether the slash at `at` starts a regex literal or is a division.
  *
- * Only the previous significant character can tell them apart. After a closing
- * bracket or a plain value the slash divides; after punctuation or one of the
- * keywords above it opens a literal.
+ * Only the previous significant character can tell them apart, with one
+ * exception: `)` is ambiguous and needs to know what its `(` opened, which the
+ * scanner tracks as it goes and hands in as `lastClose`.
+ *
+ * Treating every `)` as a value was how a regex after an `if (...)` went
+ * unrecognised, and an unrecognised regex is not a small error: the scanner
+ * walks into the pattern, meets a quote inside it, and blanks the rest of the
+ * line, so any eval() or fetch() sharing that line disappears from the gate.
  */
-function opensRegex(source, at) {
+function opensRegex(source, at, lastClose) {
   let k = at - 1;
   while (k >= 0 && /\s/.test(source[k])) k--;
   if (k < 0) return true;
   const c = source[k];
-  if (c === ')' || c === ']') return false;
+  if (c === ')') return !!(lastClose && lastClose.index === k && lastClose.controlHead);
+  if (c === ']') return false;
   if (/[A-Za-z0-9_$]/.test(c)) {
     const end = k + 1;
     while (k >= 0 && /[A-Za-z0-9_$]/.test(source[k])) k--;
@@ -557,13 +631,31 @@ function opensRegex(source, at) {
  * hypothetical: a fetch() planted in the app page, in a file the gate exists to
  * keep away from the network, passed a full release check that way.
  */
-function blankCommentsAndStrings(source) {
+function scanSource(source) {
   const out = source.split('');
+  const misreads = [];
   const blank = (from, to) => {
     for (let k = from; k < to && k < out.length; k++) {
       if (out[k] !== '\n') out[k] = ' ';
     }
   };
+  /*
+   * Every span this scanner blanks ends at a delimiter it recognises. When one
+   * ends at a newline or at end of file instead, the scanner did not understand
+   * the code, and the consequence is that it blanked something it should have
+   * left visible. That is the exact shape of the two holes this file has had:
+   * a fetch() planted after a regex literal vanished from a gate that then
+   * printed "network confined to Discord". So a misread is now reported rather
+   * than absorbed, and a gate that cannot read a file fails on it.
+   */
+  const misread = (at, kind) => {
+    misreads.push({ line: source.slice(0, at).split('\n').length, kind });
+  };
+
+  // What the last closed `)` was closing, so a slash after it can be told from
+  // division. See opensRegex.
+  let lastClose = null;
+  const parens = [];
 
   let i = 0;
   while (i < source.length) {
@@ -578,6 +670,7 @@ function blankCommentsAndStrings(source) {
     }
     if (two === '/*') {
       const end = source.indexOf('*/', i + 2);
+      if (end === -1) misread(i, 'block comment with no end');
       const stop = end === -1 ? source.length : end + 2;
       blank(i, stop);
       i = stop;
@@ -586,9 +679,10 @@ function blankCommentsAndStrings(source) {
 
     const ch = source[i];
 
-    if (ch === '/' && opensRegex(source, i)) {
+    if (ch === '/' && opensRegex(source, i, lastClose)) {
       let j = i + 1;
       let inClass = false;
+      let closed = false;
       while (j < source.length) {
         const c = source[j];
         if (c === '\\') {
@@ -604,12 +698,25 @@ function blankCommentsAndStrings(source) {
           // A slash inside a character class is a literal slash, not the end.
           inClass = true;
         } else if (c === '/') {
+          closed = true;
           break;
         }
         j++;
       }
+      if (!closed) misread(i, 'regular expression with no end');
       blank(i + 1, j);
       i = j + 1;
+      continue;
+    }
+
+    if (ch === '(') {
+      parens.push(CONTROL_HEADS.has(precedingWord(source, i)));
+      i++;
+      continue;
+    }
+    if (ch === ')') {
+      lastClose = { index: i, controlHead: parens.length ? parens.pop() : false };
+      i++;
       continue;
     }
 
@@ -622,25 +729,36 @@ function blankCommentsAndStrings(source) {
     if (ch === '`') {
       let j = i + 1;
       let literalFrom = i + 1;
+      let closed = false;
       while (j < source.length) {
         const c = source[j];
         if (c === '\\') {
           j += 2;
           continue;
         }
-        if (c === '`') break;
+        if (c === '`') {
+          closed = true;
+          break;
+        }
         if (c === '$' && source[j + 1] === '{') {
           blank(literalFrom, j);
           const from = j + 2;
           const to = matchingBrace(source, from);
-          const inner = blankCommentsAndStrings(source.slice(from, to));
-          for (let k = 0; k < inner.length; k++) out[from + k] = inner[k];
+          const nested = scanSource(source.slice(from, to));
+          for (let k = 0; k < nested.code.length; k++) out[from + k] = nested.code[k];
+          for (const m of nested.misreads) {
+            misreads.push({
+              line: source.slice(0, from).split('\n').length + m.line - 1,
+              kind: m.kind,
+            });
+          }
           j = to + 1;
           literalFrom = j;
           continue;
         }
         j++;
       }
+      if (!closed) misread(i, 'template literal with no end');
       blank(literalFrom, j);
       i = j + 1;
       continue;
@@ -648,24 +766,34 @@ function blankCommentsAndStrings(source) {
 
     if (ch === '"' || ch === "'") {
       let j = i + 1;
+      let closed = false;
       while (j < source.length) {
         if (source[j] === '\\') {
           j += 2;
           continue;
         }
-        if (source[j] === ch) break;
-        // An unterminated single quote is almost certainly an apostrophe in
-        // prose; stop at the newline rather than eating the rest of the file.
+        if (source[j] === ch) {
+          closed = true;
+          break;
+        }
+        // An unterminated quote is a misread; stop at the newline rather than
+        // eating the rest of the file, and say so.
         if (source[j] === '\n') break;
         j++;
       }
+      if (!closed) misread(i, `${ch === '"' ? 'double' : 'single'} quote with no pair`);
       blank(i + 1, j);
       i = j + 1;
       continue;
     }
     i++;
   }
-  return out.join('');
+  return { code: out.join(''), misreads };
+}
+
+/** The blanked source alone, for callers that do not inspect the misreads. */
+function blankCommentsAndStrings(source) {
+  return scanSource(source).code;
 }
 
 /**
@@ -894,7 +1022,23 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+/*
+ * Built when run, importable when not.
+ *
+ * The scanner below decides what the release gate can see, and it has been
+ * wrong twice in ways that made the gate print "passed" over code it had not
+ * read. That is exactly the kind of thing a test should be able to plant a
+ * defect into and watch go red, and it could not, because importing this file
+ * ran a build. Guarding the entry point costs one comparison.
+ */
+const invokedDirectly =
+  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (invokedDirectly) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
+
+export { blankCommentsAndStrings, scanSource, opensRegex };

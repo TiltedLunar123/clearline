@@ -145,17 +145,25 @@ function idFor(millis) {
 }
 
 /**
- * Six messages, newest first, one of which is a join notice.
+ * Seven messages, newest first, two of which are system notices.
  *
- * The join notice is the point: Discord attributes it to the user and returns
- * it in search results, but refuses to delete it. A tool that counts it in the
- * total promises more than it can deliver.
+ * The two notices are the point, and they are deliberately different from each
+ * other, because Discord answers the two actions differently and one predicate
+ * for both is what left messages behind.
+ *
+ *   join notice (7)  Attributed to the user, returned by an author-filtered
+ *                    search, and deletable by them: it is a trace of their
+ *                    having been there, which is exactly what this tool clears.
+ *                    There is no text behind it, so it cannot be overwritten.
+ *   call notice (3)  Nobody can delete this one, so it has to be counted out of
+ *                    both, or the total promises more than any run can deliver.
  */
 function opsMessages() {
   const base = Date.UTC(2024, 2, 1, 12, 0, 0);
   return [
     { minute: 50, content: 'newest message', type: 0 },
     { minute: 40, content: 'has a link https://discord.com/channels/1', type: 0 },
+    { minute: 35, content: 'started a call', type: 3 },
     { minute: 30, content: 'joined the server', type: 7 },
     { minute: 20, content: 'ordinary chatter', type: 0 },
     { minute: 10, content: 'something with "quotes" and, a comma', type: 0 },
@@ -362,12 +370,79 @@ async function main() {
       typeof firstId === 'number' && firstId === secondId,
       `opened ${firstId} then ${secondId}`);
 
-    const appTabCount = await cdp.evaluate(
-      sw,
-      "chrome.tabs.query({}).then(t => t.filter(x => (x.pendingUrl || x.url || '').includes('/app/app.html')).length)"
+    // Counted from outside the extension, over CDP, because chrome.tabs.query
+    // only fills url/pendingUrl for tabs the extension has permission to see
+    // and this one deliberately takes neither "tabs" nor a host permission
+    // covering chrome-extension://. Asking the worker therefore returned an
+    // empty string for every extension page and the filter matched nothing: the
+    // assertion was 0 <= 3, and it stayed green with resolveOpen mutated to
+    // stack a fresh tab on every single click.
+    const appTargets = (await httpJson(PORT, '/json/list')).filter((t) =>
+      (t.url || '').includes('/app/app.html')
     );
-    check('spine', 'only one app tab exists after two toolbar clicks', appTabCount <= 3,
-      `found ${appTabCount} app tabs (the suite itself opens some directly)`);
+    check('spine', 'only one app tab exists after two toolbar clicks', appTargets.length === 1,
+      `found ${appTargets.length}: ${JSON.stringify(appTargets.map((t) => t.url))}`);
+
+    // A tab that navigated away is not the app any more, and tabs.get still
+    // resolves it, so the toolbar went on focusing whatever was there and never
+    // opened the app again. The action is the only entry point this extension
+    // has, so that was the whole product unreachable for the rest of the
+    // browser session, and a genuine app tab asking to connect was told it was
+    // "already open in another tab", naming a tab showing Discord.
+    //
+    // Driven on a tab of its own rather than by navigating the one above away:
+    // that one is this suite's app tab and everything after this still needs it.
+    // Pointing the background at a stand-in reproduces the same state, which is
+    // "the remembered id resolves and is not the app".
+    const strandedId = await cdp.evaluate(
+      sw,
+      "chrome.tabs.create({ url: 'about:blank#not-the-app', active: false }).then(t => t.id)"
+    );
+    await cdp.evaluate(
+      sw,
+      `chrome.storage.session.set({ appTabId: ${strandedId} }).then(() => true)`
+    );
+    const beforeReopen = (await httpJson(PORT, '/json/list')).filter((t) =>
+      (t.url || '').includes('/app/app.html')
+    ).length;
+    const reopenedId = await cdp.evaluate(sw, 'CL.background.openApp()');
+    await sleep(800);
+    const afterReopen = (await httpJson(PORT, '/json/list')).filter((t) =>
+      (t.url || '').includes('/app/app.html')
+    ).length;
+    check('spine', 'the toolbar still opens the app after its tab navigated away',
+      reopenedId !== strandedId && afterReopen === beforeReopen + 1,
+      `openApp returned ${reopenedId} (stranded tab was ${strandedId}); ` +
+        `app tabs went ${beforeReopen} -> ${afterReopen}`);
+
+    // And a genuine app tab is not told that stand-in owns the queue.
+    await cdp.evaluate(
+      sw,
+      `chrome.storage.session.set({ appTabId: ${strandedId} }).then(() => true)`
+    );
+    const claimAgainstStranded = await cdp.evaluate(
+      sw,
+      `CL.background.claimApp(${firstId}, false, 'probe').then(r => JSON.stringify(r))`
+    );
+    check('spine', 'a stranded tab id does not lock the real app out of the queue',
+      JSON.parse(claimAgainstStranded || '{}').ok === true,
+      `claim answered ${claimAgainstStranded}`);
+
+    // Put the suite's own tab back in charge and clean up the stand-in. Written
+    // to survive the failing case as well as the passing one: when this check
+    // goes red the two ids are the same tab, and a cleanup that removed both
+    // would throw and take the rest of the suite down with it, turning a clear
+    // failure into a crash that says nothing.
+    const cleanUp = [strandedId, reopenedId].filter(
+      (id, i, all) => typeof id === 'number' && all.indexOf(id) === i
+    );
+    for (const id of cleanUp) {
+      await cdp.evaluate(sw, `chrome.tabs.remove(${id}).then(() => true).catch(() => true)`);
+    }
+    await cdp.evaluate(
+      sw,
+      `chrome.storage.session.set({ appTabId: ${firstId} }).then(() => true)`
+    );
 
     /* ---------------- group: pacing ---------------- */
 
@@ -458,7 +533,94 @@ async function main() {
     check('one tab', 'a superseded tab stops a search that was already paging',
       flags.stopSearch === true && flags.superseded === true, `flags were ${stayedOff}`);
 
+    /*
+     * Taking the queue back must not throw away what the tab was working on.
+     *
+     * "Use this tab instead" was wired straight to connect(), whose success tail
+     * is unconditional: it rebuilds both pickers and ends on goTo('where'). For
+     * a tab that has never connected that is right. For one that has, it is the
+     * thing reconnect()'s own note warns against. There is no route from Where
+     * forward to Review except a fresh search, and a fresh search replaces the
+     * results and clears every exclusion, so a whole-server search that paged
+     * for twenty minutes and several minutes of unticking rows by hand were
+     * still in memory and no longer reachable from any control on screen.
+     */
+    await cdp.evaluate(
+      app.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.excluded = new Set(['900000000000000001']);
+        cl.goTo('review');
+      })()`
+    );
     await closeTab(cdp, second);
+    await sleep(300);
+    await cdp.evaluate(app.session, "document.getElementById('takeover').click()");
+    const takenBack = await waitFor(
+      'the tab to take the queue back',
+      async () => {
+        const value = await cdp.evaluate(
+          app.session,
+          `(() => {
+            const cl = window.__clearline;
+            const step = ['connect','where','filter','review','run'].find((n) => {
+              const el = document.getElementById('step-' + n);
+              return el && !el.classList.contains('hidden');
+            });
+            return JSON.stringify({
+              step: step || 'none',
+              superseded: cl.state.superseded,
+              results: cl.state.results.length,
+              spared: cl.state.excluded.size,
+              search: document.getElementById('search').disabled,
+              reconnect: document.getElementById('reconnect').disabled,
+            });
+          })()`
+        );
+        const parsed = value ? JSON.parse(value) : null;
+        return parsed && parsed.superseded === false ? parsed : null;
+      },
+      { timeout: 10000 }
+    ).catch(() => null);
+
+    // Read again once it has settled, not at the moment the flag clears. A full
+    // connect stands the tab up early and only rewinds the wizard at the end of
+    // three paced calls, so a check that fires on the flag alone sees the state
+    // it wanted several seconds before the damage is done and passes.
+    await sleep(5000);
+    const settled = takenBack
+      ? JSON.parse(
+          await cdp.evaluate(
+            app.session,
+            `(() => {
+              const cl = window.__clearline;
+              const step = ['connect','where','filter','review','run'].find((n) => {
+                const el = document.getElementById('step-' + n);
+                return el && !el.classList.contains('hidden');
+              });
+              return JSON.stringify({
+                step: step || 'none',
+                superseded: cl.state.superseded,
+                results: cl.state.results.length,
+                spared: cl.state.excluded.size,
+                search: document.getElementById('search').disabled,
+                reconnect: document.getElementById('reconnect').disabled,
+              });
+            })()`
+          )
+        )
+      : null;
+
+    check('one tab', 'taking the queue back leaves the result set where it was',
+      settled && settled.results === 1 && settled.spared === 1,
+      `after reclaim: ${JSON.stringify(settled)}`);
+    check('one tab', 'taking the queue back does not rewind the wizard',
+      settled && settled.step === 'review',
+      `after reclaim the visible step was ${settled && settled.step}`);
+    check('one tab', 'taking the queue back re-arms every control it stood down',
+      settled && settled.search === false && settled.reconnect === false,
+      `after reclaim: ${JSON.stringify(settled)}`);
+
     await closeTab(cdp, app);
 
     // Standing down has to reach a connect that is already in flight, not just
@@ -782,11 +944,11 @@ async function main() {
       { timeout: 20000 }
     ).catch(async () => `<never got there: ${await textOf(cdp, ops.session, '#filter-status')}>`);
 
-    check('operations', 'a search reports what it matched', /6 messages matched/.test(heading),
+    check('operations', 'a search reports what it matched', /7 messages matched/.test(heading),
       `heading said ${JSON.stringify(heading)}`);
 
     const rows = await cdp.evaluate(ops.session, "document.querySelectorAll('#results-body tr').length");
-    check('operations', 'every match is listed for review before anything is destroyed', rows === 6,
+    check('operations', 'every match is listed for review before anything is destroyed', rows === 7,
       `rendered ${rows} rows`);
 
     // Unticking a message has to take it out of the run, not just grey it out.
@@ -798,13 +960,13 @@ async function main() {
     await sleep(150);
     const afterDrop = await textOf(cdp, ops.session, '#review-heading');
     check('operations', 'unticking a message takes it out of the count',
-      /5 of 6 messages selected/.test(afterDrop || ''), `heading said ${JSON.stringify(afterDrop)}`);
+      /6 of 7 messages selected/.test(afterDrop || ''), `heading said ${JSON.stringify(afterDrop)}`);
 
     await cdp.evaluate(ops.session, "document.getElementById('review-next').click()");
     await sleep(200);
     const sparedPreflight = await textOf(cdp, ops.session, '#preflight');
     check('operations', 'a spared message is left out of the pre-flight count',
-      /permanently delete 4 messages/.test(sparedPreflight || ''),
+      /permanently delete 5 messages/.test(sparedPreflight || ''),
       `pre-flight said ${JSON.stringify(sparedPreflight)}`);
 
     // Put it back, so the run below is over the full six again.
@@ -821,16 +983,19 @@ async function main() {
 
     const preflight = await textOf(cdp, ops.session, '#preflight');
     check('operations', 'the pre-flight counts only what can actually be deleted',
-      /permanently delete 5 messages/.test(preflight || ''),
+      /permanently delete 6 messages/.test(preflight || ''),
       `pre-flight said ${JSON.stringify(preflight)}`);
-    check('operations', 'the pre-flight says the join notice is left alone',
-      /1 message cannot be deleted/.test(preflight || ''), `pre-flight said ${JSON.stringify(preflight)}`);
+    check('operations', 'the pre-flight says the call notice is left alone',
+      /1 message cannot be removed/.test(preflight || ''), `pre-flight said ${JSON.stringify(preflight)}`);
     check('operations', 'the pre-flight says it cannot be undone',
       /cannot be undone/.test(preflight || ''), `pre-flight said ${JSON.stringify(preflight)}`);
 
-    // Overwriting refuses the same message types deleting does, so it has to
-    // count them the same way. It used to promise all six and then spend a
-    // paced write finding out Discord would not change the join notice.
+    // Overwriting is held to a shorter list than deleting, so it counts fewer.
+    // Discord removes a join notice for its author but has no text behind it to
+    // replace, and answers the PATCH with a plain 400 that lands in the failure
+    // pile and counts toward the limit that halts a whole run. One predicate for
+    // both questions had to be as narrow as this one, which is what left join
+    // notices undeletable and told the user Discord had forbidden it.
     await cdp.evaluate(
       ops.session,
       "document.querySelector('input[name=action][value=edit]').click()"
@@ -840,8 +1005,8 @@ async function main() {
     check('operations', 'overwriting counts only what can actually be changed',
       /overwrite the text of 5 messages/i.test(editPreflight || ''),
       `pre-flight said ${JSON.stringify(editPreflight)}`);
-    check('operations', 'overwriting says the join notice is left alone too',
-      /1 message cannot be changed/.test(editPreflight || ''),
+    check('operations', 'overwriting leaves both system notices alone',
+      /2 messages cannot be changed/.test(editPreflight || ''),
       `pre-flight said ${JSON.stringify(editPreflight)}`);
     await cdp.evaluate(
       ops.session,
@@ -962,16 +1127,19 @@ async function main() {
       { timeout: 60000 }
     ).catch(async () => `<never finished: ${await textOf(cdp, ops.session, '#run-counter')}>`);
 
-    check('operations', 'the run deletes exactly the messages it promised', deleted.length === 5,
+    check('operations', 'the run deletes exactly the messages it promised', deleted.length === 6,
       `deleted ${deleted.length}: ${JSON.stringify(deleted)}`);
-    check('operations', 'the join notice was never even attempted',
-      !deleted.includes(idFor(Date.UTC(2024, 2, 1, 12, 30, 0))),
+    check('operations', 'the join notice was removed like anything else the account left',
+      deleted.includes(idFor(Date.UTC(2024, 2, 1, 12, 30, 0))),
+      'the join notice this account left behind is still there');
+    check('operations', 'the call notice was never even attempted',
+      !deleted.includes(idFor(Date.UTC(2024, 2, 1, 12, 35, 0))),
       'a message Discord refuses to delete was sent to the API anyway');
-    check('operations', 'the run reports finishing', /Finished\. 5 messages handled/.test(report || ''),
+    check('operations', 'the run reports finishing', /Finished\. 6 messages handled/.test(report || ''),
       `report said ${JSON.stringify(report)}`);
 
     check('operations', 'deletes went oldest first',
-      deleted.length === 5 && BigInt(deleted[0]) < BigInt(deleted[4]),
+      deleted.length === 6 && BigInt(deleted[0]) < BigInt(deleted[5]),
       `order was ${JSON.stringify(deleted)}`);
 
     const writes = opsCalls.filter((c) => c.method === 'DELETE');
@@ -1011,6 +1179,88 @@ async function main() {
     check('operations', 'the report offers to be kept',
       savedState.found === true && savedState.visible === true,
       `report buttons were ${JSON.stringify(savedState.labels)}`);
+
+    /*
+     * A run that stops has to be resumable, and it has to resume the right set.
+     *
+     * The messages a stopped run never reached used to be counted and then
+     * discarded, so the only route on was to search the whole server again and
+     * redo every exclusion by hand: on a set that took twenty minutes to page,
+     * a reason not to stop a run that should be stopped.
+     *
+     * Driven against a real cancel rather than a fabricated state, because what
+     * is being checked is that the queue handed back is exactly the untouched
+     * tail: not the whole set, not the part already deleted.
+     */
+    const carriedOn = await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.results = cl.stashed.slice();
+        cl.state.excluded = new Set();
+        cl.state.ran = false;
+        cl.renderReview();
+        cl.renderPreflight();
+        return cl.state.results.length;
+      })()`
+    );
+    await cdp.evaluate(ops.session, "document.getElementById('backup').checked = false");
+    await cdp.evaluate(ops.session, "document.getElementById('start').click()");
+    await sleep(1500);
+    await cdp.evaluate(ops.session, "document.getElementById('run-cancel').click()");
+    const stopped = await waitFor(
+      'the cancelled run to report',
+      async () =>
+        (await cdp.evaluate(
+          ops.session,
+          "document.getElementById('run-report').classList.contains('hidden')"
+        )) === false
+          ? true
+          : null,
+      { timeout: 30000 }
+    ).catch(() => false);
+
+    const continueState = await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const buttons = Array.from(document.querySelectorAll('#run-report button'));
+        const carry = buttons.find((b) => /Carry on/i.test(b.textContent));
+        const before = window.__clearline.state.results.length;
+        // Read before the click. Clicking hides the report, so asking
+        // afterwards asks whether a control the user has already used is
+        // visible, which is always no and says nothing about whether it was
+        // reachable in the first place.
+        const offered = !!carry && carry.offsetParent !== null;
+        if (carry) carry.click();
+        const cl = window.__clearline;
+        return JSON.stringify({
+          offered,
+          label: carry ? carry.textContent : null,
+          before,
+          after: cl.state.results.length,
+          spared: cl.state.excluded.size,
+          startDisabled: document.getElementById('start').disabled,
+          reportHidden: document.getElementById('run-report').classList.contains('hidden'),
+          focusInRunStep: document.getElementById('step-run').contains(document.activeElement),
+        });
+      })()`
+    );
+    const carried = JSON.parse(continueState || '{}');
+    check('operations', 'a stopped run offers to carry on with what it never reached',
+      stopped === true && carried.offered === true,
+      `report offered ${JSON.stringify(carried)}`);
+    check('operations', 'carrying on loads exactly the untouched tail, not the whole set',
+      carried.after > 0 && carried.after < carriedOn && carried.spared === 0,
+      `${carriedOn} queued, ${carried.after} carried on, ${carried.spared} spared`);
+    check('operations', 'carrying on re-arms Start rather than leaving the run screen dead',
+      carried.startDisabled === false && carried.reportHidden === true,
+      `after carrying on ${JSON.stringify(carried)}`);
+    // hide() takes the clicked button out of the accessibility tree while it
+    // still holds focus, which drops focus to <body>: the next Tab restarts at
+    // the page heading and nothing announces that Start is live again.
+    check('operations', 'carrying on moves focus somewhere real',
+      carried.focusInRunStep === true,
+      `focus left the run step: ${JSON.stringify(carried)}`);
 
     await closeTab(cdp, ops);
 
@@ -1135,7 +1385,7 @@ async function main() {
       },
       { timeout: 30000 }
     ).catch(async () => `<never got there: ${await textOf(cdp, scopeTab.session, '#filter-status')}>`);
-    check('scope', 'a search still lands after the picker moved', /6 messages matched/.test(scopeHeading),
+    check('scope', 'a search still lands after the picker moved', /7 messages matched/.test(scopeHeading),
       `heading said ${JSON.stringify(scopeHeading)}`);
 
     const scopeSummary = await textOf(cdp, scopeTab.session, '#review-summary');
@@ -1150,7 +1400,7 @@ async function main() {
       )
     );
     check('scope', 'every row still knows which channel it came from',
-      channelCells.length === 6 && channelCells.every((c) => c === '#general'),
+      channelCells.length === 7 && channelCells.every((c) => c === '#general'),
       `channel column was ${JSON.stringify(channelCells)}`);
 
     await cdp.evaluate(scopeTab.session, "document.getElementById('review-next').click()");
@@ -1250,6 +1500,59 @@ async function main() {
     check('big sets', 'nothing selected means nothing to continue to',
       noneOn.nextDisabled === true, `heading said ${JSON.stringify(noneOn.heading)}`);
 
+    /*
+     * Undo the header checkbox.
+     *
+     * It replaces the whole selection in one click, including when it is hit on
+     * the way to something else, and unticking two hundred rows out of five
+     * thousand one at a time is an afternoon's work with no way back. Checked
+     * against a hand-made selection rather than an empty one, because restoring
+     * "nothing was spared" would pass whatever the undo actually did.
+     */
+    await cdp.evaluate(bigTab.session, "document.getElementById('pick-all').click()");
+    await sleep(200);
+    await cdp.evaluate(
+      bigTab.session,
+      `(() => {
+        const boxes = document.querySelectorAll('#results-body input[type=checkbox]');
+        for (const i of [3, 7, 11]) boxes[i].click();
+      })()`
+    );
+    await sleep(200);
+    const handMade = await bigState(`{
+      spared: window.__clearline.state.excluded.size,
+      undoHidden: document.getElementById('undo-pick').classList.contains('hidden'),
+    }`);
+    await cdp.evaluate(bigTab.session, "document.getElementById('pick-all').click()");
+    await sleep(200);
+    const wiped = await bigState(`{
+      spared: window.__clearline.state.excluded.size,
+      undoHidden: document.getElementById('undo-pick').classList.contains('hidden'),
+      undoVisible: document.getElementById('undo-pick').offsetParent !== null,
+    }`);
+    await cdp.evaluate(bigTab.session, "document.getElementById('undo-pick').click()");
+    await sleep(200);
+    const restored = await bigState(`{
+      spared: window.__clearline.state.excluded.size,
+      undoHidden: document.getElementById('undo-pick').classList.contains('hidden'),
+      firstRowsOff: Array.from(document.querySelectorAll('#results-body tr'))
+        .slice(0, 12).filter((r) => r.classList.contains('off')).length,
+    }`);
+
+    check('big sets', 'undo is offered only once there is something to undo',
+      handMade.undoHidden === true && wiped.undoVisible === true,
+      `before ${JSON.stringify(handMade)}, after ${JSON.stringify(wiped)}`);
+    check('big sets', 'undo puts back the selection the header checkbox replaced',
+      handMade.spared === 3 && wiped.spared === 400 && restored.spared === 3,
+      `spared went ${handMade.spared} -> ${wiped.spared} -> ${restored.spared}`);
+    check('big sets', 'undo redraws the rows it restored rather than only the count',
+      restored.firstRowsOff === 3,
+      `${restored.firstRowsOff} of the first twelve rows read as spared`);
+    check('big sets', 'undo takes itself away once it has been used',
+      restored.undoHidden === true, 'a second click would undo something else');
+
+    await cdp.evaluate(bigTab.session, "document.getElementById('pick-all').click()");
+    await sleep(200);
     await cdp.evaluate(bigTab.session, "document.getElementById('pick-all').click()");
     await sleep(200);
 

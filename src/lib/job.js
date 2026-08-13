@@ -74,6 +74,15 @@ CL.job = (function () {
     const writesPerMessage = action === 'edit-then-delete' ? 2 : 1;
 
     /**
+     * What this particular action is able to touch.
+     *
+     * Chosen once from the action rather than asked per message, and taken from
+     * the same place the pre-flight count comes from, so the number promised on
+     * screen and the number the loop can deliver are the same number.
+     */
+    const allowed = CL.filter.canAct(action);
+
+    /**
      * The account this run is allowed to touch.
      *
      * Belt and braces. Search already asks Discord to filter by author and
@@ -227,15 +236,14 @@ CL.job = (function () {
         // into the report. A user who selected 400 messages and saw 380 deleted
         // is owed an answer for the other 20.
         //
-        // Applied to editing too, not just to deleting. The same message types
-        // are refused for both, because a join notice is Discord narrating
-        // rather than something the account wrote: there is nothing to change
-        // and nothing to remove. Skipping this check on the edit path spent a
-        // paced write on a message Discord always refuses, and it refuses with
-        // a plain 400, which lands in the failure pile instead of the skip
-        // pile, blames the wrong thing, and counts toward the consecutive
-        // failure limit that halts the whole run.
-        if (!CL.filter.isDeletable(message)) {
+        // The two actions ask different questions and get different answers. A
+        // join notice is Discord narrating: it can be removed, because the
+        // account is what it is narrating about, but there is no text behind it
+        // to overwrite, and a PATCH comes back as a plain 400 that lands in the
+        // failure pile, blames the wrong thing, and counts toward the limit
+        // that halts the whole run. So an overwrite refuses it here and a
+        // delete goes ahead with it.
+        if (!allowed(message)) {
           state.skipped++;
           skips.push({
             message,
@@ -337,10 +345,24 @@ CL.job = (function () {
         failed: state.failed,
         skipped: state.skipped,
         remaining: state.total - (state.done + state.failed + state.skipped),
+        /*
+         * The messages the run never got to, not just how many there were.
+         *
+         * A run that stopped, for whatever reason, used to be a dead end: the
+         * count was reported and the queue behind it stayed private to this
+         * closure, so the only route on was to search the whole server again
+         * and re-do every exclusion by hand. Handing the tail back lets the app
+         * offer to carry on, and it goes back through createJob like any other
+         * queue, so the ownership check and the type check run again on every
+         * one of them rather than being skipped as already vetted.
+         */
+        remainingMessages: queue.slice(state.index),
         error: state.error,
         failures: failures.slice(),
         skips: skips.slice(),
-        elapsedMs: state.startedAt ? now() - state.startedAt : 0,
+        // Working time, not wall clock. A run paused over lunch is not a run
+        // that took four hours, and this number is shown as how long it took.
+        elapsedMs: state.startedAt ? workingMs() : 0,
       };
     }
 

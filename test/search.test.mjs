@@ -528,3 +528,61 @@ test('history paging walks backwards from the oldest of each page', async () => 
     assert.ok(walked[i] < walked[i - 1], `cursor ${i} did not move backwards`);
   }
 });
+
+test('a history walk that fails is not silently restarted from the newest message', async () => {
+  // The fallback exists to cover search failing, and the history call sat
+  // inside the same try, so an error part way through the walk landed in a
+  // catch whose only recovery is to run the walk. One 500 on page nine hundred
+  // of a large DM restarted the whole read from the top, on the shared limiter,
+  // with the on-screen counter dropping back to zero and nothing saying why. A
+  // failure that is not transient simply did the doomed walk twice.
+  const all = corpus(500);
+  let fromNewest = 0;
+  let pages = 0;
+  const finder = search.createFinder(
+    clientWith({
+      search: () => ({ status: 200, body: { total_results: 0, messages: [] } }),
+      history: (params) => {
+        pages++;
+        if (!params.before) fromNewest++;
+        if (pages === 4) {
+          throw Object.assign(new Error('server error'), { code: 'HTTP_ERROR', status: 500 });
+        }
+        const start = params.before
+          ? all.findIndex((m) => BigInt(m.id) < BigInt(params.before))
+          : 0;
+        return all.slice(start, start + params.limit);
+      },
+    }),
+    noSleep
+  );
+
+  await assert.rejects(
+    finder.find({ scope: { channelId: CHANNEL }, authorId: ME }),
+    (err) => err.code === 'HTTP_ERROR',
+    'the error belongs to the caller, who can offer to reconnect or retry'
+  );
+  assert.equal(fromNewest, 1, 'the walk was started over from the newest message');
+});
+
+test('search failing still falls back exactly once', async () => {
+  // The other side of the same change: the fallback itself must survive it.
+  const all = corpus(10);
+  let historyStarts = 0;
+  const finder = search.createFinder(
+    clientWith({
+      search: () => {
+        throw Object.assign(new Error('nope'), { code: 'HTTP_ERROR', status: 500 });
+      },
+      history: (params) => {
+        if (!params.before) historyStarts++;
+        return params.before ? [] : all.slice(0, params.limit);
+      },
+    }),
+    noSleep
+  );
+
+  const result = await finder.find({ scope: { channelId: CHANNEL }, authorId: ME });
+  assert.equal(result.messages.length, 10);
+  assert.equal(historyStarts, 1);
+});

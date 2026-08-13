@@ -26,6 +26,15 @@
         <li data-step="run" data-i18n="stepAct">Act</li>
       </ol>
 
+      <!--
+        One live region for the two operations that take a long time, updated on
+        a much coarser clock than the counters people can see. A polite region
+        rewritten once per message queues faster than a synthesiser can read it,
+        which is not "announced", it is a backlog standing between the user and
+        the Stop button.
+      -->
+      <p id="announce" class="sr-only" role="status" aria-live="polite"></p>
+
       <section class="card" id="connect-card">
         <h2 data-i18n="connectHeading">Connect</h2>
         <p class="hint" data-i18n="connectHint">
@@ -148,10 +157,25 @@
           <button id="search" class="primary" type="button" data-i18n="buttonSearch">Search</button>
         </div>
         <p class="status" id="filter-status" role="status" aria-live="polite"></p>
+        <!-- A whole-server search pages for minutes. It gets the same treatment
+             as the run for the same reason: it is a long wait that has to be
+             able to say it is still working, to someone who cannot see it. -->
         <div class="progress hidden" id="search-progress">
-          <div class="bar"><div class="fill" id="search-fill"></div></div>
+          <div
+            class="bar"
+            id="search-bar"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            aria-label="Search progress"
+            data-i18n-attr="aria-label:searchProgressLabel"
+          >
+            <div class="fill" id="search-fill"></div>
+          </div>
           <p class="counter" id="search-counter" data-i18n="searching">Searching...</p>
           <p class="hint tight" id="search-elapsed"></p>
+          <p class="hint tight pace" id="search-pace"></p>
           <button id="search-stop" class="ghost small" type="button" data-i18n="buttonStopSearch">
             Stop and keep what I have
           </button>
@@ -188,6 +212,11 @@
         </div>
         <div class="actions left">
           <button id="show-more" class="ghost small hidden" type="button">Show more</button>
+          <!-- The header checkbox replaces the whole selection in one click,
+               including when it is hit on the way to something else. -->
+          <button id="undo-pick" class="ghost small hidden" type="button" data-i18n="undoSelection">
+            Undo select all
+          </button>
         </div>
         <p class="hint tight" id="results-note"></p>
 
@@ -274,8 +303,12 @@
           </div>
           <!-- The run is the one part of the app that takes hours with nobody
                looking at it, so it is also the part that has to announce itself. -->
-          <p class="counter" id="run-counter" role="status" aria-live="polite"></p>
+          <!-- Not itself the live region. It changes once per message, which is
+               far faster than anything can read it out; #announce carries the
+               same news on a clock a person can follow. -->
+          <p class="counter" id="run-counter"></p>
           <p class="hint tight" id="run-eta"></p>
+          <p class="hint tight pace" id="run-pace"></p>
           <div class="actions left">
             <button id="run-pause" class="ghost small" type="button" data-i18n="buttonPause">Pause</button>
             <button id="run-cancel" class="ghost small" type="button" data-i18n="buttonStop">Stop</button>

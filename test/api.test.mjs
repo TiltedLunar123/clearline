@@ -8,16 +8,28 @@ const ctx = await loadLib(['lib/browser.js', 'lib/i18n.js', 'lib/ratelimit.js', 
 });
 const client = ctx.CL.api_client;
 
+// Snowflake-shaped, because that is what the function actually receives and the
+// rule it is being tested against only applies at fifteen digits and up. With
+// three-digit fixtures the two keys below differed in the template itself, so
+// the major-parameter suffix that does the real work was never exercised:
+// deleting it left every channel sharing one lane and the whole suite green.
+const CHANNEL_A = '111111111111111111';
+const CHANNEL_B = '222222222222222222';
+
 test('groups messages in one channel into a single bucket', () => {
-  const a = client.routeKeyFor('DELETE', '/channels/111/messages/999999999999999999');
-  const b = client.routeKeyFor('DELETE', '/channels/111/messages/888888888888888888');
+  const a = client.routeKeyFor('DELETE', `/channels/${CHANNEL_A}/messages/999999999999999999`);
+  const b = client.routeKeyFor('DELETE', `/channels/${CHANNEL_A}/messages/888888888888888888`);
   assert.equal(a, b);
 });
 
 test('keeps different channels in different buckets', () => {
-  const a = client.routeKeyFor('DELETE', '/channels/111/messages/999999999999999999');
-  const b = client.routeKeyFor('DELETE', '/channels/222/messages/999999999999999999');
+  const a = client.routeKeyFor('DELETE', `/channels/${CHANNEL_A}/messages/999999999999999999`);
+  const b = client.routeKeyFor('DELETE', `/channels/${CHANNEL_B}/messages/999999999999999999`);
   assert.notEqual(a, b);
+  // Named so the failure says which half broke: both collapse to the same
+  // template, so the channel is the only thing keeping them apart.
+  assert.match(a, /\[channels:111111111111111111\]$/);
+  assert.match(b, /\[channels:222222222222222222\]$/);
 });
 
 test('ignores the query string when bucketing', () => {

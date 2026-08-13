@@ -113,6 +113,22 @@ CL.ratelimit = (function () {
     // Lane id -> pacing state for that bucket.
     const lanes = new Map();
 
+    /**
+     * When the account-wide limit lifts.
+     *
+     * Belt and braces today rather than load bearing, and worth saying so
+     * plainly because it reads like the opposite. The queue is serial and the
+     * request that trips a global 429 sleeps out its own back-off before it
+     * releases the queue, so by the time any other request is considered this
+     * has always already passed. It cannot be the binding constraint, and no
+     * test can make it one without faking the queue.
+     *
+     * It stays because the property it encodes is real and the reason it never
+     * binds is a property of something else. Anything that made requests
+     * overlap, or that let a request skip its own sleep, would need this to be
+     * here and correct, and finding that out afterwards is not an option on the
+     * limit whose penalty is an hour-long IP ban.
+     */
     let globalResetAt = 0;
     let consecutive429 = 0;
     let tail = Promise.resolve();
@@ -166,6 +182,13 @@ CL.ratelimit = (function () {
       if (bucket && bucketOf.get(routeKey) !== bucket) {
         // Carry the provisional lane's timing across so the remap does not
         // hand out a free request against a bucket that is already exhausted.
+        //
+        // Unpinnable by test for the same structural reason as globalResetAt
+        // above: it only changes an outcome when a response names a bucket
+        // while carrying no budget of its own, and any request that could have
+        // been affected has already slept out the window it would have
+        // inherited. Kept for the same reason too. The mapping on the next line
+        // is the load-bearing half and is covered.
         const provisional = lanes.get(routeKey);
         bucketOf.set(routeKey, bucket);
         if (provisional && !lanes.has(bucket)) lanes.set(bucket, provisional);

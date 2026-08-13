@@ -216,12 +216,45 @@ test('remaps a provisional lane onto the real bucket without granting a free req
   const clock = fakeClock();
   const limiter = rl.createLimiter({ now: clock.now, sleep: clock.sleep });
 
-  // Two different routes that Discord reports as sharing one bucket.
+  // Two genuinely different route keys that Discord reports as sharing one
+  // bucket. Both calls used to name the same route, so there was only ever one
+  // provisional lane and the cross-route remap the test is named for never
+  // happened: the line it claims to pin could be deleted with the suite green.
   await limiter.run('GET /route-one', async () => fakeResponse(200, okHeaders(0, 6, 'shared')));
   const before = clock.now();
-  await limiter.run('GET /route-one', async () => fakeResponse(200, okHeaders(4, 6, 'shared')));
+  // The second route learns its bucket from a response that carries no budget
+  // of its own, which is the shape the carry-over exists for: without it the
+  // new lane starts wide open against a bucket that is already exhausted.
+  await limiter.run('GET /route-two', async () =>
+    fakeResponse(200, { 'X-RateLimit-Bucket': 'shared' })
+  );
+  await limiter.run('GET /route-two', async () => fakeResponse(200, okHeaders(4, 6, 'shared')));
 
   assert.ok(clock.now() - before >= 6000, 'exhausted shared bucket should still be closed');
+});
+
+test('a 429 waits out the full hint before the route is tried again', async () => {
+  // Deliberately not a test that a global 429 blocks some *other* route. It
+  // cannot, and no test should claim otherwise: the queue is serial and the
+  // request that trips the limit sleeps out its own back-off before releasing
+  // the queue, so by the time anything else runs the global window has already
+  // expired. See the note on globalResetAt in ratelimit.js. What is observable,
+  // and what actually protects the account, is the back-off itself.
+  const clock = fakeClock();
+  const limiter = rl.createLimiter({ now: clock.now, sleep: clock.sleep });
+
+  let served = 0;
+  const before = clock.now();
+  const response = await limiter.run('GET /one', async () => {
+    served++;
+    return served === 1
+      ? fakeResponse(429, { 'X-RateLimit-Global': 'true' }, { global: true, retry_after: 30 })
+      : fakeResponse(200, okHeaders());
+  });
+
+  assert.equal(response.status, 200);
+  assert.equal(served, 2, 'it retried once');
+  assert.ok(clock.now() - before >= 30000, 'the full 30 seconds was waited out');
 });
 
 test('caps a single wait so a bogus header cannot hang a job for a day', () => {

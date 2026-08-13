@@ -7,6 +7,10 @@
     "message": "Eigene Discord-Nachrichten suchen, exportieren und massenhaft löschen. Dein Token verlässt den Browser nie.",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "de",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,9 @@
   "exportPinned": {
     "message": "angepinnt"
   },
+  "exportPartial": {
+    "message": "Das ist ein Teil des Bildes, nicht das ganze: die Suche wurde vorzeitig gestoppt."
+  },
   "downloadHtml": {
     "message": "Als HTML laden"
   },
@@ -640,7 +647,7 @@
     "message": "Lass diesen Tab während des Durchlaufs offen. Schließen oder neu laden stoppt ihn genau dort, wo er ist."
   },
   "preflightUndeletable": {
-    "message": "$COUNT$ kann niemand löschen, weil Discord das bei Beitrittshinweisen und Ähnlichem nicht erlaubt. Sie bleiben unangetastet.",
+    "message": "$COUNT$ kann niemand löschen, weil Discord das bei Anrufen und Kanaländerungen nicht erlaubt. Sie bleiben unangetastet.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +775,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$ Nachricht wurde nie versucht. Suche erneut, um sie mitzunehmen.",
+    "message": "$COUNT$ Nachricht wurde nie versucht.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +784,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$ Nachrichten wurden nie versucht. Suche erneut, um sie mitzunehmen.",
+    "message": "$COUNT$ Nachrichten wurden nie versucht.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +836,72 @@
   },
   "reportSave": {
     "message": "Diesen Bericht speichern"
+  },
+  "rowLeftAlone": {
+    "message": "unangetastet"
+  },
+  "undoSelection": {
+    "message": "Rückgängig"
+  },
+  "reportContinue": {
+    "message": "Mit den übrigen $COUNT$ weitermachen",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    }
+  },
+  "reportTally": {
+    "message": "$TOTAL$ in der Warteschlange: $DONE$ erledigt, $SKIPPED$ unangetastet, $FAILED$ fehlgeschlagen.",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    }
+  },
+  "reportElapsed": {
+    "message": "Hat $TIME$ gedauert.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "paceWaiting": {
+    "message": "Wartet $SECONDS$ s, damit das Tempo sicher bleibt.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "paceThrottled": {
+    "message": "Discord hat um eine Pause gebeten. Wartet $SECONDS$ s.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "searchProgressLabel": {
+    "message": "Suchfortschritt"
   },
   "reasonNotYours": {
     "message": "Nicht bestätigt, dass dieses Konto sie geschrieben hat"

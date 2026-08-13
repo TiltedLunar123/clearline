@@ -201,18 +201,54 @@ test('every action the allow-list names is actually accepted', () => {
   }
 });
 
-test('a system message is skipped without being attempted', async () => {
-  // Join notices and pin notices come back in search results attributed to the
-  // user but cannot be deleted, so attempting them only produces noise.
+test('a message type Discord refuses is skipped without being attempted', async () => {
+  // A call notice cannot be removed by anyone, so attempting it only spends a
+  // paced write to be told so.
   const client = fakeClient();
   const result = await job
-    .createJob({ client, messages: [msg(1), msg(2, { type: 7 }), msg(3)] })
+    .createJob({ client, messages: [msg(1), msg(2, { type: 3 }), msg(3)] })
     .start();
 
   assert.equal(result.done, 2);
   assert.equal(result.skipped, 1);
   assert.equal(client.calls.length, 2, 'the system message never reached the API');
   assert.match(result.skips[0].reason, /does not allow/i);
+});
+
+test('a delete run removes a join notice, which is the account’s own trace', async () => {
+  // The whole product is "clear what you left behind", and a join notice is as
+  // much a part of that as anything typed. Discord deletes it for its author.
+  // It used to be refused here and reported as something Discord would not
+  // allow, which was untrue and left it in place permanently.
+  const client = fakeClient();
+  const result = await job
+    .createJob({ client, messages: [msg(1), msg(2, { type: 7 }), msg(3, { type: 18 })] })
+    .start();
+
+  assert.equal(result.done, 3);
+  assert.equal(result.skipped, 0);
+  assert.equal(client.calls.length, 3, 'all three reached the API');
+});
+
+test('an overwrite run still refuses the same join notice', async () => {
+  // The other half of the split. There is no content behind a system notice to
+  // replace, and the PATCH comes back a plain 400, which lands in the failure
+  // pile and counts toward the limit that halts the whole run.
+  const client = fakeClient();
+  const result = await job
+    .createJob({
+      client,
+      messages: [msg(1), msg(2, { type: 7 })],
+      action: 'edit',
+      editContent: 'gone',
+    })
+    .start();
+
+  assert.equal(result.done, 1);
+  assert.equal(result.skipped, 1);
+  assert.equal(result.failed, 0, 'refused here rather than at Discord');
+  assert.equal(client.calls.length, 1, 'no write was spent on it');
+  assert.match(result.skips[0].reason, /chang|edit/i);
 });
 
 test('cancelling stops the run where it stands', async () => {
@@ -462,4 +498,111 @@ test('overwrite then delete still reports the refusal as a delete refusal', asyn
     .start();
 
   assert.equal(result.skips[0].reason, ctx.CL.i18n.t('reasonUndeletable'));
+});
+
+test('a stopped run hands back the messages it never reached', async () => {
+  // A run that halts or is cancelled used to be a dead end: the count of what
+  // was never attempted was reported and the queue behind it stayed private, so
+  // the only way on was to search the whole server again and redo every
+  // exclusion by hand. On a set that took twenty minutes to page, that is a
+  // reason not to stop a run that should be stopped.
+  let runner;
+  const client = fakeClient((id, op, callCount) => {
+    if (callCount === 2) runner.cancel();
+    return null;
+  });
+  const queue = [msg(1), msg(2), msg(3), msg(4), msg(5)];
+  runner = job.createJob({ client, messages: queue });
+  const result = await runner.start();
+
+  assert.equal(result.status, 'cancelled');
+  assert.equal(result.remaining, result.remainingMessages.length, 'the count and the list agree');
+  assert.ok(result.remainingMessages.length > 0);
+  // Ordered oldest first, like the queue, so carrying on resumes rather than
+  // starting somewhere arbitrary.
+  const ids = result.remainingMessages.map((m) => m.id);
+  assert.deepEqual(ids, [...ids].sort((a, b) => snowflake.compare(a, b)));
+  // And nothing already handled comes back round for a second attempt.
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(result.done + result.failed + result.skipped + ids.length, queue.length);
+});
+
+test('carrying on from a stopped run finishes exactly what was left', async () => {
+  const mine = (minute) => msg(minute, { authorId: 'me' });
+  let first;
+  const client = fakeClient((id, op, callCount) => {
+    if (callCount === 2) first.cancel();
+    return null;
+  });
+  first = job.createJob({
+    client,
+    authorId: 'me',
+    messages: [mine(1), mine(2), mine(3), mine(4), mine(5)],
+  });
+  const stopped = await first.start();
+
+  const second = job.createJob({
+    client: fakeClient(),
+    messages: stopped.remainingMessages,
+    authorId: 'me',
+  });
+  const finished = await second.start();
+
+  assert.equal(finished.status, 'done');
+  assert.equal(finished.done, stopped.remaining);
+  assert.equal(finished.remainingMessages.length, 0);
+});
+
+test('the resumed queue is checked again rather than waved through as vetted', async () => {
+  // The tail goes back through createJob like any other queue, which is the
+  // whole reason it is safe to hand it back. Anything that cannot be confirmed
+  // as this account's is refused on the second pass exactly as on the first.
+  let first;
+  const client = fakeClient((id, op, callCount) => {
+    if (callCount === 1) first.cancel();
+    return null;
+  });
+  first = job.createJob({ client, messages: [msg(1), msg(2), msg(3)] });
+  const stopped = await first.start();
+  assert.ok(stopped.remainingMessages.length > 0);
+
+  const resumed = await job
+    .createJob({ client: fakeClient(), messages: stopped.remainingMessages, authorId: 'me' })
+    .start();
+
+  assert.equal(resumed.done, 0, 'none of them carry an author, so none are attempted');
+  assert.equal(resumed.skipped, stopped.remainingMessages.length);
+  assert.match(resumed.skips[0].reason, /written by this account/i);
+});
+
+test('a finished run has nothing left to carry on with', async () => {
+  const result = await job.createJob({ client: fakeClient(), messages: [msg(1), msg(2)] }).start();
+  assert.equal(result.status, 'done');
+  assert.deepEqual(result.remainingMessages, []);
+});
+
+test('time spent paused is not counted as time the run took', async () => {
+  // The report prints this as how long it took. A run left paused over lunch is
+  // not a four hour run, and the same number drives the estimate that tells
+  // somebody whether to wait.
+  let clock = 1000;
+  const now = () => clock;
+  let runner;
+  const client = fakeClient((id, op, callCount) => {
+    if (callCount === 1) {
+      runner.pause();
+      clock += 60 * 60 * 1000;
+      runner.resume();
+    }
+    clock += 10;
+    return null;
+  });
+  runner = job.createJob({ client, messages: [msg(1), msg(2)], now });
+  const result = await runner.start();
+
+  assert.equal(result.status, 'done');
+  assert.ok(
+    result.elapsedMs < 60 * 60 * 1000,
+    `an hour of standing still was billed as work: ${result.elapsedMs}ms`
+  );
 });

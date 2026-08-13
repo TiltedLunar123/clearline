@@ -61,9 +61,50 @@
     return result;
   }
 
+  /**
+   * App tabs that are provably still running the app page.
+   *
+   * A remembered tab id is not the same claim. `tabs.get` only throws when a
+   * tab is *closed*, so a tab that navigated to discord.com still resolved, and
+   * the toolbar button dutifully focused it and opened nothing: the extension's
+   * only entry point, dead for the rest of the browser session. Reading the
+   * tab's URL to tell the difference would mean taking the "tabs" permission,
+   * which is the trade this file exists to avoid.
+   *
+   * A port answers it for free. The app page opens one on load and the browser
+   * closes it on navigation as well as on close, so membership here means the
+   * page is alive right now. Kept in memory rather than storage.session
+   * deliberately: if the worker is restarted the ports are re-established by
+   * the pages that still exist, and anything remembered across that restart
+   * would be a guess again.
+   */
+  const livePorts = new Map();
+
+  CL.api.runtime.onConnect.addListener((port) => {
+    if (!port || port.name !== 'clearline:app') return;
+    const tabId = port.sender && port.sender.tab && port.sender.tab.id;
+    if (typeof tabId !== 'number') return;
+    livePorts.set(tabId, port);
+    port.onDisconnect.addListener(() => {
+      if (livePorts.get(tabId) === port) livePorts.delete(tabId);
+    });
+  });
+
+  /**
+   * Whether a remembered tab is still the app.
+   *
+   * Falls back to "yes" only while no port has ever been seen, which is the
+   * window between the worker starting and the page connecting. Answering "no"
+   * there would open a second tab beside a perfectly good one.
+   */
+  function stillTheApp(tabId) {
+    if (livePorts.has(tabId)) return true;
+    return livePorts.size === 0;
+  }
+
   async function resolveOpen() {
     const stored = await CL.api.storage.session.get('appTabId');
-    if (typeof stored.appTabId === 'number') {
+    if (typeof stored.appTabId === 'number' && stillTheApp(stored.appTabId)) {
       try {
         const tab = await CL.api.tabs.get(stored.appTabId);
         await CL.api.tabs.update(stored.appTabId, { active: true });
@@ -134,7 +175,11 @@
     const owner = stored.appTabId;
 
     if (typeof owner === 'number' && owner !== senderTabId) {
-      let alive = true;
+      // Same question as the toolbar asks, and for the same reason: a tab that
+      // has navigated away still resolves through tabs.get, so trusting that
+      // alone told a genuine app tab it was "already open in another tab" and
+      // named a tab that was showing Discord.
+      let alive = stillTheApp(owner);
       try {
         await CL.api.tabs.get(owner);
       } catch {
@@ -223,5 +268,11 @@
 
   // Exposed so the end to end suite drives the real handoff rather than a
   // reimplementation of it. Nothing else reads this.
-  CL.background = { fetchToken, openApp, claimApp, DISCORD_MATCHES };
+  CL.background = {
+    fetchToken,
+    openApp,
+    claimApp,
+    DISCORD_MATCHES,
+    liveAppTabs: () => Array.from(livePorts.keys()),
+  };
 })();

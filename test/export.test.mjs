@@ -173,8 +173,11 @@ test('HTML contains no external URL', () => {
     META
   );
   assert.doesNotMatch(html, /https?:\/\//i);
-  // The locale the browser chose, not the one this file was authored in.
-  assert.match(html, /^<!doctype html>\n<html lang="en-US">/);
+  // The locale that supplied the messages, which is what the document is
+  // actually written in. Not the browser's UI language: the stub reports
+  // "en-US" and there is no _locales/en-US, so tagging the document with it
+  // named a locale that contributed nothing to it.
+  assert.match(html, /^<!doctype html>\n<html lang="en">/);
 });
 
 test('the export document is written in the reader language', () => {
@@ -403,4 +406,58 @@ test('a report filename does not collide with an export of the same scope', () =
   assert.notEqual(report, plain);
   assert.match(report, /^clearline-report-/);
   assert.match(plain, /^clearline-my-server/);
+});
+
+test('every character a spreadsheet treats as a formula is neutralised', () => {
+  // Only "=" and a leading tab were ever driven, so the other four in the guard
+  // were free to be wrong and nothing would have said so. Excel evaluates all
+  // of them, and the payload here is the standard one: a cell that runs a
+  // program when the file is opened.
+  for (const lead of ['=', '+', '-', '@', '\t', '\r']) {
+    const content = `${lead}cmd|' /C calc'!A0`;
+    const csv = exp.toCSV([msg({ content })]);
+    const body = csv.split('\r\n')[1];
+    assert.ok(
+      body.includes(`'${lead}`) || body.includes(`"'${lead}`),
+      `a cell beginning ${JSON.stringify(lead)} was left evaluable: ${JSON.stringify(body)}`
+    );
+    assert.ok(!/^[=+@\t\r-]/.test(body.replace(/^"/, '')), 'the field still starts with the lead');
+  }
+});
+
+test('a harmless message is not mangled by the formula guard', () => {
+  // The other direction. Quoting everything that merely contains one of those
+  // characters would corrupt ordinary text, which is most of what this exports.
+  const csv = exp.toCSV([msg({ content: 'maths: 2+2=4, see you @ 5' })]);
+  assert.ok(csv.includes('maths: 2+2=4, see you @ 5'), csv);
+  assert.ok(!csv.includes("'maths"), 'a leading letter is not a formula');
+});
+
+test('the saved copy says when it is only part of the picture', () => {
+  // A stopped search puts a notice above the results, and the copy taken from
+  // that screen looked like the whole thing. It is the only record that will
+  // exist of messages that no longer do, so it has to carry the caveat too.
+  const partial = exp.toHTML([msg({})], { ...META, truncated: true });
+  assert.ok(partial.includes(ctx.CL.i18n.t('exportPartial')), 'the HTML copy is silent about it');
+  assert.equal(JSON.parse(exp.toJSON([msg({})], { ...META, truncated: true })).clearline.partial, true);
+
+  const whole = exp.toHTML([msg({})], META);
+  assert.ok(!whole.includes(ctx.CL.i18n.t('exportPartial')), 'a complete search must not claim otherwise');
+  assert.equal(JSON.parse(exp.toJSON([msg({})], META)).clearline.partial, false);
+});
+
+test('the saved copy timestamps a message the way the screen did', () => {
+  // The review table and the run report print local time, and this document
+  // printed the raw instant, so the backup taken moments before a delete
+  // disagreed with the table it was made from and with the date range the user
+  // typed. Same moment, different label, which is the hardest kind to notice.
+  const html = exp.toHTML([msg({ timestamp: '2024-03-05T23:30:00.000000+00:00' })], META);
+  assert.ok(!html.includes('2024-03-05T23:30:00.000000+00:00'), 'the raw instant is still in there');
+  assert.ok(html.includes(exp.localStamp('2024-03-05T23:30:00.000000+00:00')));
+});
+
+test('CSV and JSON keep the exact instant, because other software reads them', () => {
+  const stamp = '2024-03-05T23:30:00.000000+00:00';
+  assert.ok(exp.toCSV([msg({ timestamp: stamp })]).includes(stamp));
+  assert.ok(exp.toJSON([msg({ timestamp: stamp })], META).includes(stamp));
 });

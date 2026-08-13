@@ -32,6 +32,31 @@ CL.i18n = (function () {
   }
 
   /**
+   * The locale that actually supplied these messages.
+   *
+   * Not `getUILanguage()`, which is the browser's own UI language and says
+   * nothing about which `_locales` folder answered. The browser tries the UI
+   * locale, then its parent language, then `default_locale`, so a browser set
+   * to Dutch or Hindi gets English text out of `_locales/en` while
+   * getUILanguage still says `nl` or `hi`. Everything downstream then went to
+   * the wrong place: `<html lang>` told a screen reader to pronounce English
+   * with Dutch phonetics, `Intl.PluralRules` chose forms for a language the
+   * text is not in, and `num()` printed digits from a numbering system the
+   * strings around them do not use.
+   *
+   * Each locale file names itself, so the answer comes from the same file the
+   * messages did and cannot be anything else. The build gate requires every key
+   * `en` has in every locale, so a new translation cannot forget it.
+   */
+  function language() {
+    try {
+      return api.getMessage('localeCode') || 'en';
+    } catch {
+      return 'en';
+    }
+  }
+
+  /**
    * Plural forms, which the extension message store has no concept of.
    *
    * English needs two and Russian and Polish need four, so a one/other split
@@ -46,7 +71,7 @@ CL.i18n = (function () {
    */
   const rules = (function () {
     try {
-      return new Intl.PluralRules(api.getUILanguage());
+      return new Intl.PluralRules(language());
     } catch {
       return null;
     }
@@ -71,10 +96,62 @@ CL.i18n = (function () {
    */
   function num(value) {
     try {
-      return Number(value).toLocaleString(api.getUILanguage());
+      return Number(value).toLocaleString(language());
     } catch {
       return String(value);
     }
+  }
+
+  const ASCII_DIGITS = '0123456789';
+
+  /**
+   * The ten digits this locale prints, in order.
+   *
+   * Derived from `num` rather than assumed, because the pair below has to be
+   * exact inverses of each other and the only way to guarantee that is to build
+   * one from the other.
+   */
+  const localDigits = (function () {
+    let glyphs = '';
+    for (let i = 0; i < 10; i++) glyphs += num(i);
+    return glyphs.length === 10 ? glyphs : ASCII_DIGITS;
+  })();
+
+  /**
+   * Characters a locale may put between groups of digits.
+   *
+   * `\s` already covers every space form including the non-breaking ones a
+   * number formatter reaches for. The rest are written out: the apostrophes
+   * Swiss locales group with, and Arabic's own decimal and thousands marks.
+   */
+  const SEPARATORS = /[\s,._'’٫٬]/g;
+
+  /**
+   * Read a number back out of what somebody typed, in the digits it was shown.
+   *
+   * The inverse of `num`, and it exists because the one place this lands is the
+   * box asking a person to type back how many messages they are about to
+   * destroy. Comparing that box against `String(count)` assumes ASCII digits and
+   * three separators. The count above it does not: it is printed through `num`,
+   * so it carries whatever digits and grouping the locale uses. Where those
+   * disagreed, the app printed a number, the user typed exactly that number, and
+   * was told to type the number again, with no way through and nothing on screen
+   * admitting the box wanted something other than what the label said.
+   *
+   * Returns null rather than a partial reading. This gates something
+   * irreversible, so anything that is not cleanly a number is a refusal.
+   */
+  function parseCount(text) {
+    const cleaned = String(text === null || text === undefined ? '' : text).replace(SEPARATORS, '');
+    if (!cleaned) return null;
+    let digits = '';
+    for (const ch of cleaned) {
+      const ascii = ASCII_DIGITS.indexOf(ch);
+      const local = localDigits.indexOf(ch);
+      if (ascii === -1 && local === -1) return null;
+      digits += ASCII_DIGITS[ascii === -1 ? local : ascii];
+    }
+    return Number(digits);
   }
 
   /**
@@ -87,7 +164,7 @@ CL.i18n = (function () {
    */
   const listFormat = (function () {
     try {
-      return new Intl.ListFormat(api.getUILanguage(), { style: 'long', type: 'conjunction' });
+      return new Intl.ListFormat(language(), { style: 'long', type: 'conjunction' });
     } catch {
       return null;
     }
@@ -120,23 +197,8 @@ CL.i18n = (function () {
     // The document language drives hyphenation, quote marks, and how a screen
     // reader pronounces the page, so it has to follow the locale actually used
     // rather than stay at the `en` the file was authored in.
-    document.documentElement.lang = api.getUILanguage();
+    document.documentElement.lang = language();
   }
 
-  /**
-   * The locale the browser actually picked.
-   *
-   * Wanted by anything that builds a document rather than the page: an export
-   * needs it on `<html lang>` for hyphenation, quote marks and how a screen
-   * reader pronounces it, and has no DOM of its own to read it back from.
-   */
-  function language() {
-    try {
-      return api.getUILanguage() || 'en';
-    } catch {
-      return 'en';
-    }
-  }
-
-  return { t, plural, num, list, has, apply, language };
+  return { t, plural, num, parseCount, list, has, apply, language };
 })();

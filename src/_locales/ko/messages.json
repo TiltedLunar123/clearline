@@ -7,6 +7,10 @@
     "message": "내 Discord 메시지를 검색하고 내보내고 한 번에 삭제하세요. 토큰은 브라우저 밖으로 나가지 않습니다.",
     "description": "Store description. Hard limit of 132 characters in every language."
   },
+  "localeCode": {
+    "message": "ko",
+    "description": "BCP-47 tag for this file. Read back at runtime so the app knows which locale actually supplied its messages, rather than asking the browser what its UI language is. Do not translate; set it to this folder’s language tag."
+  },
   "actionTitle": {
     "message": "Clearline"
   },
@@ -350,6 +354,9 @@
   "exportPinned": {
     "message": "고정됨"
   },
+  "exportPartial": {
+    "message": "이것은 전체가 아니라 일부입니다. 검색이 도중에 중단되었습니다."
+  },
   "downloadHtml": {
     "message": "HTML 내려받기"
   },
@@ -640,7 +647,7 @@
     "message": "작업하는 동안 이 탭을 열어 두세요. 닫거나 새로고침하면 그 지점에서 멈춥니다."
   },
   "preflightUndeletable": {
-    "message": "$COUNT$은(는) 누구도 삭제할 수 없습니다. 입장 알림 같은 것에 대해 Discord가 삭제를 허용하지 않기 때문입니다. 그대로 둡니다.",
+    "message": "$COUNT$은(는) 누구도 삭제할 수 없습니다. 통화나 채널 변경 같은 것에 대해 Discord가 삭제를 허용하지 않기 때문입니다. 그대로 둡니다.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -768,7 +775,7 @@
     }
   },
   "reportRemaining_one": {
-    "message": "$COUNT$개는 아예 시도하지 못했습니다. 다시 검색해서 이어서 하세요.",
+    "message": "$COUNT$개는 아예 시도하지 못했습니다.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -777,7 +784,7 @@
     }
   },
   "reportRemaining_other": {
-    "message": "$COUNT$개는 아예 시도하지 못했습니다. 다시 검색해서 이어서 하세요.",
+    "message": "$COUNT$개는 아예 시도하지 못했습니다.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -829,6 +836,72 @@
   },
   "reportSave": {
     "message": "이 보고서 저장"
+  },
+  "rowLeftAlone": {
+    "message": "그대로"
+  },
+  "undoSelection": {
+    "message": "되돌리기"
+  },
+  "reportContinue": {
+    "message": "남은 $COUNT$ 이어서 진행",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "4,997 messages"
+      }
+    }
+  },
+  "reportTally": {
+    "message": "대기열 $TOTAL$개: 처리 $DONE$개, 그대로 $SKIPPED$개, 실패 $FAILED$개.",
+    "placeholders": {
+      "total": {
+        "content": "$1",
+        "example": "3,000"
+      },
+      "done": {
+        "content": "$2",
+        "example": "2,980"
+      },
+      "skipped": {
+        "content": "$3",
+        "example": "17"
+      },
+      "failed": {
+        "content": "$4",
+        "example": "3"
+      }
+    }
+  },
+  "reportElapsed": {
+    "message": "$TIME$ 걸렸습니다.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "2m 40s"
+      }
+    }
+  },
+  "paceWaiting": {
+    "message": "안전한 속도를 유지하려고 $SECONDS$초 기다리는 중입니다.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "8"
+      }
+    }
+  },
+  "paceThrottled": {
+    "message": "Discord가 잠시 멈추라고 했습니다. $SECONDS$초 물러납니다.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "searchProgressLabel": {
+    "message": "검색 진행률"
   },
   "reasonNotYours": {
     "message": "이 계정이 쓴 것으로 확인되지 않음"

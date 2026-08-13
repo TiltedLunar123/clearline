@@ -1,5 +1,108 @@
 # Changelog
 
+## 1.4.0
+
+### Added
+
+- A run that stops can be carried on rather than started over. Cancel one, or
+  have one halted by a rate limit or an expired session, and the report now
+  offers to pick up exactly the messages it never reached. Before this the count
+  of what was left was reported and the messages behind it were thrown away, so
+  the only way forward was to search the whole server again and redo every
+  spared row by hand, which on a large search is a reason not to stop a run that
+  should be stopped.
+- The header checkbox can be undone. It replaces the whole selection in one
+  click, including when it is caught on the way to something else, and unticking
+  two hundred rows out of five thousand one at a time is an afternoon's work. It
+  undoes that one action only, and stops offering as soon as you tick anything
+  yourself, so it can never take newer work away with it.
+- The review table marks the messages nothing can touch, instead of only
+  counting them under the Start button. Finding out which rows a number referred
+  to used to mean comparing two figures.
+- The report says what the run actually did: how many were queued, handled, left
+  alone and failed, and how long it worked for. It counted all of that from the
+  beginning and showed one of them.
+- Clearline now says why it is standing still. A closed rate limit bucket and a
+  429 being backed away from both looked exactly like a tab that had crashed,
+  which is the worst possible moment to be unreadable: the run is behaving
+  correctly and the obvious next move is to reload, which is the one thing that
+  loses it.
+- A saved copy says when it is only part of the picture, so a file taken from a
+  search you stopped early cannot be mistaken later for the whole of it.
+
+### Fixed
+
+- The box that asks you to type a count back accepts the count exactly as it is
+  printed. It is read through the same code that wrote it now, rather than being
+  stripped of the three separators English happens to use. Where those
+  disagreed, the app asked for a number, you typed that number, and were asked
+  for it again, with nothing on screen admitting the box wanted something else.
+- Clearline knows which language it is actually speaking. It asked the browser
+  for its interface language, which is a different question: with the browser
+  set to a language Clearline does not ship, every word came from English while
+  the page, the saved copy and the run report were all labelled as that other
+  language. A screen reader took that label seriously and read English aloud
+  with the wrong pronunciation, and the same wrong label went into the file that
+  outlives the messages.
+- Join notices, boosts, pins and "started a thread" are removed like anything
+  else you left behind. Discord deletes all of them for the account they belong
+  to; Clearline refused them and said Discord would not allow it, so a run over
+  a server left them in place with your name on them and no way to ever clear
+  them. Overwriting still leaves them alone, because there is no text behind
+  them to replace, and the two are now counted separately instead of both being
+  held to the stricter answer.
+- The toolbar button keeps working after its tab is used for something else.
+  Clearline remembered the tab by id and a tab that had been navigated away
+  still answered to that id, so the button went on bringing up whatever was
+  there and never opened the app again. That is the only way in, so it meant the
+  whole extension was unreachable until the browser was restarted, and a genuine
+  app tab was told it was "already open in another tab", naming a tab showing
+  Discord.
+- Taking the queue back leaves you where you were. "Use this tab instead" ran a
+  full reconnect, which ends by returning to the first step, and nothing leads
+  from there back to a result set except a fresh search: a search that had paged
+  for twenty minutes and every row spared by hand were still in memory and no
+  longer reachable from anything on screen.
+- Reconnect works again after a takeover lands in the middle of one. The button
+  disabled itself and nothing ever turned it back on, so the one way to recover
+  from an expired session sat there visible and dead for the rest of the tab's
+  life.
+- A session installed by taking the queue back is checked against the account
+  this tab connected as, which reconnecting already did. Everything keeping
+  Clearline to your own messages hangs off the account it started with.
+- A search that falls back to reading a channel directly no longer restarts that
+  read from the newest message when it hits an error part way through.
+- Reading a run's progress no longer floods a screen reader. The counter changes
+  once per message, which is faster than it can be spoken, so the queue grew
+  without limit and the Pause and Stop buttons sat behind a backlog. The counter
+  still moves every message; the announcement is now paced.
+- The search step announces itself at all. A whole-server search can page for
+  minutes and said nothing, including after Stop was pressed.
+- Carrying on from the report moves focus somewhere real instead of dropping it
+  when the report closes.
+- The saved copy timestamps messages the way the screen does. It printed the raw
+  instant while the table beside it printed local time, so the backup taken
+  moments before a delete disagreed with the screen it was made from.
+- Closing the tab on a report nobody has kept now asks first, on the same terms
+  as closing it mid-run. It is the only account of what happened to messages
+  that no longer exist.
+
+### Internal
+
+- The release gate can no longer be blinded by a regular expression. A pattern
+  written after `if (...)` was read as a division, and the scanner then walked
+  into it, met a quote and blanked the rest of the line: an `eval()` or a
+  `fetch()` sharing that line disappeared from every check, and the build printed
+  "no remote code" over it. Both are now caught, and anything the scanner cannot
+  read to the end fails the build instead of being passed silently.
+- The gate holds every translated message against the English one. A locale that
+  dropped a placeholder, or filled it from the wrong argument, passed as
+  perfectly self-consistent, and the sentence it damaged is the one directly
+  above the Start button.
+- Several checks that could not fail were rebuilt so they can: two rate limit
+  lane tests, the route bucketing test, and the end-to-end check that counted app
+  tabs, which was structurally always zero.
+
 ## 1.3.0
 
 ### Added

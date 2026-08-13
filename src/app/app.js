@@ -15,7 +15,33 @@
 (function () {
   'use strict';
 
-  const client = CL.api_client.createClient();
+  /**
+   * Why nothing is happening, when nothing is happening.
+   *
+   * The limiter has emitted these since it was written and nothing listened, so
+   * the two moments the extension deliberately stands still, a bucket closing
+   * and a 429 being backed away from, looked exactly like a tab that had
+   * crashed. That is the worst possible moment to be unreadable: the run is
+   * behaving correctly and the user's next move is to reload, which is the one
+   * thing that loses the run.
+   *
+   * Display only. It runs inside the serialised queue, so it never throws and
+   * never touches the limiter's own bookkeeping.
+   */
+  function onLimiterEvent(event) {
+    try {
+      if (!event) return;
+      if (event.type === 'throttled') {
+        paceNote(t('paceThrottled', [num(Math.ceil(event.ms / 1000))]));
+      } else if (event.type === 'wait' && event.ms >= 3000) {
+        paceNote(t('paceWaiting', [num(Math.ceil(event.ms / 1000))]));
+      }
+    } catch {
+      // Nothing here is worth interrupting a run for.
+    }
+  }
+
+  const client = CL.api_client.createClient({ onEvent: onLimiterEvent });
   const finder = CL.search.createFinder(client);
 
   const t = CL.i18n.t;
@@ -68,9 +94,28 @@
     ran: false,
     job: null,
     stopSearch: false,
+    /** A finished report nobody has kept yet. Guards the tab against a reload. */
+    unsavedReport: false,
   };
 
   const $ = (id) => document.getElementById(id);
+
+  /**
+   * Tell the background this page exists, for as long as it exists.
+   *
+   * Opened once and never read from. The background needs to know whether the
+   * tab it remembers is still the app, and a tab id alone cannot answer that:
+   * navigating away leaves the id valid, so the toolbar button went on focusing
+   * a tab that was showing Discord and never opened the app again. A port is
+   * closed by the browser on navigation as well as on close, which is exactly
+   * the question, and it costs no permission.
+   */
+  try {
+    CL.api.runtime.connect({ name: 'clearline:app' });
+  } catch {
+    // No background to connect to, which happens while the worker restarts.
+    // One tab is the ordinary case, so carrying on is right.
+  }
 
   /* ---------------------------------------------------------------- */
   /* Small helpers                                                     */
@@ -88,6 +133,30 @@
 
   function hide(el) {
     el.classList.add('hidden');
+  }
+
+  /**
+   * Say something to a screen reader, at a pace a person can follow.
+   *
+   * The run counter was itself the live region, rewritten once per message. On
+   * a three thousand message run that is a fresh sentence every nine hundred
+   * milliseconds, each taking about three seconds to speak, so the queue grew
+   * without bound and the synthesiser never stopped: the Pause and Stop buttons
+   * were unreachable behind a backlog, and any status the app wrote competed
+   * with it. The visible counter still moves every message; only what is
+   * announced is throttled, keyed on something that changes rarely.
+   */
+  let lastAnnounceKey = '';
+  function announce(text, key) {
+    const k = key === undefined ? text : key;
+    if (!text || k === lastAnnounceKey) return;
+    lastAnnounceKey = k;
+    $('announce').textContent = text;
+  }
+
+  /** The current reason for a pause, written wherever the user is watching. */
+  function paceNote(text) {
+    for (const id of ['search-pace', 'run-pace']) $(id).textContent = text;
   }
 
   /**
@@ -215,6 +284,7 @@
       generatedAt: Date.now(),
       filterSummary: CL.filter.describe(state.filters),
       total: selected().length,
+      truncated: !!state.truncated,
     };
   }
 
@@ -326,10 +396,19 @@
     state.stopSearch = false;
     $('connect').disabled = false;
     $('search').disabled = false;
+    // Reconnect too. It latches itself to the stand-down flag on the way out of
+    // reconnect(), and nothing ever cleared it again, so a takeover landing
+    // inside a reconnect left the one in-page recovery from an expired session
+    // visible and permanently dead for the rest of the tab's life.
+    $('reconnect').disabled = false;
     if ($('status').textContent === STOOD_DOWN) say($('status'), '');
     if ($('run-status').textContent === t('runStoppedByTakeover')) say($('run-status'), '');
     hide($('takeover'));
     syncTabActions();
+    // Start is derived, not latched. standDown() switches it off directly, so
+    // without this the tab came back up with every other control working and
+    // the one button the screen exists for still greyed out.
+    renderPreflight();
   }
 
   /**
@@ -409,6 +488,11 @@
       client.setToken(reply.token);
       say($('status'), t('statusConnected'));
 
+      // Whose token this is, established before anything is pinned to it. See
+      // the note on reconnect(): connect() is not only step one, the takeover
+      // button reaches it too, and a tab that has already connected has an
+      // identity that the credential just installed does not have to match.
+
       // Checked between every call, not once at the top. Connect is the only
       // path to the network that starts before there is anything on screen to
       // disable, so a takeover landing here has nothing else to stop it: the
@@ -416,6 +500,11 @@
       // and the tail then blanks the notice explaining that this tab stopped.
       const me = await client.me();
       if (state.superseded) return;
+      if (state.me && String(me.id) !== String(state.me.id)) {
+        client.setToken(null);
+        say($('status'), t('errDifferentAccount'), 'error');
+        return;
+      }
       // Sequential on purpose. Firing these together would be the first burst
       // the account ever sees from this extension, which is the opposite of the
       // pacing everything else here is built around.
@@ -494,6 +583,42 @@
    * this tool deleting another person's messages, which is the one outcome the
    * whole design exists to make impossible.
    */
+  /**
+   * Install the session token again, and refuse it if it is somebody else's.
+   *
+   * The token half and the identity half are one operation, never one without
+   * the other, which is why they live in one function that both callers use
+   * rather than in each of them. Answers whether the client is usable
+   * afterwards; anything it refuses it has already explained on screen.
+   */
+  async function refreshSession() {
+    const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
+    // Checked after the await, like every other network path here. A takeover
+    // landing inside this round trip used to be overwritten by the tail of the
+    // caller: the stand-down notice lives in #status and so does the success
+    // line, so a stopped tab ended up reading "Reconnected" with Search and
+    // Start greyed out and nothing left on screen to explain why.
+    if (state.superseded) return false;
+    if (!reply || !reply.ok) {
+      say($('status'), tokenProblem(reply && reply.reason), 'error');
+      return false;
+    }
+    client.setToken(reply.token);
+
+    // Asked, not assumed. Only when there is an identity to protect: before a
+    // connect has ever succeeded there is nothing pinned to contradict.
+    if (state.me) {
+      const me = await client.me();
+      if (state.superseded) return false;
+      if (String(me.id) !== String(state.me.id)) {
+        client.setToken(null);
+        say($('status'), t('errDifferentAccount'), 'error');
+        return false;
+      }
+    }
+    return true;
+  }
+
   async function reconnect() {
     if (state.superseded || state.connecting) return;
     const button = $('reconnect');
@@ -501,32 +626,7 @@
     clearHalt();
     say($('status'), t('statusReconnecting'));
     try {
-      const reply = await CL.api.runtime.sendMessage({ type: 'clearline:get-token' });
-      // Checked after the await, like every other network path here. A takeover
-      // landing inside this round trip used to be overwritten by the tail of
-      // this function: the stand-down notice lives in #status, and the success
-      // line below is written to the same element, so a stopped tab ended up
-      // reading "Reconnected" with Search and Start greyed out and nothing left
-      // on screen to explain why.
-      if (state.superseded) return;
-      if (!reply || !reply.ok) {
-        say($('status'), tokenProblem(reply && reply.reason), 'error');
-        return;
-      }
-      client.setToken(reply.token);
-
-      // Asked, not assumed. Only when there is an identity to protect: before a
-      // connect has ever succeeded there is nothing pinned to contradict.
-      if (state.me) {
-        const me = await client.me();
-        if (state.superseded) return;
-        if (String(me.id) !== String(state.me.id)) {
-          client.setToken(null);
-          say($('status'), t('errDifferentAccount'), 'error');
-          return;
-        }
-      }
-
+      if (!(await refreshSession())) return;
       say($('status'), t('statusReconnected'));
       hide(button);
       syncTabActions();
@@ -537,6 +637,43 @@
       // not: a tab superseded mid-reconnect would otherwise hand a control back
       // at the moment it was supposed to have stopped.
       button.disabled = state.superseded;
+    }
+  }
+
+  /**
+   * Take the queue back, and stay where you were.
+   *
+   * This used to be wired straight to connect(), which rebuilds both pickers
+   * and ends on goTo('where'). For a tab that has never connected that is
+   * exactly right. For one that has, it is the thing reconnect()'s own note
+   * warns against: it walks the user back to the first step and strands the
+   * result set they were halfway through acting on. Nothing reaches the review
+   * table except a fresh search, and a fresh search replaces `state.results`
+   * and clears every exclusion, so twenty minutes of paging and several minutes
+   * of unticking rows by hand were still in memory and no longer reachable from
+   * any control on screen.
+   *
+   * Taking the queue back is a claim plus a session, so that is all it does.
+   */
+  async function reclaim() {
+    if (!state.me) return connect(true);
+    if (state.connecting) return;
+    const button = $('takeover');
+    button.disabled = true;
+    clearHalt();
+    say($('status'), t('statusReconnecting'));
+    try {
+      // An affirmative claim stands this tab back up, which is what re-arms the
+      // controls and re-derives Start.
+      if (!(await claimOwnership(true))) return;
+      if (!(await refreshSession())) return;
+      say($('status'), t('statusReconnected'));
+      hide($('reconnect'));
+      syncTabActions();
+    } catch (err) {
+      if (!state.superseded) say($('status'), (err && err.message) || t('errGeneric'), 'error');
+    } finally {
+      button.disabled = false;
     }
   }
 
@@ -779,27 +916,38 @@
         maxId: bounds.maxId,
         shouldStop: () => state.stopSearch,
         onProgress: (p) => {
+          let line;
           if (p.phase === 'indexing') {
-            $('search-counter').textContent = t('searchIndexing');
+            line = t('searchIndexing');
           } else if (p.strategy === 'history') {
             // The history path knows how much it has read but not how much
             // there is, so it reports work done. It was reporting neither, and
             // a big DM sat on one unchanging line for minutes looking wedged.
-            $('search-counter').textContent = t('searchHistoryProgress', [
-              num(p.scanned || 0),
-              num(p.found),
-            ]);
+            line = t('searchHistoryProgress', [num(p.scanned || 0), num(p.found)]);
           } else {
-            $('search-counter').textContent = p.total
+            line = p.total
               ? t('searchFoundOf', [count(p.found), num(p.total)])
               : t('searchFound', [count(p.found)]);
           }
-          if (p.total) {
-            $('search-fill').style.width = `${Math.min(100, Math.round((p.found / p.total) * 100))}%`;
+          $('search-counter').textContent = line;
+          // A request landed, so whatever the limiter was waiting for is over.
+          if (p.phase !== 'indexing') paceNote('');
+
+          const pct = p.total ? Math.min(100, Math.round((p.found / p.total) * 100)) : null;
+          if (pct !== null) {
+            $('search-fill').style.width = `${pct}%`;
+            $('search-bar').setAttribute('aria-valuenow', String(pct));
           }
           // Something on screen has to move even when neither denominator is
           // known, or a slow search is indistinguishable from a stuck one.
           $('search-elapsed').textContent = t('searchElapsed', [humanElapsed(Date.now() - startedAt)]);
+          // Announced on a coarser clock than it is drawn. Without a total there
+          // is no percentage to key on, so it falls back to a slow tick, which
+          // is still the difference between silence and knowing it is alive.
+          announce(
+            line,
+            `${p.phase}:${pct === null ? Math.floor((Date.now() - startedAt) / 15000) : pct}`
+          );
         },
       });
 
@@ -812,6 +960,7 @@
       state.resultScope = scope;
       state.resultScopeLabel = scopeLabel;
       state.excluded = new Set();
+      previousSelection = null;
       state.shown = MAX_ROWS;
       state.ran = false;
       state.truncated = !!found.truncated;
@@ -852,6 +1001,16 @@
   let lastPicked = null;
 
   /**
+   * The selection as it was before the last select-all or select-none.
+   *
+   * That header checkbox replaces the whole set in one click, and unticking two
+   * hundred rows out of five thousand one at a time is an afternoon's work with
+   * no way back. Deliberately one step deep and tied to that one control: it is
+   * an undo for the destructive click, not a history of the screen.
+   */
+  let previousSelection = null;
+
+  /**
    * Discord's timestamp, in the reader's own timezone.
    *
    * It arrives as an ISO instant with an offset, and slicing the first sixteen
@@ -860,17 +1019,13 @@
    * reading "sent on or before 5 March" while showing the 6th, immediately
    * before an irreversible action. Same instant either way; only the label was
    * lying.
+   *
+   * Shared with the exporter rather than written twice. The saved copy is what
+   * the user is told is the only record they will have, and a record that
+   * timestamps the same message differently from the table it was made from is
+   * the kind of discrepancy nobody can resolve afterwards.
    */
-  function localStamp(iso) {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso).slice(0, 16).replace('T', ' ');
-    const pad = (n) => String(n).padStart(2, '0');
-    return (
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
-      `${pad(d.getHours())}:${pad(d.getMinutes())}`
-    );
-  }
+  const localStamp = CL.exporter.localStamp;
 
   /**
    * Where this message lives in Discord.
@@ -935,6 +1090,11 @@
           setPicked(index, on);
         }
         lastPicked = index;
+        // Undo goes back one action, not to a bookmark. Once a row has been
+        // ticked by hand the stored set no longer describes "just before this",
+        // so offering to restore it would quietly throw that work away instead
+        // of giving it back.
+        previousSelection = null;
         refreshSelectionCounts();
       });
       pick.appendChild(box);
@@ -958,6 +1118,19 @@
       // privileged extension page, and there is no version of this worth risking.
       what.textContent =
         message.content || (message.attachments.length ? t('attachmentOnly') : t('noText'));
+
+      // Said on the row, not only counted underneath the Start button. The
+      // pre-flight has always printed how many messages would be left alone and
+      // then hidden which ones, so the only way to find them was to compare two
+      // numbers. Marked as text rather than by colour alone, so it survives
+      // being read out and being printed.
+      if (!CL.filter.isDeletable(message)) {
+        tr.classList.add('untouchable');
+        const mark = document.createElement('span');
+        mark.className = 'rowmark';
+        mark.textContent = t('rowLeftAlone');
+        what.appendChild(mark);
+      }
 
       tr.append(pick, when, where, what);
       tr.dataset.index = String(index);
@@ -1016,6 +1189,8 @@
     const nextBatch = Math.min(MAX_ROWS, beyond);
     more.textContent = plural('showMore', nextBatch);
 
+    $('undo-pick').classList.toggle('hidden', previousSelection === null);
+
     $('review-next').disabled = picked === 0;
     for (const button of document.querySelectorAll('[data-export]')) button.disabled = picked === 0;
   }
@@ -1031,8 +1206,16 @@
     return checked ? checked.value : 'delete';
   }
 
-  function deletableCount() {
-    return selected().filter(CL.filter.isDeletable).length;
+  /**
+   * How many of the selected messages this action can actually touch.
+   *
+   * Asked of `CL.filter.canAct` rather than worked out here, because the job
+   * loop asks the same question of the same function before every call. The
+   * number on screen, the number typed back into the confirm box and the number
+   * the run delivers all come from one place by construction.
+   */
+  function affectedCount(action) {
+    return selected().filter(CL.filter.canAct(action)).length;
   }
 
   function syncRunForm() {
@@ -1053,12 +1236,12 @@
   function renderPreflight() {
     const action = chosenAction();
     const total = selected().length;
-    const deletable = deletableCount();
-    // The same for all three actions. Discord refuses the same message types
-    // either way, so an edit run counting them in promised a number it could
-    // not deliver, and then suppressed the line that would have explained the
-    // shortfall because that line was tied to deleting.
-    const affected = deletable;
+    // Counted per action, because the two are not the same question. Discord
+    // will remove a join notice, since the account is what it is a notice
+    // about, and will not overwrite one, since there is no text behind it. A
+    // single answer for both had to be the stricter one, which promised less
+    // than a delete could deliver and left those messages unreachable for good.
+    const affected = affectedCount(action);
     const writes = action === 'edit-then-delete' ? 2 : 1;
     const estimate = CL.job.estimateMs(affected, writes, null);
 
@@ -1084,10 +1267,10 @@
     if (estimate > 5 * 60 * 1000) {
       lines.push(t('preflightKeepOpen'));
     }
-    if (deletable < total) {
+    if (affected < total) {
       lines.push(
-        t(action === 'edit' ? 'preflightUneditable' : 'preflightUndeletable', [
-          count(total - deletable),
+        t(action === 'delete' ? 'preflightUndeletable' : 'preflightUneditable', [
+          count(total - affected),
         ])
       );
     }
@@ -1126,10 +1309,16 @@
     const pct = p.total ? Math.round((done / p.total) * 100) : 0;
     $('run-fill').style.width = `${pct}%`;
     $('run-bar').setAttribute('aria-valuenow', String(pct));
-    $('run-counter').textContent =
+    const line =
       t('runCounter', [num(done), num(p.total)]) +
       (p.failed ? t('runCounterFailed', [num(p.failed)]) : '') +
       (p.skipped ? t('runCounterSkipped', [num(p.skipped)]) : '');
+    $('run-counter').textContent = line;
+    // A message was just processed, so whatever the limiter was waiting out has
+    // passed. Cleared here rather than by an event, because there is no "the
+    // wait ended" to listen for and work resuming is the same news.
+    paceNote('');
+    announce(line, `${p.status}:${pct}`);
     $('run-eta').textContent =
       p.status === 'paused' ? t('runPaused') : p.etaMs ? t('runEta', [humanDuration(p.etaMs)]) : '';
     // The whole design asks the user to leave the run alone, then gave them no
@@ -1174,10 +1363,29 @@
       box.appendChild(why);
     }
 
-    // The job has always counted this and the report has never shown it. A run
-    // halted at message three of five thousand said "Stopped early. 3 messages
-    // handled." and left the reader to work out for themselves that the other
-    // 4,997 were never attempted.
+    // The job has counted all of these from the beginning and the report showed
+    // one of them. "Finished. 2,980 messages handled." is not an account of a
+    // run that also left 20 alone, failed on 3 and took two hours.
+    const tally = document.createElement('p');
+    tally.textContent = t('reportTally', [
+      num(summary.total),
+      num(summary.done),
+      num(summary.skipped),
+      num(summary.failed),
+    ]);
+    doc.lines.push(tally.textContent);
+    box.appendChild(tally);
+
+    if (summary.elapsedMs > 0) {
+      const took = document.createElement('p');
+      took.textContent = t('reportElapsed', [humanElapsed(summary.elapsedMs)]);
+      doc.lines.push(took.textContent);
+      box.appendChild(took);
+    }
+
+    // A run halted at message three of five thousand said "Stopped early. 3
+    // messages handled." and left the reader to work out for themselves that
+    // the other 4,997 were never attempted.
     if (summary.remaining > 0) {
       const left = document.createElement('p');
       left.textContent = plural('reportRemaining', summary.remaining);
@@ -1234,20 +1442,62 @@
     const buttons = document.createElement('div');
     buttons.className = 'actions left';
 
+    /**
+     * Load a set of messages back into the run screen.
+     *
+     * Shared by the two buttons that do it, because the difference between them
+     * is only which messages, and everything else has to happen the same way:
+     * the report stops being the thing that is about to be lost, the review
+     * table is rebuilt so the rows can still be inspected and spared, and focus
+     * moves somewhere real rather than being destroyed with the report.
+     */
+    function loadBack(messages) {
+      state.results = messages;
+      state.excluded = new Set();
+      state.shown = MAX_ROWS;
+      state.ran = false;
+      state.unsavedReport = false;
+      previousSelection = null;
+      renderReview();
+      hide(box);
+      renderPreflight();
+      // hide() takes the button that was just clicked out of the accessibility
+      // tree while it still holds focus, which drops it to <body>: the next Tab
+      // restarts at the page heading and nothing announces that Start is live
+      // again. Every other place in this file that hides what it was standing
+      // on moves focus deliberately, and these two did not.
+      const heading = $('step-run').querySelector('h2');
+      if (heading) heading.focus({ preventScroll: true });
+    }
+
+    /*
+     * Carry on with the messages the run never reached.
+     *
+     * A run that halted on a rate limit or an expired session, or that the user
+     * stopped, left every unattempted message in a queue this screen could not
+     * see. The only route on was to search the whole server again and redo every
+     * exclusion by hand, which on a set that took twenty minutes to page is a
+     * reason not to stop a run that should be stopped.
+     *
+     * The tail goes back through createJob like any other queue, so the author
+     * check and the type check run again on every message rather than being
+     * waved through as already vetted.
+     */
+    if (summary.remainingMessages && summary.remainingMessages.length) {
+      const carry = document.createElement('button');
+      carry.className = 'ghost';
+      carry.type = 'button';
+      carry.textContent = t('reportContinue', [count(summary.remainingMessages.length)]);
+      carry.addEventListener('click', () => loadBack(summary.remainingMessages.slice()));
+      buttons.appendChild(carry);
+    }
+
     if (summary.failures.length) {
       const retry = document.createElement('button');
       retry.className = 'ghost';
       retry.type = 'button';
       retry.textContent = t('reportRetry', [num(summary.failures.length)]);
-      retry.addEventListener('click', () => {
-        state.results = summary.failures.map((f) => f.message);
-        state.excluded = new Set();
-        state.shown = MAX_ROWS;
-        state.ran = false;
-        renderReview();
-        hide(box);
-        renderPreflight();
-      });
+      retry.addEventListener('click', () => loadBack(summary.failures.map((f) => f.message)));
       buttons.appendChild(retry);
     }
 
@@ -1273,6 +1523,10 @@
           'text/html'
         );
         say($('run-status'), t('saved'));
+        // The unload guard is here to protect an unsaved report, so saving it
+        // is what lifts the guard. A prompt that cannot be satisfied is worse
+        // than no prompt.
+        state.unsavedReport = false;
       } catch (err) {
         say($('run-status'), (err && err.message) || t('errSaveFailed'), 'error');
       }
@@ -1291,6 +1545,8 @@
       state.excluded = new Set();
       state.shown = MAX_ROWS;
       state.ran = false;
+      state.unsavedReport = false;
+      previousSelection = null;
       hide(box);
       goTo('filter');
     });
@@ -1313,10 +1569,16 @@
     // The same count renderPreflight put on screen. The number the user is asked
     // to type back has to be the number they were just shown, so this cannot
     // work out "affected" a second way.
-    const affected = deletableCount();
+    const affected = affectedCount(action);
 
-    const typed = $('confirm').value.replace(/[\s,._]/g, '');
-    if (affected > CONFIRM_ABOVE && action !== 'edit' && typed !== String(affected)) {
+    // Read back through the same module that printed it, rather than stripped
+    // of the three separators English happens to use. The label is written with
+    // `num()`, so its digits and its grouping are the locale's, and comparing
+    // that against an ASCII count meant a locale printing anything else asked
+    // for a number and then refused the number it had just asked for, over and
+    // over, with no way through.
+    const typed = CL.i18n.parseCount($('confirm').value);
+    if (affected > CONFIRM_ABOVE && action !== 'edit' && typed !== affected) {
       say($('run-status'), t('confirmRefused', [num(affected)]), 'error');
       return;
     }
@@ -1372,11 +1634,16 @@
     const summary = await runner.start();
 
     hide($('run-progress'));
+    paceNote('');
     document.title = 'Clearline';
     $('run-back').disabled = false;
     state.job = null;
     state.ran = true;
     $('start').disabled = true;
+    // The report is now the only account of something that cannot be undone, so
+    // it takes over the guard the running job was holding. Only when the run
+    // actually did something: a report of nothing is not worth a prompt.
+    state.unsavedReport = summary.done + summary.failed + summary.skipped > 0;
     renderReport(summary);
     // A session that expired partway through is the most likely reason a long
     // run stopped early, and the retry button is useless until it is fixed.
@@ -1388,7 +1655,7 @@
   /* ---------------------------------------------------------------- */
 
   $('connect').addEventListener('click', () => connect(false));
-  $('takeover').addEventListener('click', () => connect(true));
+  $('takeover').addEventListener('click', reclaim);
   $('reconnect').addEventListener('click', reconnect);
 
   for (const radio of document.querySelectorAll('input[name="scope-kind"]')) {
@@ -1420,9 +1687,21 @@
   }
 
   $('pick-all').addEventListener('change', () => {
+    // Kept before it is replaced, not after. This is the one control on the
+    // screen that can throw away an arbitrary amount of careful work in a
+    // single click, including by being hit on the way to something else.
+    previousSelection = new Set(state.excluded);
     if ($('pick-all').checked) state.excluded = new Set();
     else state.excluded = new Set(state.results.map((m) => m.id));
     renderReview();
+  });
+
+  $('undo-pick').addEventListener('click', () => {
+    if (previousSelection === null) return;
+    state.excluded = previousSelection;
+    previousSelection = null;
+    renderReview();
+    $('pick-all').focus({ preventScroll: true });
   });
 
   $('show-more').addEventListener('click', () => {
@@ -1476,11 +1755,17 @@
    * The job loop lives here rather than in the service worker on purpose, and
    * nothing said so anywhere: a run reported as "about 3 hours" invites exactly
    * the shut-the-laptop that kills it, with no report and no record of how far
-   * it got. `state.job` is nulled when start() resolves, so the guard takes
-   * itself off again the moment there is nothing to lose.
+   * it got.
+   *
+   * The finished report is guarded on the same terms. It is the only account of
+   * which messages were left alone and why, which failed and with what, and how
+   * many were never reached, about messages that no longer exist to be looked
+   * at again. Both flags clear themselves the moment there is nothing to lose,
+   * because a prompt that cannot be satisfied is worse than no prompt: the job
+   * when start() resolves, the report when it is saved or acted on.
    */
   window.addEventListener('beforeunload', (event) => {
-    if (!state.job) return;
+    if (!state.job && !state.unsavedReport) return;
     event.preventDefault();
     event.returnValue = '';
   });

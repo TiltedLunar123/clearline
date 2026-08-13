@@ -17,20 +17,63 @@ CL.filter = (function () {
   'use strict';
 
   /**
-   * Message types the API will actually let an account delete.
+   * Message types Discord will let the account that wrote them delete.
    *
-   * Everything else in a channel is a system notice: someone joined, a call
-   * started, a message was pinned. They are attributed to the user and come back
-   * in search results, so without this the count on screen promises more than
-   * the job can deliver and every one of them fails at delete time.
+   * Taken from Discord's own message type table, the Deletable column. Most of
+   * these are system notices rather than anything typed: "X joined the server",
+   * "X started a thread", "X pinned a message". They carry the acting user as
+   * the author, so a search filtered by author returns them, and they are as
+   * much a trace of somebody having been there as an ordinary message is.
+   *
+   * The list used to be the four ordinary types alone, which meant a run over a
+   * server left every join notice, every boost, every "started a thread" behind
+   * and told the user Discord would not allow their removal. It would have.
+   * Nothing in the product could ever have cleared them.
+   *
+   * Left out on purpose: 1-5 and 21, which Discord marks not deletable at all,
+   * and 24, which is only deletable with Manage Messages and so is somebody
+   * else's to remove.
    */
-  const DELETABLE_TYPES = [0, 19, 20, 23];
+  const DELETABLE_TYPES = [
+    0, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 22, 23, 25, 26,
+    27, 28, 29, 31, 32, 36, 37, 38, 39, 44, 46,
+  ];
+
+  /**
+   * Message types that can be overwritten, which is a much shorter list.
+   *
+   * A join notice is Discord narrating rather than something the account wrote:
+   * there is text on screen but no content field behind it to replace, and the
+   * API answers a PATCH with a plain 400. That lands in the failure pile rather
+   * than the skip pile, blames the wrong thing, and counts toward the limit
+   * that halts a whole run, so an overwrite has to be refused here instead.
+   *
+   * This is why the two lists exist separately. One predicate answering both
+   * questions had to be as narrow as the stricter of them, and being narrow on
+   * the delete side is what left those messages in place.
+   */
+  const EDITABLE_TYPES = [0, 19, 20, 23];
 
   /** Not anchored, so it finds a link anywhere in a message. */
   const LINK = /\bhttps?:\/\/[^\s<>]+/i;
 
   function isDeletable(message) {
     return DELETABLE_TYPES.indexOf(Number(message.type) || 0) !== -1;
+  }
+
+  function isEditable(message) {
+    return EDITABLE_TYPES.indexOf(Number(message.type) || 0) !== -1;
+  }
+
+  /**
+   * The predicate for what a given action can actually touch.
+   *
+   * One place, so the count on the pre-flight screen, the number the user is
+   * asked to type back, and the guard in front of the call cannot disagree
+   * about which messages a run is going to reach.
+   */
+  function canAct(action) {
+    return action === 'edit' || action === 'edit-then-delete' ? isEditable : isDeletable;
   }
 
   function hasLink(message) {
@@ -218,7 +261,10 @@ CL.filter = (function () {
     startOfDay,
     endOfDay,
     isDeletable,
+    isEditable,
+    canAct,
     hasLink,
     DELETABLE_TYPES,
+    EDITABLE_TYPES,
   };
 })();
