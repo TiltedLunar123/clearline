@@ -1591,6 +1591,192 @@ async function main() {
       secondPage.stillSpared === 1, `${secondPage.stillSpared} rows were marked spared`);
 
     await closeTab(cdp, bigTab);
+
+    /* ---------------- group: rail ---------------- */
+
+    // The step rail, now that it navigates.
+    //
+    // It spent four releases looking exactly like a row of tabs and doing
+    // nothing, and making it work opens three ways to break the app that a
+    // decorative list could not. Going forward past what has been done would
+    // walk somebody to the delete screen without a result set. Going to
+    // `connect` would hide every step and show nothing, because the connect
+    // card is not a step and there is no `#step-connect` to reveal: the app
+    // would be a header and a footer with no way back. And going anywhere at
+    // all mid-run takes the counter, the pace note and the Stop button off
+    // screen while the run carries on deleting, which is why `run-back` is
+    // disabled for the length of a run and why the rail owes the same answer.
+    const railTab = await openTab(cdp, appUrl);
+    await mockApi(cdp, railTab.session, operationsMock([]));
+    await sleep(400);
+    await cdp.evaluate(railTab.session, "document.getElementById('connect').click()");
+    await waitFor('the where step', async () =>
+      (await cdp.evaluate(railTab.session, "!document.getElementById('step-where').classList.contains('hidden')")) === true
+    ).catch(() => null);
+
+    const railState = async (expression) =>
+      JSON.parse(await cdp.evaluate(railTab.session, `JSON.stringify(${expression})`));
+
+    // Read off the live buttons rather than off the classes, because being
+    // enabled is the whole of what changed and a class says nothing about it.
+    const railProbe = `(() => {
+      const out = {};
+      for (const li of document.querySelectorAll('#rail li')) {
+        out[li.dataset.step] = li.querySelector('.railbtn').disabled;
+      }
+      return out;
+    })()`;
+
+    const atWhere = await railState(railProbe);
+    check('rail', 'nothing ahead of the current step is offered',
+      atWhere.filter === true && atWhere.review === true && atWhere.run === true,
+      `filter/review/run disabled: ${atWhere.filter}/${atWhere.review}/${atWhere.run}`);
+    check('rail', 'the current step is not a way to itself',
+      atWhere.where === true);
+    // The one that would blank the app. `connect` is behind every other step
+    // for the rest of the session, so it is permanently the most tempting
+    // thing on the rail and permanently the most broken.
+    check('rail', 'connect is never offered, having no step to go back to',
+      atWhere.connect === true);
+
+    await cdp.evaluate(
+      railTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.results = [{
+          id: '930000000000000001',
+          channelId: ${JSON.stringify(OPS_CHANNEL)},
+          authorId: ${JSON.stringify(ACCOUNT.id)},
+          channelName: 'general',
+          type: 0, content: 'keep me', attachments: [],
+          timestamp: '2024-03-01T12:00:00.000Z',
+        }];
+        cl.state.excluded = new Set();
+        cl.state.shown = 0;
+        cl.state.resultScopeLabel = 'g0 / all channels';
+        cl.renderReview();
+        cl.goTo('run');
+      })()`
+    );
+
+    const atRun = await railState(railProbe);
+    check('rail', 'a finished step is offered once it is behind you',
+      atRun.where === false && atRun.filter === false && atRun.review === false,
+      `where/filter/review disabled: ${atRun.where}/${atRun.filter}/${atRun.review}`);
+
+    // The point of the shortcut. Going back by the rail has to leave the
+    // result set alone, because the only thing that rebuilds it is a fresh
+    // search, and a fresh search clears every row spared by hand.
+    await cdp.evaluate(railTab.session, `(() => {
+      for (const li of document.querySelectorAll('#rail li')) {
+        if (li.dataset.step === 'review') li.querySelector('.railbtn').click();
+      }
+    })()`);
+    await sleep(200);
+    const wentBack = await railState(`{
+      onReview: !document.getElementById('step-review').classList.contains('hidden'),
+      onRun: !document.getElementById('step-run').classList.contains('hidden'),
+      rows: document.querySelectorAll('#results-body tr').length,
+    }`);
+    check('rail', 'clicking a finished step goes there',
+      wentBack.onReview === true && wentBack.onRun === false,
+      `review ${wentBack.onReview}, run ${wentBack.onRun}`);
+    check('rail', 'going back by the rail keeps the results it was standing on',
+      wentBack.rows === 1, `${wentBack.rows} rows survived`);
+
+    // Mid-run. Driven through setBusy rather than by starting a real job,
+    // because the assertion is about the rail and a real run would put a
+    // minute of write-floor pacing between the click and the answer.
+    await cdp.evaluate(railTab.session, "window.__clearline.setBusy(true)");
+    await sleep(100);
+    const duringRun = await railState(railProbe);
+    check('rail', 'the rail closes while a search or a run is going',
+      Object.values(duringRun).every((disabled) => disabled === true),
+      `disabled flags were ${JSON.stringify(duringRun)}`);
+
+    await cdp.evaluate(railTab.session, "window.__clearline.setBusy(false)");
+    await sleep(100);
+    const afterRun = await railState(railProbe);
+    check('rail', 'and opens again when it stops',
+      afterRun.where === false && afterRun.filter === false,
+      `where/filter disabled: ${afterRun.where}/${afterRun.filter}`);
+
+    /* ---------------- group: nothing matched ---------------- */
+
+    // A search that found nothing.
+    //
+    // The table was left standing with a header row and no rows under it,
+    // which reads as a table still loading, and under it three download
+    // buttons that would each write an empty file under a heading offering a
+    // copy of something. Only the buttons were disabled, and only because the
+    // selection happened to be empty too.
+    await cdp.evaluate(
+      railTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.results = [];
+        cl.state.excluded = new Set();
+        cl.state.shown = 0;
+        cl.state.resultScopeLabel = 'g0 / all channels';
+        cl.renderReview();
+        cl.goTo('review');
+      })()`
+    );
+    const nothing = await railState(`{
+      tableHidden: document.getElementById('results-wrap').classList.contains('hidden'),
+      saveHidden: document.getElementById('save-block').classList.contains('hidden'),
+      actionsHidden: document.getElementById('results-actions').classList.contains('hidden'),
+      explained: document.getElementById('review-summary').textContent,
+      isBlank: document.getElementById('review-summary').classList.contains('blank'),
+      heading: document.getElementById('review-heading').textContent,
+    }`);
+    check('nothing matched', 'the empty table comes off screen',
+      nothing.tableHidden === true);
+    check('nothing matched', 'so do the buttons that would save an empty file',
+      nothing.saveHidden === true && nothing.actionsHidden === true,
+      `save ${nothing.saveHidden}, actions ${nothing.actionsHidden}`);
+    check('nothing matched', 'the heading says so in words',
+      /nothing|no messages/i.test(nothing.heading || ''),
+      `heading said ${JSON.stringify(nothing.heading)}`);
+    // The empty state is the sentence explaining the miss, restyled. If that
+    // sentence ever stopped being written the screen would be blank, so the
+    // test asserts the words as well as the box around them.
+    check('nothing matched', 'and the reason takes the place of the table',
+      nothing.isBlank === true && /g0 \/ all channels/.test(nothing.explained || ''),
+      `blank ${nothing.isBlank}, summary ${JSON.stringify(nothing.explained)}`);
+
+    // Back to a result set: the table has to come back with it, or a second
+    // search after an empty one lands on a review screen with nothing on it.
+    await cdp.evaluate(
+      railTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.results = [{
+          id: '930000000000000002',
+          channelId: ${JSON.stringify(OPS_CHANNEL)},
+          authorId: ${JSON.stringify(ACCOUNT.id)},
+          channelName: 'general',
+          type: 0, content: 'found something', attachments: [],
+          timestamp: '2024-03-01T12:00:00.000Z',
+        }];
+        cl.state.excluded = new Set();
+        cl.state.shown = 0;
+        cl.renderReview();
+      })()`
+    );
+    const foundAgain = await railState(`{
+      tableHidden: document.getElementById('results-wrap').classList.contains('hidden'),
+      saveHidden: document.getElementById('save-block').classList.contains('hidden'),
+      isBlank: document.getElementById('review-summary').classList.contains('blank'),
+      rows: document.querySelectorAll('#results-body tr').length,
+    }`);
+    check('nothing matched', 'a later search that finds something gets its table back',
+      foundAgain.tableHidden === false && foundAgain.saveHidden === false &&
+        foundAgain.isBlank === false && foundAgain.rows === 1,
+      `table ${foundAgain.tableHidden}, save ${foundAgain.saveHidden}, ` +
+        `blank ${foundAgain.isBlank}, ${foundAgain.rows} rows`);
+
+    await closeTab(cdp, railTab);
   } finally {
     server.close();
     await shutdown(session);

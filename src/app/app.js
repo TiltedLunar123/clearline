@@ -96,6 +96,17 @@
     stopSearch: false,
     /** A finished report nobody has kept yet. Guards the tab against a reload. */
     unsavedReport: false,
+    /** Which step is on screen, so the rail never has to ask the DOM. */
+    step: 'connect',
+    /**
+     * A search is paging, or a run is going.
+     *
+     * Only the rail reads it. Leaving either of those screens would hide the
+     * counter and the Stop button of something still running, which is why
+     * `run-back` is disabled for the length of a run; the rail is the same
+     * escape hatch and owes the same answer.
+     */
+    busy: false,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -192,6 +203,46 @@
 
   const STEPS = ['connect', 'where', 'filter', 'review', 'run'];
 
+  /**
+   * The rail, as five buttons rather than five labels.
+   *
+   * It has always looked like a row of tabs and has never been clickable, which
+   * is the worst of both: it invites the click and then ignores it. Every
+   * backward move it now offers is one a Back button on the screen already
+   * makes, so this is a shortcut through the wizard rather than a second way
+   * around it, and the order stays the safety mechanism: nothing ahead of the
+   * current step is ever reachable.
+   *
+   * Three things close it off. A step with no section behind it, which is
+   * `connect`: the connect card is hidden for good once a connect succeeds and
+   * there is no `#step-connect` to go back to, so keying on the section rather
+   * than on a special case means the list itself answers the question. Anything
+   * at or past the current step. And anything at all while a search is paging
+   * or a run is going, because navigating away from those hides their own Stop
+   * button.
+   */
+  function syncRail() {
+    const here = STEPS.indexOf(state.step);
+    for (const item of document.querySelectorAll('#rail li')) {
+      const name = item.dataset.step;
+      const index = STEPS.indexOf(name);
+      const current = index === here;
+      item.classList.toggle('on', current);
+      item.classList.toggle('done', index < here);
+      const button = item.querySelector('.railbtn');
+      if (!button) continue;
+      button.disabled = state.busy || index >= here || !$(`step-${name}`);
+      if (current) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
+    }
+  }
+
+  /** Long operations own the rail for as long as they last. */
+  function setBusy(busy) {
+    state.busy = busy;
+    syncRail();
+  }
+
   function goTo(step) {
     let opened = null;
     for (const name of STEPS) {
@@ -200,11 +251,8 @@
       section.classList.toggle('hidden', name !== step);
       if (name === step) opened = section;
     }
-    for (const item of document.querySelectorAll('#rail li')) {
-      const index = STEPS.indexOf(item.dataset.step);
-      item.classList.toggle('on', item.dataset.step === step);
-      item.classList.toggle('done', index < STEPS.indexOf(step));
-    }
+    state.step = step;
+    syncRail();
     window.scrollTo(0, 0);
 
     // Focus follows the step. Hiding a section blurs whatever was inside it, so
@@ -466,6 +514,10 @@
     if (state.connecting) return;
     state.connecting = true;
     button.disabled = true;
+    // Four round trips happen behind this click before anything appears, and
+    // the only sign of them was the button greying out, which is also what a
+    // finished button with nothing left to do looks like.
+    button.classList.add('busy');
     $('takeover').disabled = true;
 
     try {
@@ -551,6 +603,7 @@
       }
     } finally {
       state.connecting = false;
+      button.classList.remove('busy');
       $('takeover').disabled = false;
       // Not unconditionally false, for the same reason the Search button is
       // not: a tab superseded while connecting would otherwise hand its own
@@ -718,6 +771,10 @@
     }
 
     select.disabled = true;
+    // The "Loading channels..." option says so to anyone reading the box. A
+    // screen reader lands on a disabled select and moves on, so the state has
+    // to be on the control as well as in it.
+    select.setAttribute('aria-busy', 'true');
     fillSelect(select, [], t('optLoadingChannels'));
     clearHalt();
     try {
@@ -742,6 +799,7 @@
         null
       );
       select.disabled = false;
+      select.removeAttribute('aria-busy');
       say($('where-status'), '');
     } catch (err) {
       // Dropped rather than left standing. A failed load used to leave the
@@ -751,6 +809,7 @@
       state.channels = [];
       state.channelNames = new Map();
       state.channelsFor = null;
+      select.removeAttribute('aria-busy');
       fillSelect(select, [], t('optChannelsFailed'));
       say($('where-status'), (err && err.message) || t('errChannelsFailed'), 'error');
       offerReconnect();
@@ -889,6 +948,7 @@
     state.filters = filters;
     state.stopSearch = false;
     button.disabled = true;
+    setBusy(true);
     say($('filter-status'), '');
     show($('search-progress'));
     // The message a halt throws tells the user to start again. This is them
@@ -897,7 +957,12 @@
 
     const bounds = CL.filter.toWindow(filters);
     const startedAt = Date.now();
-    $('search-fill').style.width = '0%';
+    // Indeterminate until Discord says how much there is, which for the history
+    // path is never. See the note in onProgress: the width has to be handed back
+    // to the stylesheet, because an inline one beats the sweeping rule.
+    $('search-fill').style.width = '';
+    $('search-bar').classList.add('waiting');
+    $('search-bar').removeAttribute('aria-valuenow');
     $('search-elapsed').textContent = '';
     // Reset with the other two. The counter kept whatever the last search left
     // in it, so a second search opened the progress panel already claiming
@@ -934,7 +999,21 @@
           if (p.phase !== 'indexing') paceNote('');
 
           const pct = p.total ? Math.min(100, Math.round((p.found / p.total) * 100)) : null;
-          if (pct !== null) {
+          // Two different bars. With a total it is a percentage; without one the
+          // track sweeps, which says "moving, length unknown" where a bar pinned
+          // at zero says "stalled". Discord withholds a total more often than it
+          // gives one: the history path knows what it has read and not what is
+          // left, and an index still building answers with nothing at all, and
+          // both of those are exactly when somebody reloads the tab and loses
+          // the search. The inline width is given back rather than set, because
+          // it would otherwise beat the stylesheet's sweeping rule; the aria
+          // value is removed rather than zeroed, which is how a progressbar says
+          // it does not know.
+          $('search-bar').classList.toggle('waiting', pct === null);
+          if (pct === null) {
+            $('search-fill').style.width = '';
+            $('search-bar').removeAttribute('aria-valuenow');
+          } else {
             $('search-fill').style.width = `${pct}%`;
             $('search-bar').setAttribute('aria-valuenow', String(pct));
           }
@@ -974,6 +1053,10 @@
       // would otherwise hand its Search button back at exactly the moment it
       // was supposed to have stopped.
       button.disabled = state.superseded;
+      // Unconditionally, unlike the button: the rail navigates between screens
+      // and does not talk to Discord, so a stopped tab still gets to move
+      // around what it already has.
+      setBusy(false);
       hide($('search-progress'));
     }
   }
@@ -1048,6 +1131,21 @@
     $('review-summary').textContent = total
       ? t('reviewSummary', [CL.filter.describe(state.filters), state.resultScopeLabel])
       : t('reviewNoMatch', [state.resultScopeLabel, CL.filter.describe(state.filters)]);
+
+    /*
+     * Nothing matched.
+     *
+     * A table header with no rows under it reads as a table still loading,
+     * which is the one thing it is not, and three download buttons over an
+     * empty set are three buttons that write an empty file, under a heading
+     * promising a copy of something. The sentence that explains the miss
+     * becomes the empty state itself rather than a caption above an empty
+     * frame, so this costs no new words in eleven languages.
+     */
+    const empty = total === 0;
+    $('review-summary').classList.toggle('blank', empty);
+    $('results-wrap').classList.toggle('hidden', empty);
+    $('save-block').classList.toggle('hidden', empty);
 
     const truncated = $('review-truncated');
     if (state.truncated) {
@@ -1191,6 +1289,14 @@
 
     $('undo-pick').classList.toggle('hidden', previousSelection === null);
 
+    // The row holding those two collapses when neither is on offer, the same
+    // way the tab-state strip does, rather than reserving a gap between the
+    // table and the note under it for buttons that are not there.
+    $('results-actions').classList.toggle(
+      'hidden',
+      more.classList.contains('hidden') && $('undo-pick').classList.contains('hidden')
+    );
+
     $('review-next').disabled = picked === 0;
     for (const button of document.querySelectorAll('[data-export]')) button.disabled = picked === 0;
   }
@@ -1218,12 +1324,35 @@
     return selected().filter(CL.filter.canAct(action)).length;
   }
 
+  /**
+   * Mark the moment the screen turns destructive.
+   *
+   * One ring off the pre-flight box, and only from here: this runs when the
+   * chosen action changes and when the step opens, which are the two moments
+   * the answer to "can this be taken back" is actually new. renderPreflight()
+   * is called from several other places, including standing a superseded tab
+   * back up, and none of those are news worth a pulse.
+   *
+   * The class is taken off and the element measured before it goes back on.
+   * Without that read the browser coalesces both writes into one frame, sees no
+   * change, and the animation never restarts, so it would play once per page
+   * and never again.
+   */
+  function flagEscalation(destructive) {
+    const box = $('preflight');
+    box.classList.remove('alarm');
+    if (!destructive) return;
+    void box.offsetWidth;
+    box.classList.add('alarm');
+  }
+
   function syncRunForm() {
     const action = chosenAction();
     const edits = action !== 'delete';
     $('replacement-field').classList.toggle('hidden', !edits);
     $('replacement-hint').classList.toggle('hidden', action !== 'edit-then-delete');
     renderPreflight();
+    flagEscalation(action !== 'edit');
   }
 
   /**
@@ -1277,11 +1406,21 @@
     if (action !== 'edit') lines.push(t('preflightNoUndo'));
 
     const box = $('preflight');
+    // Overwriting leaves the message standing and deleting does not, and both
+    // used to be delivered in the same mild amber as the sentence about how
+    // long the run would take.
+    box.classList.toggle('grave', action !== 'edit');
     box.textContent = '';
     for (const line of lines) {
       const p = document.createElement('p');
       p.textContent = line;
       box.appendChild(p);
+    }
+    // The line saying it cannot be undone, which is the last one pushed on any
+    // run that has one. Marked here rather than further down, because the stale
+    // notice is appended after this and would otherwise be the last child.
+    if (action !== 'edit' && box.lastElementChild) {
+      box.lastElementChild.className = 'irreversible';
     }
 
     const needsTyping = affected > CONFIRM_ABOVE && action !== 'edit';
@@ -1309,6 +1448,12 @@
     const pct = p.total ? Math.round((done / p.total) * 100) : 0;
     $('run-fill').style.width = `${pct}%`;
     $('run-bar').setAttribute('aria-valuenow', String(pct));
+    // Moving, as opposed to merely partway. The width creeps by a fraction of a
+    // percent per message, so on a set of several thousand it is not
+    // distinguishable from a bar that has stopped. Off the moment the run is
+    // paused: a bar that keeps moving over a paused run is the one thing on
+    // this screen that would be a lie.
+    $('run-bar').classList.toggle('moving', p.status !== 'paused');
     const line =
       t('runCounter', [num(done), num(p.total)]) +
       (p.failed ? t('runCounterFailed', [num(p.failed)]) : '') +
@@ -1627,6 +1772,9 @@
     say($('run-status'), '');
     $('start').disabled = true;
     $('run-back').disabled = true;
+    // The rail closes for the same reason run-back does: leaving this screen
+    // takes the counter, the pace note and the Stop button off screen with it.
+    setBusy(true);
     hide($('run-report'));
     show($('run-progress'));
     $('run-pause').textContent = t('buttonPause');
@@ -1637,6 +1785,7 @@
     paceNote('');
     document.title = 'Clearline';
     $('run-back').disabled = false;
+    setBusy(false);
     state.job = null;
     state.ran = true;
     $('start').disabled = true;
@@ -1657,6 +1806,21 @@
   $('connect').addEventListener('click', () => connect(false));
   $('takeover').addEventListener('click', reclaim);
   $('reconnect').addEventListener('click', reconnect);
+
+  /*
+   * Going back by the rail rather than by the Back buttons.
+   *
+   * Delegated to the list, because which of the five is live changes on every
+   * step. syncRail() has already decided that by disabling the rest, and a
+   * disabled button fires no click at all, so the guard here is only for a
+   * click that lands on the list itself between two of them.
+   */
+  $('rail').addEventListener('click', (event) => {
+    const button = event.target.closest('.railbtn');
+    if (!button || button.disabled) return;
+    const item = button.closest('li');
+    if (item && item.dataset.step) goTo(item.dataset.step);
+  });
 
   for (const radio of document.querySelectorAll('input[name="scope-kind"]')) {
     radio.addEventListener('change', syncScopeKind);
@@ -1773,8 +1937,11 @@
   CL.i18n.apply();
   syncScopeKind();
   syncTabActions();
+  // Derived from the step, not latched in the markup, so the rail cannot drift
+  // out of step with what is actually on screen.
+  syncRail();
 
   // Exposed for the end to end suite, which drives the real screens rather than
   // a reimplementation of them. Nothing in the app reads this.
-  window.__clearline = { state, goTo, renderReview, renderPreflight, localStamp };
+  window.__clearline = { state, goTo, setBusy, renderReview, renderPreflight, localStamp };
 })();

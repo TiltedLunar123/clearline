@@ -8,22 +8,51 @@
   <body>
     <main class="shell">
       <header class="head">
+        <!--
+          The installed icon, redrawn without its own background so it takes the
+          page's. Decorative: the name it belongs to is the heading beside it.
+        -->
+        <svg class="mark" viewBox="46 66 172 124" aria-hidden="true" focusable="false">
+          <g fill="currentColor">
+            <rect x="52" y="74" width="152" height="26" rx="13" />
+            <rect x="52" y="116" width="116" height="26" rx="13" opacity="0.62" />
+            <rect x="52" y="158" width="46" height="26" rx="13" opacity="0.44" />
+            <rect x="110" y="158" width="26" height="26" rx="8" opacity="0.32" />
+            <rect x="148" y="161" width="20" height="20" rx="6" opacity="0.22" />
+            <rect x="178" y="164" width="14" height="14" rx="4" opacity="0.15" />
+          </g>
+        </svg>
         <h1>Clearline</h1>
-        <p class="sub" data-i18n="appTagline">Search, export and clear your own Discord messages.</p>
       </header>
+      <p class="sub" data-i18n="appTagline">Search, export and clear your own Discord messages.</p>
 
       <!--
         One step visible at a time, in order. The alternative, every control on
         one dense screen, is what makes the existing tools in this category feel
         like a cockpit, and it puts a delete button next to a filter box before
         the user has any idea what the filter matches.
+
+        The finished steps are buttons and the rest are disabled ones. Every move
+        this offers is a move a Back button already made, so it is a shortcut
+        rather than a way around the order, and the order is the safety
+        mechanism. `data-step` stays on the li, which is what goTo() reads.
       -->
       <ol class="rail" id="rail">
-        <li data-step="connect" class="on" data-i18n="stepConnect">Connect</li>
-        <li data-step="where" data-i18n="stepWhere">Where</li>
-        <li data-step="filter" data-i18n="stepNarrow">Narrow</li>
-        <li data-step="review" data-i18n="stepReview">Review</li>
-        <li data-step="run" data-i18n="stepAct">Act</li>
+        <li data-step="connect" class="on">
+          <button class="railbtn" type="button" disabled data-i18n="stepConnect">Connect</button>
+        </li>
+        <li data-step="where">
+          <button class="railbtn" type="button" disabled data-i18n="stepWhere">Where</button>
+        </li>
+        <li data-step="filter">
+          <button class="railbtn" type="button" disabled data-i18n="stepNarrow">Narrow</button>
+        </li>
+        <li data-step="review">
+          <button class="railbtn" type="button" disabled data-i18n="stepReview">Review</button>
+        </li>
+        <li data-step="run">
+          <button class="railbtn" type="button" disabled data-i18n="stepAct">Act</button>
+        </li>
       </ol>
 
       <!--
@@ -189,7 +218,7 @@
 
         <div class="notice hidden" id="review-truncated"></div>
 
-        <div class="tablewrap">
+        <div class="tablewrap" id="results-wrap">
           <table class="results">
             <thead>
               <tr>
@@ -210,7 +239,7 @@
             <tbody id="results-body"></tbody>
           </table>
         </div>
-        <div class="actions left">
+        <div class="actions left" id="results-actions">
           <button id="show-more" class="ghost small hidden" type="button">Show more</button>
           <!-- The header checkbox replaces the whole selection in one click,
                including when it is hit on the way to something else. -->
@@ -220,19 +249,30 @@
         </div>
         <p class="hint tight" id="results-note"></p>
 
-        <h3 data-i18n="saveACopy">Save a copy</h3>
-        <p class="hint tight" data-i18n="saveHint">
-          Deleting cannot be undone. Whatever you keep here is the only record you will have.
-        </p>
-        <div class="actions left">
-          <button class="ghost" type="button" data-export="html" data-i18n="downloadHtml">Download HTML</button>
-          <button class="ghost" type="button" data-export="json" data-i18n="downloadJson">Download JSON</button>
-          <button class="ghost" type="button" data-export="csv" data-i18n="downloadCsv">Download CSV</button>
+        <!-- Taken off screen along with the table when nothing matched. Three
+             download buttons over an empty result set are three buttons that
+             produce an empty file, and the heading above them promises a copy of
+             something that does not exist. -->
+        <div id="save-block">
+          <h3 data-i18n="saveACopy">Save a copy</h3>
+          <p class="hint tight" data-i18n="saveHint">
+            Deleting cannot be undone. Whatever you keep here is the only record you will have.
+          </p>
+          <div class="actions left">
+            <button class="ghost" type="button" data-export="html" data-i18n="downloadHtml">Download HTML</button>
+            <button class="ghost" type="button" data-export="json" data-i18n="downloadJson">Download JSON</button>
+            <button class="ghost" type="button" data-export="csv" data-i18n="downloadCsv">Download CSV</button>
+          </div>
         </div>
 
+        <!-- Continue, not a delete button. It was wearing `danger`, which spent
+             the one colour that means "this cannot be taken back" on a move to
+             a screen where the choice is still open, including the choice to
+             only overwrite the text. Red now appears once, on the control that
+             earns it. -->
         <div class="actions">
           <button id="review-back" class="ghost" type="button" data-i18n="buttonBack">Back</button>
-          <button id="review-next" class="danger" type="button" data-i18n="buttonContinue">Continue</button>
+          <button id="review-next" class="primary" type="button" data-i18n="buttonContinue">Continue</button>
         </div>
         <p class="status" id="review-status" role="status" aria-live="polite"></p>
       </section>
