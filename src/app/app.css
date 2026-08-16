@@ -1,27 +1,85 @@
+/*
+ * One palette, two schemes.
+ *
+ * Every colour the app uses is named here for the job it does rather than for
+ * the colour it is, so a scheme is a value swap and never a second rule. The
+ * pairs matter most: anything used as a background has an `-ink` beside it that
+ * is guaranteed to be legible on it. `--accent` alone was being used as a button
+ * background in both schemes with white text on top, which is fine on the dark
+ * indigo of the light scheme and close to unreadable on the pale indigo the dark
+ * scheme lightens it to.
+ */
 :root {
   color-scheme: light dark;
-  --bg: #f5f6f8;
+
+  --bg: #f3f4f8;
   --card: #ffffff;
-  --ink: #1c1e21;
-  --muted: #63676d;
-  --line: #dfe1e5;
-  --accent: #4453c4;
+  /* Inset surfaces: text boxes, table headings, the step badges. Reads as
+     "recessed" in both schemes, which means lighter than the card in light and
+     darker than it in dark. */
+  --sunk: #f6f7fb;
+  --hover: #eef0f6;
+
+  --ink: #14161a;
+  --muted: #5b616e;
+
+  --line: #e0e3ea;
+  --line-strong: #c3c9d6;
+
+  --accent: #3d4bbd;
+  --accent-ink: #ffffff;
+  --accent-soft: #ebedfa;
+
   --danger: #b3261e;
-  --warn-bg: #fdf3e3;
-  --warn-line: #e8d3a8;
+  --danger-ink: #ffffff;
+  --danger-soft: #fdecea;
+  --danger-line: #f0c5c1;
+
+  --warn-bg: #fdf4e5;
+  --warn-line: #ead6ab;
+
+  --shadow-1: 0 1px 2px rgba(18, 22, 34, 0.05), 0 1px 3px rgba(18, 22, 34, 0.04);
+  --shadow-2: 0 2px 4px rgba(18, 22, 34, 0.05), 0 8px 20px rgba(18, 22, 34, 0.07);
+  --shadow-sunk: inset 0 1px 2px rgba(18, 22, 34, 0.04);
+
+  --radius: 8px;
+  --radius-lg: 12px;
+  --speed: 130ms;
+
+  /* Native checkboxes and radios, in the app's own colour. Three words instead
+     of rebuilding them out of divs, and it keeps every keyboard and assistive
+     behaviour the platform already gets right. */
+  accent-color: var(--accent);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #17181b;
-    --card: #202226;
-    --ink: #e9eaec;
-    --muted: #9a9ea6;
-    --line: #32353b;
+    --bg: #121316;
+    --card: #1c1e23;
+    --sunk: #16181c;
+    --hover: #24272e;
+
+    --ink: #e8eaef;
+    --muted: #979eab;
+
+    --line: #2e323a;
+    --line-strong: #454b58;
+
     --accent: #8f9bf0;
+    --accent-ink: #10132b;
+    --accent-soft: #22254a;
+
     --danger: #f08a80;
-    --warn-bg: #2c2618;
-    --warn-line: #4a3f22;
+    --danger-ink: #2a0f0c;
+    --danger-soft: #321a17;
+    --danger-line: #5b2b26;
+
+    --warn-bg: #2a2517;
+    --warn-line: #493f22;
+
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.35);
+    --shadow-sunk: inset 0 1px 2px rgba(0, 0, 0, 0.25);
   }
 }
 
@@ -31,6 +89,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font: 15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .shell {
@@ -38,45 +97,165 @@ body {
   margin: 0 auto;
 }
 
+/* Header ------------------------------------------------------------ */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 4px;
+}
+
+/* The installed icon, at the one size where a person sees it beside its own
+   name. Inline rather than an <img> so it takes the page's colours in both
+   schemes instead of carrying its own background into the wrong one. */
+.mark {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 6px;
+  box-sizing: border-box;
+  box-shadow: var(--shadow-1);
+}
+
 .head h1 {
   margin: 0;
   font-size: 26px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .sub {
-  margin: 4px 0 24px;
+  margin: 0 0 24px;
   color: var(--muted);
 }
 
 /* Step rail --------------------------------------------------------- */
 
+/*
+ * Numbered, and the finished ones are real buttons.
+ *
+ * It used to be five flat pills that looked exactly like tabs and did nothing
+ * when clicked, which is the worst of both: it invites the click and then
+ * ignores it. Every backward move it offers already existed on a Back button,
+ * so this adds a shortcut rather than a new path through the app. Forward steps
+ * stay disabled, because the order is the safety mechanism.
+ */
 .rail {
   display: flex;
-  gap: 6px;
+  align-items: center;
   list-style: none;
-  margin: 0 0 20px;
+  counter-reset: step;
+  margin: 0 0 22px;
   padding: 0;
-  font-size: 13px;
   flex-wrap: wrap;
+  gap: 2px 0;
 }
 
 .rail li {
+  counter-increment: step;
+  display: flex;
+  align-items: center;
+}
+
+/* Drawn on the item rather than between them, so a wrapped rail never leaves a
+   connector dangling off the end of a line.
+
+   Two colours at twice the connector's own width. Finishing a step slides the
+   accent half across it instead of swapping one flat colour for another, which
+   is the one place in the app where progress can be shown as progress. The
+   slide is in the motion section at the bottom. */
+.rail li:not(:last-child)::after {
+  content: '';
+  width: 16px;
+  height: 1px;
+  margin: 0 3px;
+  background-image: linear-gradient(to right, var(--accent) 50%, var(--line) 50%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+}
+
+.rail li.done:not(:last-child)::after {
+  background-position: 0 0;
+}
+
+.railbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
   color: var(--muted);
-  padding: 4px 10px;
-  border-radius: 999px;
+  background: transparent;
   border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 5px 12px 5px 5px;
+  cursor: default;
+  transition:
+    background var(--speed) ease,
+    color var(--speed) ease,
+    border-color var(--speed) ease;
 }
 
-.rail li.done {
-  color: var(--ink);
-}
-
-.rail li.on {
-  color: var(--ink);
-  border-color: var(--line);
-  background: var(--card);
+/* The step number, and a tick once the step is behind you. Both are read out
+   with the step name, so "done" survives being spoken as well as being seen. */
+.railbtn::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rail li.done .railbtn {
+  color: var(--ink);
+}
+
+.rail li.done .railbtn::before {
+  content: '\2713';
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-size: 12px;
+}
+
+.rail li.on .railbtn {
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow-1);
+}
+
+.rail li.on .railbtn::before {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.railbtn:not(:disabled) {
+  cursor: pointer;
+}
+
+.railbtn:not(:disabled):hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+/* Not dimmed. A step you have not reached yet is not a broken control, and the
+   badge and the weight already say which one you are on. */
+.railbtn:disabled {
+  opacity: 1;
 }
 
 /* Cards ------------------------------------------------------------- */
@@ -84,25 +263,42 @@ body {
 .card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 20px 22px;
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-1);
 }
 
 .card h2 {
   margin: 0 0 8px;
   font-size: 17px;
+  letter-spacing: -0.01em;
 }
 
 .card h3 {
-  margin: 24px 0 4px;
+  margin: 26px 0 4px;
   font-size: 14px;
 }
 
 /* Named for what it is, not its shape. It used to be .bar, which collided with
    the progress track further down and squashed this card to eight pixels. */
 .summary {
-  padding: 12px 22px;
+  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+/* Connected, said in something other than words, beside the account it is about.
+   The words are still there; this is the glance version, so it is decorative and
+   carries no meaning of its own. */
+.summary::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .hint {
@@ -125,8 +321,9 @@ body {
 .field > span {
   display: block;
   font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 input[type='text'],
@@ -136,14 +333,62 @@ select {
   box-sizing: border-box;
   font: inherit;
   color: var(--ink);
-  background: var(--bg);
+  background: var(--sunk);
   border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 8px 10px;
+  border-radius: var(--radius);
+  padding: 9px 11px;
+  box-shadow: var(--shadow-sunk);
+  transition:
+    border-color var(--speed) ease,
+    box-shadow var(--speed) ease;
+}
+
+input[type='text']:hover,
+input[type='date']:hover,
+select:hover {
+  border-color: var(--line-strong);
+}
+
+/* On :focus rather than :focus-visible, unlike the ring further down. Clicking
+   into a text box is exactly when you want to see which box you landed in, and
+   a pointer click does not match :focus-visible. */
+input[type='text']:focus,
+input[type='date']:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/*
+ * The native arrow, redrawn in the page's own palette.
+ *
+ * Two gradients meeting at a point rather than an SVG: a data URI would need
+ * its `xmlns`, which names a host, and the build gate refuses every host that
+ * is not Discord anywhere in shipped source, strings included. It is right to.
+ * Drawing it out of gradients also means one rule instead of one per scheme,
+ * because it can read `--muted` rather than carry a colour of its own.
+ */
+select:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    right 16px center,
+    right 11px center;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
 }
 
 select[multiple] {
-  padding: 4px;
+  padding: 5px;
+}
+
+select[multiple] option {
+  padding: 4px 7px;
+  border-radius: 5px;
 }
 
 .row {
@@ -171,8 +416,114 @@ select[multiple] {
 .check {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   cursor: pointer;
+}
+
+/*
+ * The tick boxes and radios, drawn rather than inherited.
+ *
+ * These are the primary control of the whole app: the review step is a list of
+ * three hundred of them, and the act step is three radios deciding whether
+ * those rows survive. Left native they came out at the platform's 13px in the
+ * platform's blue, beside text boxes the page had restyled, which reads as two
+ * products sharing a window. `accent-color` on :root still covers everything
+ * not redrawn here, and forced-colors mode gets the real control back.
+ */
+input[type='checkbox'],
+input[type='radio'] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  display: grid;
+  place-content: center;
+  background: var(--card);
+  /* --muted, not --line-strong. An empty tick box has no text in it, so its
+     border is the whole of what there is to see, and the hairline the other
+     boundaries use came out at 1.7:1 against the card. WCAG asks 3:1 of
+     anything that identifies a control; this pair is above 6:1 in both
+     schemes. It is also the control this entire app is driven by. */
+  border: 1.5px solid var(--muted);
+  border-radius: 4px;
+  color: var(--accent-ink);
+  cursor: pointer;
+  transition:
+    background var(--speed) ease,
+    border-color var(--speed) ease;
+}
+
+input[type='radio'] {
+  border-radius: 50%;
+}
+
+input[type='checkbox']:not(:disabled):hover,
+input[type='radio']:not(:disabled):hover {
+  border-color: var(--accent);
+}
+
+input[type='checkbox']:checked,
+input[type='radio']:checked,
+input[type='checkbox']:indeterminate {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+input[type='checkbox']:checked::before {
+  content: '';
+  width: 8px;
+  height: 4px;
+  margin-top: -2px;
+  border: 2px solid currentColor;
+  border-top: 0;
+  border-right: 0;
+  transform: rotate(-45deg);
+}
+
+input[type='radio']:checked::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Some rows spared, not all and not none, which is the state the header box is
+   in for most of the time anyone spends on the review step. It can be checked
+   and indeterminate at once, so this has to undo the tick rather than sit on
+   top of it. */
+input[type='checkbox']:indeterminate::before {
+  content: '';
+  width: 8px;
+  height: 2px;
+  margin: 0;
+  border: 0;
+  border-radius: 1px;
+  background: currentColor;
+  transform: none;
+}
+
+input:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* High contrast mode draws its controls from the system palette, and a redrawn
+   one throws away the only thing that mode exists to do. */
+@media (forced-colors: active) {
+  input[type='checkbox'],
+  input[type='radio'] {
+    appearance: auto;
+  }
+}
+
+/* Room around the smallest targets on the page, hit through the label. */
+.choice label,
+.check {
+  padding: 3px 0;
 }
 
 .check {
@@ -187,6 +538,7 @@ select[multiple] {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 18px;
+  flex-wrap: wrap;
 }
 
 .actions.left {
@@ -196,46 +548,99 @@ select[multiple] {
 .primary,
 .ghost,
 .danger {
-  border-radius: 7px;
-  padding: 9px 16px;
+  border-radius: var(--radius);
+  padding: 9px 17px;
   font: inherit;
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
+  transition:
+    background var(--speed) ease,
+    border-color var(--speed) ease,
+    box-shadow var(--speed) ease,
+    transform var(--speed) ease;
 }
 
 .primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   border: 0;
+  box-shadow: var(--shadow-1);
 }
 
 .danger {
   background: var(--danger);
-  color: #fff;
+  color: var(--danger-ink);
   border: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  .danger {
-    color: #2a0f0c;
-  }
+  box-shadow: var(--shadow-1);
 }
 
 .ghost {
   background: transparent;
   color: var(--ink);
-  border-color: var(--line);
+  border-color: var(--line-strong);
+}
+
+/* Hover and press, which the page had none of. On a tool where one of these
+   buttons destroys several thousand messages, a control that does not react to
+   the pointer reads as one that is not listening. */
+.primary:not(:disabled):hover,
+.danger:not(:disabled):hover {
+  box-shadow: var(--shadow-2);
+  filter: brightness(1.08);
+}
+
+.ghost:not(:disabled):hover {
+  background: var(--hover);
+  border-color: var(--line-strong);
+}
+
+.primary:not(:disabled):active,
+.danger:not(:disabled):active,
+.ghost:not(:disabled):active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-1);
+  filter: none;
 }
 
 .small {
-  padding: 5px 11px;
+  padding: 5px 12px;
   font-size: 13px;
 }
 
 button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/*
+ * Working on it.
+ *
+ * Connect reaches the network four times in sequence before anything appears on
+ * screen, and it announced that by greying itself out, which is exactly what a
+ * button that has finished and has nothing left to do also looks like.
+ */
+button.busy::after {
+  content: '';
+  display: inline-block;
+  width: 0.72em;
+  height: 0.72em;
+  margin-left: 9px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.08em;
+  animation: spin 700ms linear infinite;
+}
+
+button.busy:disabled {
+  opacity: 0.75;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Status and notices ------------------------------------------------ */
@@ -250,13 +655,14 @@ button:disabled {
 .status[data-tone='error'],
 .error {
   color: var(--danger);
+  font-weight: 500;
 }
 
 .notice {
   background: var(--warn-bg);
   border: 1px solid var(--warn-line);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: var(--radius);
+  padding: 11px 13px;
   font-size: 14px;
   margin-bottom: 14px;
 }
@@ -281,6 +687,21 @@ button:disabled {
   margin-top: 8px;
 }
 
+/*
+ * The same strip, when what it is saying is that something has broken.
+ *
+ * An expired session, a Discord tab that needs reloading, another tab holding
+ * the queue: every one of those needs the user to do something, and all three
+ * arrived as a fourteen pixel caption in the gap between two cards. Only ever
+ * an alert box when there is an alert, so a healthy tab still shows nothing.
+ */
+.tabstate:has(.status[data-tone='error']) {
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
 .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
@@ -303,6 +724,7 @@ button:disabled {
 .facts dd {
   margin: 0 16px 0 0;
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
 }
 
 /* Results table ----------------------------------------------------- */
@@ -314,34 +736,45 @@ button:disabled {
   max-height: min(60vh, 720px);
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
+  background: var(--card);
 }
 
 .results {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
 }
 
 .results th {
   position: sticky;
   top: 0;
-  background: var(--card);
+  z-index: 1;
+  background: var(--sunk);
   text-align: left;
   font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--muted);
-  padding: 8px 10px;
+  padding: 9px 10px;
   border-bottom: 1px solid var(--line);
 }
 
 .results td {
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
 
 .results tr:last-child td {
   border-bottom: 0;
+}
+
+/* Which row the pointer is on, over three or four hundred of them. */
+.results tbody tr:hover td {
+  background: var(--hover);
 }
 
 /* The three narrow columns. The channel name wrapped mid-word once the table
@@ -358,12 +791,14 @@ button:disabled {
   overflow-wrap: anywhere;
   max-width: 0;
   width: 100%;
+  color: var(--ink);
 }
 
 .results th.pick,
 .results td.pick {
   width: 1%;
   padding-right: 0;
+  padding-left: 12px;
 }
 
 /* A dropped message stays visible, so it is obvious what was spared. */
@@ -379,13 +814,25 @@ button:disabled {
 .rowmark {
   display: inline-block;
   margin-left: 8px;
-  padding: 0 6px;
-  border: 1px solid var(--line);
+  padding: 0 7px;
+  border: 1px solid var(--line-strong);
   border-radius: 999px;
+  background: var(--sunk);
   color: var(--muted);
   font-size: 12px;
   white-space: nowrap;
   vertical-align: baseline;
+}
+
+/* Nothing came back. The empty shell of a table with a header row and no rows
+   under it reads as a table still loading, which is the one thing it is not. */
+.blank {
+  padding: 34px 20px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 /* Pre-flight and progress ------------------------------------------- */
@@ -393,8 +840,9 @@ button:disabled {
 .preflight {
   background: var(--warn-bg);
   border: 1px solid var(--warn-line);
-  border-radius: 8px;
-  padding: 14px 16px;
+  border-left: 3px solid var(--warn-line);
+  border-radius: var(--radius);
+  padding: 15px 17px;
   margin: 18px 0 0;
   font-size: 14px;
 }
@@ -408,13 +856,109 @@ button:disabled {
   font-weight: 600;
 }
 
+/*
+ * The same box, when what it describes cannot be undone.
+ *
+ * Overwriting text is recoverable in the sense that the message survives;
+ * deleting is not, and both used to be delivered in the same mild amber. The
+ * escalation is carried by the border and the rule down the left edge as well
+ * as by the fill, so it still reads without colour.
+ */
+.preflight.grave {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  border-left-color: var(--danger);
+}
+
+/* The line that says it cannot be undone, in the colour of the button it is
+   about. Weight alone was carrying it, in the same mild amber as the sentence
+   about how long the run would take. */
+.preflight .irreversible {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/*
+ * The three actions, as three things to choose between rather than three more
+ * tick boxes.
+ *
+ * This is the most consequential control in the app and it was wearing the same
+ * `.choice` row as "Has a link" two screens back. `:has()` does the work a
+ * wrapper element would otherwise need; where it is unsupported the cards do
+ * not tint, which loses an emphasis and breaks nothing, because the radio still
+ * says which one is chosen.
+ */
+#action-choice {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+#action-choice label {
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--sunk);
+  transition:
+    background var(--speed) ease,
+    border-color var(--speed) ease;
+}
+
+#action-choice label:hover {
+  border-color: var(--line-strong);
+}
+
+#action-choice label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+#action-choice label:has(input[value='delete']:checked),
+#action-choice label:has(input[value='edit-then-delete']:checked) {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* The dot in the middle of the chosen radio comes along with the card. Left on
+   the accent it was the one blue thing inside a red panel, which reads as the
+   card and the control disagreeing about what has been chosen. */
+#action-choice label:has(input[value='delete']:checked) input,
+#action-choice label:has(input[value='edit-then-delete']:checked) input {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-ink);
+}
+
+/* The typed-count box, once it appears. It is the last thing between a person
+   and several thousand irreversible deletions, so it stops looking like the
+   date fields two screens back. */
+#confirm-field:not(.hidden) {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+}
+
+#confirm-field > span {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+#confirm {
+  background: var(--card);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
 .progress {
   margin-top: 18px;
 }
 
 .bar {
   height: 8px;
-  background: var(--bg);
+  background: var(--sunk);
   border: 1px solid var(--line);
   border-radius: 999px;
   overflow: hidden;
@@ -426,7 +970,34 @@ button:disabled {
   height: 100%;
   width: 0;
   background: var(--accent);
+  border-radius: 999px;
   transition: width 160ms linear;
+}
+
+/*
+ * Working, with no idea how much of it there is.
+ *
+ * Discord answers a search with a total most of the time and not always: the
+ * history path knows what it has read and not what is left, and an index that
+ * is still building answers with nothing at all. The bar sat at zero through
+ * both, which is what a stalled bar looks like. This is the same track saying
+ * "moving, length unknown", which is the truth.
+ */
+.bar.waiting .fill {
+  width: 34%;
+  animation: sweep 1.6s ease-in-out infinite;
+}
+
+/* Kept short of clearing the track at either end. A sweep that runs right off
+   the edge spends part of every cycle looking exactly like the empty bar this
+   replaced, which is the one impression it exists to correct. */
+@keyframes sweep {
+  0% {
+    transform: translateX(-70%);
+  }
+  100% {
+    transform: translateX(265%);
+  }
 }
 
 .counter {
@@ -476,10 +1047,15 @@ button:disabled {
 .report .headline {
   margin: 0 0 10px;
   font-weight: 600;
+  font-size: 16px;
 }
 
 .report details {
   margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  background: var(--sunk);
 }
 
 .report summary {
@@ -488,12 +1064,16 @@ button:disabled {
 }
 
 .report ul {
-  margin: 8px 0;
+  margin: 8px 0 4px;
   padding-left: 20px;
   color: var(--muted);
   font-size: 13px;
   max-height: 180px;
   overflow: auto;
+}
+
+.report li {
+  margin-bottom: 3px;
 }
 
 .foot {
@@ -543,9 +1123,267 @@ button:disabled {
   color: var(--accent);
 }
 
+/* Motion ------------------------------------------------------------ */
+
+/*
+ * The rule everything below is written against: motion here reports something.
+ *
+ * A step arriving, a stage of the wizard closing behind you, a tick landing, a
+ * run still moving. Nothing loops for decoration and nothing runs longer than
+ * about a quarter of a second, because this is a wizard people cross quickly
+ * and anything slower turns navigation into waiting. All of it is off under
+ * prefers-reduced-motion, at the bottom of this file.
+ */
+
+.step:not(.hidden),
+#account-card:not(.hidden) {
+  animation: rise 190ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+}
+
+/*
+ * The contents arrive just behind the card they are in.
+ *
+ * Five steps of 26ms, which is under a tenth of a second end to end, so it
+ * reads as the panel settling rather than as a list being dealt out. Capped at
+ * five because the run step has more children than that and a stagger you can
+ * count is a stagger that is too slow.
+ */
+.step:not(.hidden) > * {
+  animation: rise 200ms cubic-bezier(0.22, 0.8, 0.3, 1) backwards;
+}
+
+.step:not(.hidden) > :nth-child(1) {
+  animation-delay: 26ms;
+}
+
+.step:not(.hidden) > :nth-child(2) {
+  animation-delay: 52ms;
+}
+
+.step:not(.hidden) > :nth-child(3) {
+  animation-delay: 78ms;
+}
+
+.step:not(.hidden) > :nth-child(4) {
+  animation-delay: 104ms;
+}
+
+.step:not(.hidden) > :nth-child(n + 5) {
+  animation-delay: 130ms;
+}
+
+/* Progress running along the rail, as a step closes behind you. The gradient
+   it slides is set up where the connector is drawn, further up. */
+.rail li:not(:last-child)::after {
+  transition: background-position 280ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+/* The badge, when a step becomes the one you are on or the one you just left.
+   Only ever on the change, because a class that is toggled to the value it
+   already had restarts nothing. */
+.rail li.on .railbtn::before,
+.rail li.done .railbtn::before {
+  animation: pop 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.55);
+  }
+}
+
+/*
+ * A tick landing.
+ *
+ * Deliberately not on the review table. Those rows arrive three hundred at a
+ * time and nearly all of them arrive checked, so the same animation there is
+ * three hundred simultaneous pops on the one screen that has to be read
+ * carefully. The rows say it another way: an unticked one greys and strikes
+ * through, which is the louder signal of the two anyway.
+ */
+.choice input:checked::before,
+.check input:checked::before,
+#pick-all:checked::before {
+  animation: landbox 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes landbox {
+  from {
+    transform: rotate(-45deg) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.choice input[type='radio']:checked::before {
+  animation: landdot 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes landdot {
+  from {
+    transform: scale(0);
+  }
+}
+
+/*
+ * A run that is actually running.
+ *
+ * The bar creeps by a fraction of a percent per message, which on a set of
+ * several thousand is indistinguishable from a bar that has stopped. The
+ * hatching moves at a speed unrelated to progress, so it answers "is this
+ * alive" while the width goes on answering "how far". It is switched off the
+ * moment the run is paused, from renderProgress, because a moving bar over a
+ * paused run would be the one thing here that lies.
+ */
+.bar.moving .fill {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.19) 0 7px,
+    transparent 7px 14px
+  );
+  animation: hatch 620ms linear infinite;
+}
+
+@keyframes hatch {
+  to {
+    background-position: 28px 0;
+  }
+}
+
+/* Which row the pointer is on, said at the edge as well as behind the text, so
+   it survives the row already being greyed out for being spared. */
+.results tbody tr td {
+  transition: background 110ms ease;
+}
+
+.results tbody tr td:first-child {
+  box-shadow: inset 3px 0 0 transparent;
+  transition:
+    background 110ms ease,
+    box-shadow 110ms ease;
+}
+
+.results tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/*
+ * The moment the screen turns destructive.
+ *
+ * One ring off the pre-flight box when the chosen action changes to something
+ * that cannot be undone, and never a loop: a box that pulses forever is
+ * wallpaper within about four seconds, and this has one thing to say and one
+ * moment to say it in. A shadow rather than a border, so nothing on the screen
+ * moves while it plays.
+ */
+.preflight.alarm {
+  animation: alarm 620ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+@keyframes alarm {
+  from {
+    box-shadow: 0 0 0 0 var(--danger);
+  }
+  to {
+    box-shadow: 0 0 0 11px transparent;
+  }
+}
+
+/* What a run has to show for itself, which is worth a beat longer than the
+   rest: on a long run this is the first thing to appear in hours. */
+.report:not(.hidden) {
+  animation: rise 300ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+/*
+ * Asked for less motion, given none of it.
+ *
+ * Every animation above is switched off here rather than shortened, and the
+ * two that were carrying information on their own are given a still form that
+ * says the same thing: the indeterminate bar fills and dims instead of
+ * sweeping, and the hatching comes off the running bar, which still has its
+ * width and its counter. Nothing below is only decorative, so nothing below
+ * loses meaning by stopping.
+ */
 @media (prefers-reduced-motion: reduce) {
   .fill {
     transition: none;
+  }
+
+  .bar.waiting .fill {
+    animation: none;
+    width: 100%;
+    opacity: 0.45;
+  }
+
+  .bar.moving .fill {
+    animation: none;
+    background-image: none;
+  }
+
+  button.busy::after {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .step:not(.hidden),
+  .step:not(.hidden) > *,
+  #account-card:not(.hidden),
+  .report:not(.hidden),
+  .rail li.on .railbtn::before,
+  .rail li.done .railbtn::before,
+  .choice input:checked::before,
+  /* Spelled out rather than left to the line above it. The rule that turns this
+     one on names the attribute, so it outranks the plainer selector and would
+     have gone on animating for the one reader who asked it not to. */
+  .choice input[type='radio']:checked::before,
+  .check input:checked::before,
+  #pick-all:checked::before,
+  .preflight.alarm {
+    animation: none;
+  }
+
+  .rail li:not(:last-child)::after,
+  .results tbody tr td,
+  .results tbody tr td:first-child {
+    transition: none;
+  }
+
+  .primary:not(:disabled):active,
+  .danger:not(:disabled):active,
+  .ghost:not(:disabled):active {
+    transform: none;
+  }
+}
+
+/* A narrow window, which an extension page gets more often than a site does:
+   half a screen beside Discord is the way this actually gets used. */
+@media (max-width: 620px) {
+  body {
+    padding: 24px 14px 60px;
+  }
+
+  .card {
+    padding: 18px 16px;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .head h1 {
+    font-size: 22px;
+  }
+
+  .actions {
+    gap: 8px;
   }
 }
 

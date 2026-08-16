@@ -159,7 +159,33 @@ async function buildVariant() {
   return { dir: to, extensionId: id };
 }
 
+/**
+ * Wait until the page has stopped moving.
+ *
+ * Steps and their contents animate in on a stagger, so for the third of a
+ * second after a step opens some of it is still partly transparent. The sleeps
+ * around the calls to this file were tuned when nothing animated, and a store
+ * screenshot of a half-faded panel looks like a rendering bug rather than a
+ * product. Asking the page which animations are still running beats guessing at
+ * a number that has to be re-guessed every time a duration changes.
+ *
+ * Capped, because an intentionally endless animation would otherwise hang the
+ * run: the indeterminate search bar sweeps for as long as it is on screen.
+ */
+async function settle(cdp, session, capMs = 1200) {
+  const until = Date.now() + capMs;
+  for (;;) {
+    const running = await cdp.evaluate(
+      session,
+      "document.getAnimations().filter((a) => a.playState === 'running').length"
+    );
+    if (Number(running) === 0 || Date.now() > until) return;
+    await sleep(50);
+  }
+}
+
 async function shoot(cdp, session, name) {
+  await settle(cdp, session);
   const { data } = await cdp.send(
     'Page.captureScreenshot',
     { format: 'png', captureBeyondViewport: false },

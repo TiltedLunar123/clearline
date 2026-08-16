@@ -1,5 +1,75 @@
 # Changelog
 
+## 1.5.0
+
+A pass over the whole interface. What Clearline does has not changed, and no
+screen has moved. This is about the screens being easier to read, and harder to
+misread on the one that matters.
+
+### Added
+
+- The step rail goes back. It has always looked like a row of tabs and has
+  never been clickable, which is the worst of both, because it invites the
+  click and then ignores it. Finished steps are buttons now. Every move they
+  make is one a Back button already made, so the order the app walks you
+  through is unchanged. Nothing ahead of where you are is ever reachable, and
+  the rail closes altogether while a search is paging or a run is going,
+  because leaving those screens would take their own Stop button with them.
+- The steps are numbered, and the ones behind you are ticked.
+- A search that cannot know how long it will take now says so with a moving
+  bar rather than an empty one. Discord withholds a total more often than it
+  gives one. A bar pinned at zero for four minutes looks like a tab that has
+  died; that is exactly when somebody reloads and loses the search.
+- Connect shows that it is working. There are four requests behind that click
+  before anything appears, and the only sign of them was the button greying
+  out, which is also what a button that has finished looks like.
+
+### Changed
+
+- Red is spent once, on the screen that earns it. Continue was wearing the
+  colour that means "this cannot be taken back", and it leads to a screen where
+  the choice is still open (including the choice to only overwrite the text).
+- The three things Clearline can do to a message are three cards you choose
+  between now, and the two that destroy something say so in their own colour.
+  They were laid out exactly like the "Has a link" tick boxes two screens back.
+- The sentence above the button reads as what it is when the action cannot be
+  undone. The box asking you to type the count back looks like the last gate
+  rather than like the date fields.
+- Tick boxes and radios are drawn by Clearline rather than by the platform, at
+  a size worth aiming at, and the header box shows properly when only some of
+  the rows are picked. High contrast mode still gets the system's own controls.
+- Buttons answer the pointer: nothing on the page reacted to hover or to being
+  pressed. On a control that deletes several thousand messages, that reads as a
+  control which is not listening.
+- A lost session, an expired token, or another tab holding the queue arrives as
+  an alert now. All three used to be a small grey line in the gap between two
+  cards, and all three need you to do something.
+- Rows highlight under the pointer, which the review table very much wanted at
+  three hundred of them.
+- The window can be narrow. Half a screen beside Discord is how this actually
+  gets used, and the two date fields were squashing into each other.
+- The interface moves now, in the places where moving says something. A step and
+  the controls inside it settle in rather than appearing between frames. The
+  rail fills along its connector as each stage closes behind you. Tick boxes
+  land instead of blinking on. A running bar carries moving hatching, because
+  the width creeps too slowly on a set of several thousand to tell a working run
+  from a stalled one, and the hatching stops the moment you pause. The
+  pre-flight box rings once when the action you have picked turns into one that
+  cannot be undone, and only once: a box that pulses forever is wallpaper.
+  Nothing here loops for decoration, and all of it is off entirely if you have
+  asked your system for less motion.
+
+### Fixed
+
+- The primary button was white text on pale indigo in dark mode, which is not
+  readable. Every filled button now carries a colour that is guaranteed to be
+  legible on it, and the palette is checked against the contrast the standard
+  asks for rather than by eye.
+- A search that matched nothing left an empty table on screen, which reads as a
+  table still loading. Under it there were three download buttons that would
+  each have written an empty file. The sentence explaining the miss takes their
+  place.
+
 ## 1.4.0
 
 ### Added
