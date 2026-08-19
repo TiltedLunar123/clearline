@@ -207,9 +207,24 @@ CL.search = (function () {
 
         if (total === null && typeof body.total_results === 'number') total = body.total_results;
 
+        /*
+         * How much of the window is left is a question about groups, not hits.
+         *
+         * Discord serves a fixed number of context blocks per page, and hitOf
+         * answers nothing for a block holding none of the account's messages: a
+         * hit deleted since it was indexed comes back as its neighbours alone.
+         * Both end-of-window tests below used to count what came out of hitOf,
+         * so a single unusable block in a page of twenty-five read as a short
+         * page, and a short page is how this loop knows it has reached the end.
+         * The search stopped there, reported the partial set as the whole of it,
+         * and the run that followed touched a fraction of what was asked for
+         * while saying it had finished. Counting the blocks Discord actually
+         * served is the question that was meant all along; how many of them
+         * belonged to the account has nothing to do with whether there is more.
+         */
         const groups = Array.isArray(body.messages) ? body.messages : [];
+        if (groups.length === 0) break;
         const page = groups.map((group) => hitOf(group, authorId)).filter(Boolean);
-        if (page.length === 0) break;
 
         const parents = parentsFrom(body);
         for (const raw of page) {
@@ -234,8 +249,9 @@ CL.search = (function () {
 
         // A page shorter than the page size is the end of this window. Asking
         // for the next offset anyway would spend a request, and the read floor
-        // that comes with it, to be told the same thing.
-        if (page.length < SEARCH_PAGE) break;
+        // that comes with it, to be told the same thing. Groups rather than
+        // hits, for the reason given where they are counted above.
+        if (groups.length < SEARCH_PAGE) break;
 
         offset += SEARCH_PAGE;
         if (offset > MAX_OFFSET - SEARCH_PAGE) {

@@ -178,10 +178,23 @@ CL.job = (function () {
      * `gone` is deliberately counted as done. The message the user asked to be
      * rid of is not there, which is the outcome they wanted, and reporting it as
      * a failure would make every second run of the same filter look broken.
+     *
+     * That reasoning runs out at the one action that leaves the message
+     * standing. An overwrite is a request to change what a message says, not to
+     * be rid of it, so a 404 there is not the outcome asked for: the text was
+     * never replaced, and the message it belonged to has gone somewhere the user
+     * did not send it. Counted as done it was reported as an overwrite that
+     * happened, in the document that exists to be the record of what happened.
+     * It is a skip with a reason instead, which is the pile for "this one was
+     * not touched, and here is why".
      */
     function classify(err) {
       const code = err && err.code;
-      if (code === 'NOT_FOUND') return { kind: 'gone' };
+      if (code === 'NOT_FOUND') {
+        return action === 'edit'
+          ? { kind: 'skip', reason: CL.i18n.t('reasonAlreadyGone') }
+          : { kind: 'gone' };
+      }
       if (code === 'FORBIDDEN') return { kind: 'skip', reason: CL.i18n.t('reasonNoPermission') };
       if (code === 'BAD_ID') return { kind: 'skip', reason: CL.i18n.t('reasonMalformedId') };
       if (code === 'RATE_LIMIT_HALT') return { kind: 'halt', reason: err.message };
@@ -285,6 +298,16 @@ CL.job = (function () {
               state.status = 'halted';
               state.error = CL.i18n.t('errTooManyFailures', [String(MAX_CONSECUTIVE_FAILURES)]);
               state.current = null;
+              // Past this message before stopping, because it was attempted and
+              // has already been counted as a failure. Returning from where the
+              // index still pointed at it put it in both piles at once: the
+              // report said thirty were never reached and offered to carry on
+              // with thirty-one, and the extra one was the message sitting in
+              // the failure list directly above. Retrying the failures and
+              // carrying on then both queued it. The other halt does not need
+              // this: it counts nothing for the message it stops on, so leaving
+              // the index there is what keeps its two numbers agreeing.
+              state.index++;
               emit();
               return summary();
             }

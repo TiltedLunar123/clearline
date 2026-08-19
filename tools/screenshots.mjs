@@ -286,6 +286,15 @@ async function main() {
       );
       return rows > 0 ? rows : null;
     });
+    // Opened for the picture. It is folded away by default because most visits
+    // to this screen are about the table under it, but a store screenshot of a
+    // closed grey bar shows nothing, and being able to keep one channel out of
+    // a server-wide sweep is the reason somebody would install this over the
+    // alternatives.
+    await cdp.evaluate(
+      session,
+      "(() => { const d = document.getElementById('channel-block'); if (d) d.open = true; })()"
+    );
     await sleep(400);
     await shoot(cdp, session, '4-review');
 

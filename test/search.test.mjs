@@ -155,6 +155,59 @@ test('the search window is pinned so messages arriving mid run cannot shift the 
   assert.ok(server.requests.every((r) => r.max_id === pinned));
 });
 
+test('one unusable context block does not end the whole search', async () => {
+  /*
+   * Discord serves a fixed number of context blocks per page and hitOf answers
+   * nothing for a block holding none of the account's messages, which is what a
+   * hit deleted since it was indexed looks like coming back. Counting what came
+   * out of hitOf made that block read as a short page, and a short page is how
+   * the loop knows the window is exhausted: the search stopped at the block,
+   * reported a quarter of the account's messages as all of them, and the run
+   * that followed said it had finished.
+   */
+  const all = corpus(60);
+  const handler = (params) => {
+    const offset = Number(params.offset || 0);
+    const page = all.slice(offset, offset + search.SEARCH_PAGE);
+    return {
+      status: 200,
+      body: {
+        total_results: all.length,
+        messages: page.map((m, i) =>
+          offset === 0 && i === 5 ? [{ ...raw(999), author: OTHER }] : [m]
+        ),
+      },
+    };
+  };
+  const finder = search.createFinder(clientWith({ search: handler }), noSleep);
+  const result = await finder.find({ scope: { guildId: '888' }, authorId: ME });
+
+  assert.equal(result.messages.length, 59, 'the paging carried on past the unusable block');
+  assert.equal(result.truncated, false, 'and did not have to call the result cut short');
+});
+
+test('a whole page of other people is paged past rather than treated as the end', async () => {
+  // The same mistake one page further in, where the short page is not short at
+  // all: every block on it is somebody else's, so hitOf yields nothing for the
+  // entire page while Discord still has two more to serve.
+  const all = corpus(75);
+  const handler = (params) => {
+    const offset = Number(params.offset || 0);
+    const page = all.slice(offset, offset + search.SEARCH_PAGE);
+    return {
+      status: 200,
+      body: {
+        total_results: all.length,
+        messages: page.map((m) => (offset === 25 ? [{ ...raw(999), author: OTHER }] : [m])),
+      },
+    };
+  };
+  const finder = search.createFinder(clientWith({ search: handler }), noSleep);
+  const result = await finder.find({ scope: { guildId: '888' }, authorId: ME });
+
+  assert.equal(result.messages.length, 50, 'the page after the empty one was still asked for');
+});
+
 test('the same message returned twice is only counted once', async () => {
   const all = corpus(30);
   let calls = 0;

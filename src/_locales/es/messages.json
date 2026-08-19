@@ -324,6 +324,31 @@
   "includeThisMessage": {
     "message": "Incluir este mensaje"
   },
+  "includeThisChannel": {
+    "message": "Incluir este canal"
+  },
+  "byChannelSummary": {
+    "message": "Dónde están estos mensajes"
+  },
+  "byChannelHint": {
+    "message": "Desmarca un canal para no tocar nada de lo que escribiste en él, ni en sus hilos."
+  },
+  "channelUnnamed": {
+    "message": "un canal sin nombre"
+  },
+  "channelTally": {
+    "message": "$PICKED$ de $TOTAL$",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "Abrir este mensaje en Discord"
   },
@@ -911,6 +936,9 @@
   },
   "reasonUneditable": {
     "message": "Discord no permite modificar este tipo de mensaje"
+  },
+  "reasonAlreadyGone": {
+    "message": "Este mensaje ya no estaba, así que no había nada que sobrescribir"
   },
   "durationUnderMinute": {
     "message": "menos de un minuto"

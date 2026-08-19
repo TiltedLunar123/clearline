@@ -324,6 +324,31 @@
   "includeThisMessage": {
     "message": "이 메시지를 대상에 포함"
   },
+  "includeThisChannel": {
+    "message": "이 채널을 대상에 포함"
+  },
+  "byChannelSummary": {
+    "message": "이 메시지들이 있는 곳"
+  },
+  "byChannelHint": {
+    "message": "채널의 체크를 해제하면 그 채널에 쓴 것은 스레드까지 그대로 둡니다."
+  },
+  "channelUnnamed": {
+    "message": "이름 없는 채널"
+  },
+  "channelTally": {
+    "message": "$TOTAL$개 중 $PICKED$개",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "이 메시지를 Discord에서 열기"
   },
@@ -911,6 +936,9 @@
   },
   "reasonUneditable": {
     "message": "Discord는 이런 종류의 메시지 변경을 허용하지 않습니다"
+  },
+  "reasonAlreadyGone": {
+    "message": "이 메시지는 이미 사라진 뒤라 덮어쓸 내용이 없었습니다"
   },
   "durationUnderMinute": {
     "message": "1분 미만"

@@ -113,7 +113,8 @@ steps, one screen at a time.
 3. Narrow. Filter by text or a pattern, a date range, whether a message has an
    attachment, a link or an embed, and whether to leave pinned messages alone.
 4. Review. See the count and the messages themselves. Untick anything you want to
-   keep. Save a copy as HTML, JSON or CSV.
+   keep, one message at a time or a whole channel at once. Save a copy as HTML,
+   JSON or CSV.
 5. Act. Delete them, overwrite the text, or overwrite and then delete. Watch it run,
    pause it, or stop it.
 

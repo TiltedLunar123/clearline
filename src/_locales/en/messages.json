@@ -324,6 +324,35 @@
   "includeThisMessage": {
     "message": "Include this message"
   },
+  "includeThisChannel": {
+    "message": "Include this channel"
+  },
+  "byChannelSummary": {
+    "message": "Where these messages are",
+    "description": "Summary of the collapsible channel breakdown on the review step."
+  },
+  "byChannelHint": {
+    "message": "Untick a channel to leave everything you wrote in it alone, its threads included.",
+    "description": "Explains what the tick box beside each channel does."
+  },
+  "channelUnnamed": {
+    "message": "a channel with no name",
+    "description": "Label for a group of results whose channel is no longer listed."
+  },
+  "channelTally": {
+    "message": "$PICKED$ of $TOTAL$",
+    "description": "How many of one channel’s messages are still in the run.",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "Open this message in Discord"
   },
@@ -920,6 +949,10 @@
   },
   "reasonUneditable": {
     "message": "Discord does not allow changing this kind of message"
+  },
+  "reasonAlreadyGone": {
+    "message": "This message was already gone, so there was nothing to overwrite",
+    "description": "Run report reason: an overwrite found the message already deleted."
   },
   "durationUnderMinute": {
     "message": "under a minute"

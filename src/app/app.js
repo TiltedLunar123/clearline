@@ -93,6 +93,14 @@
     truncated: false,
     ran: false,
     job: null,
+    /**
+     * A search is paging right now.
+     *
+     * Kept apart from `busy`, which the end to end suite drives directly to
+     * exercise the rail. This one guards the tab against a reload, and a flag
+     * that a test can switch on is not one an unload prompt should hang off.
+     */
+    searching: false,
     stopSearch: false,
     /** A finished report nobody has kept yet. Guards the tab against a reload. */
     unsavedReport: false,
@@ -114,19 +122,56 @@
   /**
    * Tell the background this page exists, for as long as it exists.
    *
-   * Opened once and never read from. The background needs to know whether the
-   * tab it remembers is still the app, and a tab id alone cannot answer that:
-   * navigating away leaves the id valid, so the toolbar button went on focusing
-   * a tab that was showing Discord and never opened the app again. A port is
-   * closed by the browser on navigation as well as on close, which is exactly
-   * the question, and it costs no permission.
+   * The background needs to know whether the tab it remembers is still the app,
+   * and a tab id alone cannot answer that: navigating away leaves the id valid,
+   * so the toolbar button went on focusing a tab that was showing Discord and
+   * never opened the app again. A port is closed by the browser on navigation as
+   * well as on close, which is exactly the question, and it costs no permission.
+   *
+   * Opened again whenever it closes, which is the half that was missing. A
+   * service worker is torn down after about thirty seconds idle and the browser
+   * drops an idle port after about five minutes, and neither of those means the
+   * page went anywhere: they are the ordinary state of a tab watching a run that
+   * takes hours, since a run sends nothing through this port. The page connected
+   * once at load and never again, so the background's list of live app tabs
+   * emptied itself a few minutes in and stayed empty.
+   *
+   * That is not a cosmetic drift. An empty list reads as "no app tab is alive",
+   * so a second tab opened afterwards was never told the queue was taken: it
+   * claimed ownership without asking, and the tab it superseded cancelled the
+   * delete run it was in the middle of. The prompt that exists to make a
+   * takeover deliberate could not appear, because by then nothing knew there
+   * was anything to take over.
+   *
+   * Reconnecting wakes the worker roughly once every five minutes for as long as
+   * the tab is open, which is the cost of the answer being true rather than
+   * merely recent.
    */
-  try {
-    CL.api.runtime.connect({ name: 'clearline:app' });
-  } catch {
-    // No background to connect to, which happens while the worker restarts.
-    // One tab is the ordinary case, so carrying on is right.
+  let presence = null;
+  function announcePresence() {
+    try {
+      presence = CL.api.runtime.connect({ name: 'clearline:app' });
+    } catch {
+      // The extension was reloaded or updated underneath this page, which no
+      // amount of retrying fixes. One tab is the ordinary case, so carrying on
+      // without the background knowing is better than a loop.
+      presence = null;
+      return;
+    }
+    presence.onDisconnect.addListener(() => {
+      // Read so the browser does not log an unchecked error for a disconnect
+      // this page expects and handles.
+      void CL.api.runtime.lastError;
+      presence = null;
+      // Short, because the gap is the one moment a second tab could claim the
+      // queue without being told this one holds it, and not zero, so a reload
+      // tearing the worker down cannot turn this into a spin. A connect against
+      // a reloaded extension throws rather than disconnecting, and the catch
+      // above stops there.
+      setTimeout(announcePresence, 250);
+    });
   }
+  announcePresence();
 
   /* ---------------------------------------------------------------- */
   /* Small helpers                                                     */
@@ -231,7 +276,26 @@
       item.classList.toggle('done', index < here);
       const button = item.querySelector('.railbtn');
       if (!button) continue;
-      button.disabled = state.busy || index >= here || !$(`step-${name}`);
+      /*
+       * Forward is closed, with one exception, and the exception is a way back
+       * rather than a way on.
+       *
+       * A report is the only account of a run that cannot be undone: which
+       * messages were left alone and why, which failed and with what, about
+       * messages that no longer exist to be looked at again. Leaving the Act
+       * step put it behind a section the rail would not reopen, because Act was
+       * now ahead. One misclick and the record was in the document with no
+       * control able to show it, while the unload prompt went on asking about
+       * something the user could not get back to and so could not save.
+       *
+       * It costs nothing of the order that makes this wizard safe. Reaching Act
+       * needs a result set and a count that have already been seen, and after a
+       * run Start is switched off by `state.ran` anyway, so what this opens is a
+       * report and a Save button.
+       */
+      const behind = index < here;
+      const strandedReport = name === 'run' && index > here && state.unsavedReport;
+      button.disabled = state.busy || (!behind && !strandedReport) || !$(`step-${name}`);
       if (current) button.setAttribute('aria-current', 'step');
       else button.removeAttribute('aria-current');
     }
@@ -947,10 +1011,14 @@
 
     state.filters = filters;
     state.stopSearch = false;
+    state.searching = true;
     button.disabled = true;
     setBusy(true);
     say($('filter-status'), '');
     show($('search-progress'));
+    // Live again for this search. It latches itself off when clicked, because
+    // a search cannot be un-stopped.
+    $('search-stop').disabled = false;
     // The message a halt throws tells the user to start again. This is them
     // starting again, so it has to mean something.
     clearHalt();
@@ -972,6 +1040,12 @@
     // a search index, which is the case where somebody is most likely to be
     // staring at it wondering whether anything is happening.
     $('search-counter').textContent = t('searching');
+    // Reset with them, and it was not. The pace note is written by the limiter
+    // and cleared by the next request landing, so a search stopped or finished
+    // while it was waiting out a rate limit left the sentence standing: the next
+    // search opened reading "Searching..." beside "Waiting 8 seconds" from the
+    // one before it, which is the same stale-progress trap as the counter.
+    paceNote('');
 
     try {
       const found = await finder.find({
@@ -981,6 +1055,13 @@
         maxId: bounds.maxId,
         shouldStop: () => state.stopSearch,
         onProgress: (p) => {
+          // A stop has been asked for and the request that was already in flight
+          // has just landed. The loop will notice at the top of its next turn,
+          // but this runs first, and it used to overwrite "Stopping after the
+          // request in flight" with a fresh count: the one visible answer to the
+          // click disappeared a moment after it, so the button read as ignored
+          // and the obvious next move was to press it again or reload.
+          if (state.stopSearch) return;
           let line;
           if (p.phase === 'indexing') {
             line = t('searchIndexing');
@@ -1043,12 +1124,34 @@
       state.shown = MAX_ROWS;
       state.ran = false;
       state.truncated = !!found.truncated;
+      /*
+       * The last run's report is about a set that has just been replaced.
+       *
+       * Three paths cleared it and the ordinary one did not: Start, the report's
+       * own Search again, and carrying on with a queue. Reaching Narrow the way
+       * the Back buttons and the rail reach it, and searching from there, left
+       * it standing. The Act step then opened on "Finished. 2,980 messages
+       * handled." above a pre-flight for messages that are all still there,
+       * which reads as the new set being already gone. Its buttons were live
+       * too: "carry on with the ones left" would have thrown away the search
+       * that had just finished and put the old queue back in its place, and
+       * "keep this report" wrote the old run's numbers into a file headed with
+       * the new selection.
+       *
+       * The flag goes with it. Searching again is the same deliberate move as
+       * the report's own button, which has always dropped the report on the
+       * same terms, and a prompt guarding something the user can no longer
+       * reach is worse than no prompt.
+       */
+      hide($('run-report'));
+      state.unsavedReport = false;
       renderReview();
       goTo('review');
     } catch (err) {
       say($('filter-status'), (err && err.message) || t('errSearchFailed'), 'error');
       offerReconnect();
     } finally {
+      state.searching = false;
       // Not unconditionally false. A tab that was superseded while searching
       // would otherwise hand its Search button back at exactly the moment it
       // was supposed to have stopped.
@@ -1123,6 +1226,114 @@
     return `https://discord.com/channels/${message.guildId || '@me'}/${message.channelId}/${message.id}`;
   }
 
+  /**
+   * The channels behind the breakdown, and the row drawn for each.
+   *
+   * Rebuilt when the result set changes and only then. The counts beside them
+   * move on every tick, so those are refreshed in place rather than by redrawing
+   * a list whose open state and focus the user is standing in.
+   */
+  let channelGroups = [];
+  const channelRows = new Map();
+
+  /**
+   * Where a message lives, as a person would say it.
+   *
+   * The hash belongs to a channel in a server. A direct message is not one, and
+   * printing "#alice, bob" in the channel column labelled a conversation as a
+   * text channel, in the table read immediately before deleting it and in the
+   * report kept afterwards. The guild id is the honest test: search fills it for
+   * a server message and leaves it null for a conversation, which is also what
+   * the message link two columns over has always keyed on.
+   */
+  function channelLabel(message) {
+    const name = message && message.channelName;
+    if (!name) return '';
+    return message.guildId ? `#${name}` : name;
+  }
+
+  /**
+   * Draw the channel breakdown, or take it away when it has nothing to say.
+   *
+   * One channel is not a breakdown: a direct message and a single-channel search
+   * both produce exactly one group, and a list of one only repeats the sentence
+   * above it.
+   */
+  function renderChannels() {
+    channelGroups = CL.filter.groupByChannel(state.results);
+    channelRows.clear();
+    const block = $('channel-block');
+    const list = $('channel-list');
+    list.textContent = '';
+
+    if (channelGroups.length < 2) {
+      hide(block);
+      return;
+    }
+
+    for (const group of channelGroups) {
+      const item = document.createElement('li');
+      const label = document.createElement('label');
+
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.setAttribute('aria-label', t('includeThisChannel'));
+      box.addEventListener('change', () => setChannelPicked(group, box.checked));
+
+      const name = document.createElement('span');
+      name.className = 'chname';
+      // The stored name is the parent channel's, so a thread reads as the
+      // channel it hangs off, which is where its author would look for it.
+      name.textContent = group.name ? `#${group.name}` : t('channelUnnamed');
+
+      const tally = document.createElement('span');
+      tally.className = 'chcount';
+
+      label.append(box, name, tally);
+      item.appendChild(label);
+      list.appendChild(item);
+      channelRows.set(group.key, { box, tally });
+    }
+    show(block);
+  }
+
+  /**
+   * Take a whole channel in or out of the run.
+   *
+   * Applied to every message in the group rather than to the rendered ones,
+   * which is the point: most of a result set is behind the render limit, and
+   * before this the only selections that could reach those rows at all were all
+   * and none. Snapshotted for undo like the header checkbox, and for the same
+   * reason, since one tick here can replace hundreds of hand-picked rows.
+   */
+  function setChannelPicked(group, on) {
+    previousSelection = new Set(state.excluded);
+    for (const id of group.ids) {
+      if (on) state.excluded.delete(id);
+      else state.excluded.add(id);
+    }
+    syncRenderedRows();
+    refreshSelectionCounts();
+  }
+
+  /**
+   * Bring the rows on screen back in line with the selection behind them.
+   *
+   * Cheaper than renderReview and, more to the point, it keeps the scroll
+   * position and the focus: a channel tick is aimed at rows the user is not
+   * looking at, and rebuilding the table would throw away where they were.
+   */
+  function syncRenderedRows() {
+    for (const row of $('results-body').querySelectorAll('tr')) {
+      const message = state.results[Number(row.dataset.index)];
+      if (!message) continue;
+      const on = !state.excluded.has(message.id);
+      const box = row.querySelector('input[type="checkbox"]');
+      if (box) box.checked = on;
+      row.classList.toggle('off', !on);
+    }
+  }
+
   function renderReview() {
     const total = state.results.length;
     const picked = selected().length;
@@ -1161,6 +1372,7 @@
     body.textContent = '';
     body.appendChild(rowsFor(0, Math.min(state.shown, state.results.length)));
 
+    renderChannels();
     refreshSelectionCounts();
   }
 
@@ -1208,7 +1420,7 @@
       when.appendChild(link);
 
       const where = document.createElement('td');
-      where.textContent = message.channelName ? `#${message.channelName}` : '';
+      where.textContent = channelLabel(message);
 
       const what = document.createElement('td');
       what.className = 'msg';
@@ -1254,11 +1466,39 @@
    * Update everything that depends on the selection without rebuilding the
    * table, which would lose scroll position on every tick of a checkbox.
    */
+  /**
+   * The counts and tick states beside each channel, recomputed in one pass.
+   *
+   * One walk of the result set rather than one filter per channel, which on a
+   * twenty-channel server would be twenty walks per tick of a single box.
+   */
+  function refreshChannelCounts() {
+    if (channelRows.size === 0) return;
+    const picked = new Map();
+    for (const group of channelGroups) picked.set(group.key, 0);
+    for (const message of state.results) {
+      if (state.excluded.has(message.id)) continue;
+      const key = String(message.parentId || message.channelId || '');
+      if (picked.has(key)) picked.set(key, picked.get(key) + 1);
+    }
+    for (const group of channelGroups) {
+      const row = channelRows.get(group.key);
+      if (!row) continue;
+      const on = picked.get(group.key) || 0;
+      row.tally.textContent = t('channelTally', [num(on), num(group.ids.length)]);
+      // Checked and indeterminate together is the state this spends most of its
+      // time in, and it is the one the header checkbox already draws as a dash.
+      row.box.checked = on > 0;
+      row.box.indeterminate = on > 0 && on < group.ids.length;
+    }
+  }
+
   function refreshSelectionCounts() {
     const total = state.results.length;
     const picked = selected().length;
 
     $('review-heading').textContent = headingFor(total, picked);
+    refreshChannelCounts();
 
     $('pick-all').checked = picked > 0;
     $('pick-all').indeterminate = picked > 0 && picked < total;
@@ -1356,6 +1596,35 @@
   }
 
   /**
+   * Freeze what the run was started with, for as long as it is running.
+   *
+   * Every control here was read once, when Start was pressed, and then left
+   * live. Nothing enforced that, so a click on a different action while the bar
+   * was moving rebuilt the whole pre-flight around it: the screen described an
+   * overwrite while the job in memory went on deleting, and the line saying it
+   * could not be undone came and went according to a radio the run had stopped
+   * listening to. Start came back too, because the pre-flight derives it from
+   * `state.ran`, which is still false mid-run.
+   *
+   * The lasting damage was one screen further on. Stop a run, take the offer to
+   * carry on with what it never reached, and the remainder goes out under
+   * whichever radio is checked by then, which is not necessarily the one the
+   * user confirmed. A run agreed to as an overwrite could finish as a delete.
+   *
+   * The backup box is in here for the same reason: it says a copy is taken
+   * before the first deletion, and after the first deletion that is a promise
+   * nothing can keep.
+   */
+  function lockRunForm(locked) {
+    for (const radio of document.querySelectorAll('input[name="action"]')) {
+      radio.disabled = locked;
+    }
+    $('replacement').disabled = locked;
+    $('backup').disabled = locked;
+    $('confirm').disabled = locked;
+  }
+
+  /**
    * The sentence immediately above the button.
    *
    * Spelled out in full rather than shown as a count next to an icon, and it
@@ -1440,7 +1709,11 @@
       stale.textContent = t('preflightStale');
       box.appendChild(stale);
     }
-    $('start').disabled = affected === 0 || state.ran || state.superseded;
+    // `state.job` belongs in here with the rest. This is the one place Start's
+    // disabled state is decided, and it is called from several paths that can
+    // run while a job is going, so leaving the running job out of the sum meant
+    // any of them handed the button back mid-run.
+    $('start').disabled = affected === 0 || state.ran || state.superseded || !!state.job;
   }
 
   function renderProgress(p) {
@@ -1555,7 +1828,7 @@
           const m = entry.message || {};
           return {
             when: localStamp(m.timestamp),
-            where: m.channelName ? `#${m.channelName}` : '',
+            where: channelLabel(m),
             text: m.content || '',
             reason: entry.reason,
             id: m.id || '',
@@ -1568,7 +1841,8 @@
         // A raw snowflake tells the reader nothing about which message this
         // was. The id stays, on the title, for anyone who wants it.
         const m = entry.message || {};
-        const where = m.channelName ? ` #${m.channelName}` : '';
+        const label = channelLabel(m);
+        const where = label ? ` ${label}` : '';
         const what = m.content ? ` "${m.content.slice(0, 60)}"` : '';
         li.textContent = `${localStamp(m.timestamp)}${where}${what}: ${entry.reason}`;
         li.title = m.id || '';
@@ -1772,6 +2046,7 @@
     say($('run-status'), '');
     $('start').disabled = true;
     $('run-back').disabled = true;
+    lockRunForm(true);
     // The rail closes for the same reason run-back does: leaving this screen
     // takes the counter, the pace note and the Stop button off screen with it.
     setBusy(true);
@@ -1779,14 +2054,23 @@
     show($('run-progress'));
     $('run-pause').textContent = t('buttonPause');
 
-    const summary = await runner.start();
+    // Wrapped so the screen cannot be left mid-run by anything thrown on the
+    // way out. This is the one function that holds the Back button, the rail
+    // and the unload prompt all at once, and a tab stuck in that state has a
+    // finished job it cannot report and no control that says so.
+    let summary;
+    try {
+      summary = await runner.start();
+    } finally {
+      hide($('run-progress'));
+      paceNote('');
+      document.title = 'Clearline';
+      $('run-back').disabled = false;
+      setBusy(false);
+      lockRunForm(false);
+      state.job = null;
+    }
 
-    hide($('run-progress'));
-    paceNote('');
-    document.title = 'Clearline';
-    $('run-back').disabled = false;
-    setBusy(false);
-    state.job = null;
     state.ran = true;
     $('start').disabled = true;
     // The report is now the only account of something that cannot be undone, so
@@ -1819,7 +2103,15 @@
     const button = event.target.closest('.railbtn');
     if (!button || button.disabled) return;
     const item = button.closest('li');
-    if (item && item.dataset.step) goTo(item.dataset.step);
+    if (!item || !item.dataset.step) return;
+    // The Act step is derived from the selection, and every other way in
+    // derives it on the way past: Continue calls syncRunForm, carrying on with
+    // a queue calls renderPreflight. The rail did neither, so arriving by it
+    // showed whatever the sentence and the button happened to be left as, which
+    // on the screen that counts what is about to be destroyed is not a place to
+    // trust a leftover.
+    if (item.dataset.step === 'run') renderPreflight();
+    goTo(item.dataset.step);
   });
 
   for (const radio of document.querySelectorAll('input[name="scope-kind"]')) {
@@ -1837,6 +2129,10 @@
   $('search-stop').addEventListener('click', () => {
     state.stopSearch = true;
     $('search-counter').textContent = t('searchStopping');
+    // Nothing takes a stop back, so the button has nothing left to offer. Left
+    // live it invited a second click that could only look ignored, on the one
+    // screen where somebody is already wondering whether anything is happening.
+    $('search-stop').disabled = true;
   });
 
   // There is no form here, so there is no implicit submit and Enter did nothing
@@ -1927,9 +2223,18 @@
    * at again. Both flags clear themselves the moment there is nothing to lose,
    * because a prompt that cannot be satisfied is worse than no prompt: the job
    * when start() resolves, the report when it is saved or acted on.
+   *
+   * A search in progress is the third, and it was the one left out. Paging a
+   * whole server runs for minutes with nothing written down anywhere: the result
+   * set exists only in this page, and a reload starts it from nothing. The
+   * screen it happens on is also the one most likely to be reloaded, since a
+   * long wait with a sweeping bar is exactly what somebody reaches for the
+   * reload button over, and the app's own note about a rate limit tells them to
+   * start again. The other two were guarded because they are expensive to lose;
+   * this one is expensive to lose in the same way and for longer.
    */
   window.addEventListener('beforeunload', (event) => {
-    if (!state.job && !state.unsavedReport) return;
+    if (!state.job && !state.searching && !state.unsavedReport) return;
     event.preventDefault();
     event.returnValue = '';
   });

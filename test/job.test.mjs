@@ -78,6 +78,38 @@ test('a message that is already gone counts as done, not as a failure', async ()
   assert.equal(result.status, 'done');
 });
 
+test('an overwrite of a message that is already gone is not reported as an overwrite', async () => {
+  /*
+   * "Gone counts as done" is right for the two actions that set out to be rid of
+   * the message, and wrong for the one that sets out to leave it standing with
+   * different words in it. The text was never replaced and the message went
+   * somewhere the user did not send it, and the run said it had overwritten it,
+   * in the document that exists to be the record of what a run did.
+   */
+  const client = fakeClient((id) => (id === idAt(2) ? fail('NOT_FOUND') : null));
+  const result = await job
+    .createJob({ client, action: 'edit', editContent: 'x', messages: [msg(1), msg(2), msg(3)] })
+    .start();
+
+  assert.equal(result.done, 2, 'only the two that were actually rewritten');
+  assert.equal(result.skipped, 1);
+  assert.equal(result.failed, 0, 'and it is not an error either, since nothing went wrong');
+  assert.match(result.skips[0].reason, /gone|no longer/i);
+});
+
+test('deleting a message that is already gone is still a success', async () => {
+  // The other half of the same rule. Being rid of it is the outcome asked for,
+  // however it came about, and edit-then-delete ends in the same place.
+  for (const action of ['delete', 'edit-then-delete']) {
+    const client = fakeClient((id) => (id === idAt(2) ? fail('NOT_FOUND') : null));
+    const result = await job
+      .createJob({ client, action, editContent: 'x', messages: [msg(1), msg(2), msg(3)] })
+      .start();
+    assert.equal(result.done, 3, `${action} treated a gone message as unfinished business`);
+    assert.equal(result.skipped, 0, action);
+  }
+});
+
 test('a channel the account cannot write to is a skip with a stated reason', async () => {
   const client = fakeClient((id) => (id === idAt(2) ? fail('FORBIDDEN') : null));
   const result = await job.createJob({ client, messages: [msg(1), msg(2), msg(3)] }).start();
@@ -117,6 +149,34 @@ test('ten unexplained failures in a row stop the run', async () => {
   assert.equal(result.status, 'halted');
   assert.equal(result.failed, job.MAX_CONSECUTIVE_FAILURES);
   assert.match(result.error, /failures in a row/i);
+});
+
+test('a run halted by failures does not offer to redo the one it failed on', async () => {
+  /*
+   * The message the tenth failure lands on is counted as a failure and was also
+   * left sitting under the index the remaining queue is sliced from, so it came
+   * back in both piles: the report said thirty were never reached and the button
+   * beside it offered to carry on with thirty-one, the extra one being the
+   * message named in the failure list directly above. Retry the failures and
+   * carry on with the rest, and it went round twice.
+   *
+   * Checked as the same invariant the cancel path is checked against, since the
+   * two halts want the same arithmetic and only one of them had it.
+   */
+  const messages = Array.from({ length: 40 }, (_, i) => msg(i + 1));
+  const client = fakeClient(() => fail('HTTP_ERROR', 'server error'));
+  const result = await job.createJob({ client, messages }).start();
+
+  assert.equal(result.status, 'halted');
+  assert.equal(result.remaining, result.remainingMessages.length, 'the count and the list agree');
+  assert.equal(
+    result.done + result.failed + result.skipped + result.remainingMessages.length,
+    messages.length,
+    'every message is in exactly one pile'
+  );
+  const failedIds = new Set(result.failures.map((f) => f.message.id));
+  const carried = result.remainingMessages.filter((m) => failedIds.has(m.id));
+  assert.deepEqual(carried, [], 'nothing is offered for retry and for carrying on at once');
 });
 
 test('an occasional failure does not stop the run', async () => {

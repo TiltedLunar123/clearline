@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadLib, STUB_CHROME } from './helper.mjs';
+import { loadLib, plain, STUB_CHROME } from './helper.mjs';
 
 const ctx = await loadLib(['lib/browser.js', 'lib/i18n.js', 'lib/snowflake.js', 'lib/filter.js'], {
   chrome: STUB_CHROME,
@@ -290,4 +290,88 @@ test('a broken pattern is explained in the reader language', () => {
     thrown.message.startsWith(prefix),
     `message was ${JSON.stringify(thrown.message)}, which did not come from the store`
   );
+});
+
+test('the breakdown counts a thread under the channel it hangs off', () => {
+  /*
+   * The same rule the channel predicate follows, and for the same reason: a
+   * message written in a thread carries the thread's id, and nobody thinks of a
+   * thread as somewhere separate from the channel it is in. Grouping on the raw
+   * channel id would scatter one evening in #general across a dozen
+   * one-message threads, which is worse than not grouping at all.
+   */
+  const groups = filter.groupByChannel([
+    msg({ id: '1', channelId: 'general', channelName: 'general' }),
+    msg({ id: '2', channelId: 'thread-a', parentId: 'general', channelName: 'general' }),
+    msg({ id: '3', channelId: 'thread-b', parentId: 'general', channelName: 'general' }),
+    msg({ id: '4', channelId: 'random', channelName: 'random' }),
+  ]);
+
+  assert.equal(groups.length, 2, 'two channels, not four');
+  assert.deepEqual(
+    plain(groups.map((g) => [g.name, g.ids.length])),
+    [
+      ['general', 3],
+      ['random', 1],
+    ],
+    'largest first, because "where are they" is usually answered by the biggest'
+  );
+});
+
+test('every message in the set lands in exactly one channel group', () => {
+  // The groups drive a tick box that takes a whole channel out of a delete run,
+  // so a message in neither group, or in two, is a message the count on screen
+  // and the queue behind it disagree about.
+  const messages = Array.from({ length: 50 }, (_, i) =>
+    msg({
+      id: String(i),
+      channelId: `c${i % 7}`,
+      channelName: `room-${i % 7}`,
+      parentId: i % 3 === 0 ? `c${i % 7}` : null,
+    })
+  );
+  const groups = filter.groupByChannel(messages);
+  const ids = groups.flatMap((g) => g.ids);
+
+  assert.equal(ids.length, messages.length);
+  assert.equal(new Set(ids).size, messages.length, 'nothing is in two groups');
+  assert.deepEqual(
+    [...ids].sort(),
+    messages.map((m) => m.id).sort(),
+    'and nothing is missing from all of them'
+  );
+});
+
+test('a channel that lost its name keeps its group and its messages', () => {
+  // A channel deleted between loading the picker and reading the results has no
+  // name left to give. The messages are still real and still about to be acted
+  // on, so they get a group with an empty name for the app to label, rather
+  // than being folded in with somebody else's.
+  const groups = filter.groupByChannel([
+    msg({ id: '1', channelId: 'gone', channelName: '' }),
+    msg({ id: '2', channelId: 'gone', channelName: '' }),
+    msg({ id: '3', channelId: 'here', channelName: 'here' }),
+  ]);
+
+  assert.equal(groups.length, 2);
+  const nameless = groups.find((g) => g.key === 'gone');
+  assert.equal(nameless.name, '');
+  assert.equal(nameless.ids.length, 2);
+});
+
+test('one message naming its channel is enough to name the whole group', () => {
+  // Search fills the name from a map built at commit time, and a row that
+  // arrived before the map did would otherwise cost the group its label.
+  const groups = filter.groupByChannel([
+    msg({ id: '1', channelId: 'c', channelName: '' }),
+    msg({ id: '2', channelId: 'c', channelName: 'general' }),
+  ]);
+
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].name, 'general');
+});
+
+test('grouping an empty result set is an empty list, not a crash', () => {
+  assert.deepEqual(plain(filter.groupByChannel([])), []);
+  assert.deepEqual(plain(filter.groupByChannel(null)), []);
 });

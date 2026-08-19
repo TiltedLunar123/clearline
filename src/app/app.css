@@ -24,7 +24,21 @@
   --muted: #5b616e;
 
   --line: #e0e3ea;
-  --line-strong: #c3c9d6;
+  /*
+   * The boundary that has to be seen, as opposed to the hairline above it.
+   *
+   * `--line` separates things that are next to each other, and a separator can
+   * be faint. This one is the outline of every secondary button in the app,
+   * which is most of its buttons: Back, Reconnect, Use this tab instead, Stop,
+   * Show more, Undo, the three Download buttons and everything on a run report.
+   * That outline is the whole of what says those are controls rather than
+   * captions, and it was 1.66:1 against a card, well under the 3:1 that asks
+   * for. The same script that caught the unreadable primary button found it,
+   * which is the argument for the script. Now 3.46:1 on a card and above 3:1 on
+   * every surface it is drawn on, and still far lighter than the text it
+   * surrounds, so the order of emphasis is unchanged.
+   */
+  --line-strong: #828a9d;
 
   --accent: #3d4bbd;
   --accent-ink: #ffffff;
@@ -63,7 +77,7 @@
     --muted: #979eab;
 
     --line: #2e323a;
-    --line-strong: #454b58;
+    --line-strong: #6a7285;
 
     --accent: #8f9bf0;
     --accent-ink: #10132b;
@@ -801,9 +815,25 @@ button.busy:disabled {
   padding-left: 12px;
 }
 
-/* A dropped message stays visible, so it is obvious what was spared. */
+/*
+ * A dropped message stays visible, so it is obvious what was spared.
+ *
+ * It said that and did the opposite. `opacity: 0.4` over the card put the
+ * message text at 2.6:1 and the date and channel beside it at 1.8:1, well under
+ * the 4.5:1 anything readable owes, and the dark scheme was no better at 3.4
+ * and 2.1. Opacity is the wrong tool for this: it fades the ink and the rule
+ * struck through it by the same amount, so the louder the row is marked the
+ * harder both halves are to read, and these are the rows somebody is squinting
+ * at to decide whether to put one back. The strike and the recessed fill say
+ * "set aside" on their own; the text keeps its own colour and stays legible at
+ * 5.8:1 light and 6.6:1 dark, hover included.
+ */
+.results tr.off td {
+  background: var(--sunk);
+}
+
 .results tr.off td:not(.pick) {
-  opacity: 0.4;
+  color: var(--muted);
   text-decoration: line-through;
 }
 
@@ -833,6 +863,75 @@ button.busy:disabled {
   text-align: center;
   color: var(--muted);
   font-size: 14px;
+}
+
+/*
+ * Where the messages are, and how to spare a whole channel of them.
+ *
+ * Folded away by default. It answers a question people arrive at this screen
+ * with, and it is still a second list above the list they came to read, so it
+ * opens on a click rather than pushing the table down the page for everybody.
+ */
+.channels {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--sunk);
+  padding: 10px 13px;
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+
+.channels > summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.channels ul {
+  list-style: none;
+  margin: 10px 0 2px;
+  padding: 0;
+  /* Long enough to be worth folding away, so it gets its own scroll rather than
+     pushing the table it belongs to off the bottom of the window. */
+  max-height: 240px;
+  overflow: auto;
+}
+
+.channels li + li {
+  margin-top: 2px;
+}
+
+.channels label {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.channels label:hover {
+  background: var(--hover);
+}
+
+/* The box is the only thing on the row that is not text, so it needs holding
+   to the line rather than to the baseline the rest of the row sits on. */
+.channels input[type='checkbox'] {
+  align-self: center;
+}
+
+.chname {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.chcount {
+  flex: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Pre-flight and progress ------------------------------------------- */
@@ -954,6 +1053,23 @@ button.busy:disabled {
 
 .progress {
   margin-top: 18px;
+}
+
+/*
+ * The search panel, which now stands on its own rather than inside the step it
+ * was started from.
+ *
+ * It has to be readable from wherever the user has wandered to, so it carries
+ * its own card and sits at the end of the shell, under whichever step is open.
+ * The run panel is untouched: leaving that screen is closed off for the length
+ * of a run, so it never needs to be found from anywhere else.
+ */
+.card.progress {
+  margin-top: 0;
+}
+
+.card.progress .actions {
+  margin-top: 12px;
 }
 
 .bar {
@@ -1091,9 +1207,18 @@ button.busy:disabled {
   color: var(--accent);
 }
 
+/*
+ * The line saying this is not Discord's.
+ *
+ * Quiet through size, not through being faded out. It was `--muted` at three
+ * quarters opacity, which composites to 3.33:1 against the page in the light
+ * scheme and 4.38:1 in the dark one, both under the 4.5:1 that ordinary text
+ * owes, on the one sentence in the app that exists to be read by somebody
+ * wondering whose product this is. Twelve pixels of muted grey is already the
+ * bottom of the hierarchy.
+ */
 .foot .fine {
   font-size: 12px;
-  opacity: 0.75;
 }
 
 /* The step heading takes focus when a step opens, so a keyboard user carries on

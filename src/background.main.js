@@ -80,34 +80,89 @@
    */
   const livePorts = new Map();
 
+  /**
+   * When this worker started, which is the only thing "no ports" can mean.
+   *
+   * See stillTheApp. An empty list is two situations wearing the same face, and
+   * the clock is what tells them apart.
+   */
+  const startedAt = Date.now();
+
+  /**
+   * Long enough for a page that exists to say so.
+   *
+   * The app page re-opens its port a quarter of a second after losing it, so
+   * anything still running the app has answered well inside this. Only ever
+   * waited out on a worker that has just started and been asked immediately.
+   */
+  const PRESENCE_GRACE_MS = 1500;
+
   CL.api.runtime.onConnect.addListener((port) => {
     if (!port || port.name !== 'clearline:app') return;
     const tabId = port.sender && port.sender.tab && port.sender.tab.id;
     if (typeof tabId !== 'number') return;
+    // Overwrites on a reconnect, and the guard below keeps the port being
+    // replaced from deleting the one that replaced it.
     livePorts.set(tabId, port);
     port.onDisconnect.addListener(() => {
       if (livePorts.get(tabId) === port) livePorts.delete(tabId);
     });
   });
 
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
   /**
    * Whether a remembered tab is still the app.
    *
-   * Falls back to "yes" only while no port has ever been seen, which is the
-   * window between the worker starting and the page connecting. Answering "no"
-   * there would open a second tab beside a perfectly good one.
+   * An empty port list used to be read as "ask again later", on the reasoning
+   * that it is the window between a worker starting and a page connecting. It is
+   * also exactly what the only app tab navigating away looks like, and those two
+   * want opposite answers. Read as "later" it undid the whole point of the port:
+   * a tab that had gone to discord.com was still confirmed as the app, the
+   * toolbar focused it, and the extension's only entry point did nothing for the
+   * rest of the browser session, which is the bug the port was added to close.
+   *
+   * The clock separates them, because only one of the two is about a worker that
+   * has just started. Past the grace an empty list means what it says, and inside
+   * it the question is worth waiting out rather than guessing at: a page that is
+   * still the app answers in a quarter of a second, and a toolbar click can
+   * afford that once.
    */
-  function stillTheApp(tabId) {
+  async function stillTheApp(tabId) {
     if (livePorts.has(tabId)) return true;
-    return livePorts.size === 0;
+    while (Date.now() - startedAt < PRESENCE_GRACE_MS) {
+      await sleep(60);
+      if (livePorts.has(tabId)) return true;
+    }
+    return false;
   }
 
   async function resolveOpen() {
     const stored = await CL.api.storage.session.get('appTabId');
-    if (typeof stored.appTabId === 'number' && stillTheApp(stored.appTabId)) {
+    let remembered = null;
+    if (typeof stored.appTabId === 'number') {
+      // Asked in this order so the grace inside stillTheApp is only ever paid
+      // for a tab that is genuinely still open. A remembered tab that has since
+      // been closed is answered by tabs.get in no time at all, and making the
+      // ordinary case wait a second and a half for that would be a worse bug
+      // than the one the grace is there for.
       try {
-        const tab = await CL.api.tabs.get(stored.appTabId);
-        await CL.api.tabs.update(stored.appTabId, { active: true });
+        await CL.api.tabs.get(stored.appTabId);
+        if (await stillTheApp(stored.appTabId)) remembered = stored.appTabId;
+      } catch {
+        // Closed since we last looked.
+      }
+    }
+    // A tab holding an open port is provably running the app right now, which is
+    // a better answer than a new tab. Without this, a remembered tab that had
+    // navigated away opened a third window onto an app that was already sitting
+    // there in the second.
+    const target = remembered === null ? livePorts.keys().next().value : remembered;
+
+    if (typeof target === 'number') {
+      try {
+        const tab = await CL.api.tabs.get(target);
+        await CL.api.tabs.update(target, { active: true });
         // Activating a tab only raises it within its own window. If that window
         // is behind another or minimised, clicking the toolbar looks like it did
         // nothing, and the obvious next move is to open a second copy, which is
@@ -121,7 +176,8 @@
             // Raising the window is a nicety. Never let it lose the tab.
           }
         }
-        return stored.appTabId;
+        if (target !== stored.appTabId) await CL.api.storage.session.set({ appTabId: target });
+        return target;
       } catch {
         // Closed since we last looked. Fall through and open a new one.
       }
@@ -179,9 +235,15 @@
       // has navigated away still resolves through tabs.get, so trusting that
       // alone told a genuine app tab it was "already open in another tab" and
       // named a tab that was showing Discord.
-      let alive = stillTheApp(owner);
+      //
+      // tabs.get first, so the grace inside stillTheApp is only waited out for a
+      // tab that is still open. This is the check whose wrong answer costs the
+      // most: read as dead, a tab in the middle of a delete run is superseded
+      // without anybody being asked, and the run stops.
+      let alive = false;
       try {
         await CL.api.tabs.get(owner);
+        alive = await stillTheApp(owner);
       } catch {
         alive = false;
       }

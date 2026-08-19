@@ -1,6 +1,6 @@
 {
   "name": "clearline",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Search, export and bulk delete your own Discord messages. Chrome and Firefox, MV3.",
   "private": true,
   "type": "module",

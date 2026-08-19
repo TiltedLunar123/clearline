@@ -1041,4 +1041,21 @@ if (invokedDirectly) {
   });
 }
 
+/**
+ * Build both targets, for a caller that needs dist to be current.
+ *
+ * The end to end suite copies `dist/chrome` and drives whatever is in it, which
+ * quietly meant it drove whatever the last build happened to leave there.
+ * Running it on its own therefore tested the previous version of every file
+ * that had changed since, and a suite that reports green over bytes nobody
+ * asked it to check is worse than no suite. It has one caller and no arguments
+ * on purpose: --check and --zip are gates and belong to the command that was
+ * asked for them.
+ */
+export async function buildOnly() {
+  const base = JSON.parse(await fs.readFile(path.join(SRC, 'manifest.base.json'), 'utf8'));
+  const background = await buildBackground();
+  for (const target of TARGETS) await buildTarget(target, base, background);
+}
+
 export { blankCommentsAndStrings, scanSource, opensRegex };

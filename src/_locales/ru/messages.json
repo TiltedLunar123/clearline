@@ -324,6 +324,31 @@
   "includeThisMessage": {
     "message": "Включить это сообщение"
   },
+  "includeThisChannel": {
+    "message": "Включить этот канал"
+  },
+  "byChannelSummary": {
+    "message": "Где эти сообщения"
+  },
+  "byChannelHint": {
+    "message": "Снимите отметку с канала, чтобы не трогать ничего из написанного там, включая его ветки."
+  },
+  "channelUnnamed": {
+    "message": "канал без названия"
+  },
+  "channelTally": {
+    "message": "$PICKED$ из $TOTAL$",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "Открыть это сообщение в Discord"
   },
@@ -911,6 +936,9 @@
   },
   "reasonUneditable": {
     "message": "Discord не позволяет изменять сообщения такого типа"
+  },
+  "reasonAlreadyGone": {
+    "message": "Этого сообщения уже не было, так что перезаписывать было нечего"
   },
   "durationUnderMinute": {
     "message": "меньше минуты"

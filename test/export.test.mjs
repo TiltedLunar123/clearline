@@ -33,6 +33,23 @@ function msg(overrides = {}) {
   };
 }
 
+/**
+ * The stamp filenameFor writes, derived rather than typed out.
+ *
+ * It is the local clock, so hardcoding a UTC one made the suite pass in London
+ * and fail everywhere else, which is a test asserting the timezone of whoever
+ * ran it. Building the expected value the same way the screen builds a date is
+ * what makes the assertion about the format instead.
+ */
+function localFileStamp(millis) {
+  const d = new Date(millis);
+  const pad = (n) => String(n).padStart(2, '0');
+  return (
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-` +
+    `${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+  );
+}
+
 const CSV_HEADER = 'id,timestamp,edited,guild,channel,author,content,attachments,embeds,pinned';
 
 function csvRows(csv) {
@@ -225,16 +242,39 @@ test('JSON header carries the account, scope and total', () => {
 
 test('filenameFor lowercases, strips punctuation, and collapses dashes', () => {
   const name = exp.filenameFor(META, 'csv');
-  assert.equal(name, 'clearline-my-server-general-20240301-100000.csv');
+  assert.equal(name, `clearline-my-server-general-${localFileStamp(META.generatedAt)}.csv`);
 });
 
 test('filenameFor caps a very long scope', () => {
   const long = 'A'.repeat(100) + ' / #' + 'B'.repeat(100);
   const name = exp.filenameFor({ ...META, scope: long }, 'json');
-  const slug = name.replace(/^clearline-/, '').replace(/-20240301-100000\.json$/, '');
+  const stamp = localFileStamp(META.generatedAt);
+  const slug = name.replace(/^clearline-/, '').replace(new RegExp(`-${stamp}\\.json$`), '');
   assert.ok(slug.length <= 60, 'slug is at most 60 characters');
-  assert.match(name, /^clearline-[a-z0-9-]+-20240301-100000\.json$/);
+  assert.match(name, new RegExp(`^clearline-[a-z0-9-]+-${stamp}\\.json$`));
   assert.doesNotMatch(name, /--/);
+});
+
+test('a saved file is filed under the day the person who saved it was having', () => {
+  /*
+   * The stamp was UTC while every timestamp inside the document, and every date
+   * box that produced it, was local. West of Greenwich that means an export
+   * taken in the evening is named with tomorrow's date: two files from one
+   * sitting land in different days, and the name disagrees with the first line
+   * inside the file. Checked at an instant that falls on a different calendar
+   * day in most of the world, so a UTC stamp cannot pass this by coincidence
+   * outside the timezone it was written in.
+   */
+  const evening = new Date(2024, 2, 5, 22, 30, 0).getTime();
+  const name = exp.filenameFor({ ...META, generatedAt: evening }, 'html');
+  assert.match(name, /-20240305-223000\.html$/, `named ${name}`);
+  assert.ok(
+    exp.toHTML([msg({ timestamp: new Date(evening).toISOString() })], {
+      ...META,
+      generatedAt: evening,
+    }).includes(exp.localStamp(new Date(evening).toISOString())),
+    'and the document inside it agrees about the day'
+  );
 });
 
 test('empty message array produces valid output from all three exporters', () => {
@@ -422,6 +462,25 @@ test('every character a spreadsheet treats as a formula is neutralised', () => {
       `a cell beginning ${JSON.stringify(lead)} was left evaluable: ${JSON.stringify(body)}`
     );
     assert.ok(!/^[=+@\t\r-]/.test(body.replace(/^"/, '')), 'the field still starts with the lead');
+  }
+});
+
+test('a formula hidden behind a leading space is neutralised too', () => {
+  /*
+   * The guard already said, in its own comment, that a spreadsheet strips
+   * leading whitespace before deciding whether a cell is a formula. It then
+   * checked for a tab and a carriage return and not for the space, which is the
+   * one a person can type and the one that survives being pasted. The payload
+   * is the standard run-a-program-on-open cell, and the file it would be in is
+   * the copy taken moments before the messages are destroyed.
+   */
+  for (const gap of [' ', '  ', ' \t', '\t ', ' ']) {
+    const content = `${gap}=cmd|' /C calc'!A0`;
+    const body = exp.toCSV([msg({ content })]).split('\r\n')[1];
+    assert.ok(
+      body.includes(`'${gap}=`) || body.includes(`"'${gap}=`),
+      `${JSON.stringify(gap)} then a formula was left evaluable: ${JSON.stringify(body)}`
+    );
   }
 });
 
