@@ -324,6 +324,31 @@
   "includeThisMessage": {
     "message": "Bu mesajı dahil et"
   },
+  "includeThisChannel": {
+    "message": "Bu kanalı dahil et"
+  },
+  "byChannelSummary": {
+    "message": "Bu mesajlar nerede"
+  },
+  "byChannelHint": {
+    "message": "Bir kanalın işaretini kaldır, orada yazdıklarına dokunulmasın; başlıkları da dahil."
+  },
+  "channelUnnamed": {
+    "message": "adı olmayan bir kanal"
+  },
+  "channelTally": {
+    "message": "$TOTAL$ içinden $PICKED$",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "Bu mesajı Discord'da aç"
   },
@@ -911,6 +936,9 @@
   },
   "reasonUneditable": {
     "message": "Discord bu tür bir mesajın değiştirilmesine izin vermiyor"
+  },
+  "reasonAlreadyGone": {
+    "message": "Bu mesaj zaten yoktu, üzerine yazılacak bir şey kalmamıştı"
   },
   "durationUnderMinute": {
     "message": "bir dakikadan az"

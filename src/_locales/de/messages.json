@@ -324,6 +324,31 @@
   "includeThisMessage": {
     "message": "Diese Nachricht einbeziehen"
   },
+  "includeThisChannel": {
+    "message": "Diesen Kanal einbeziehen"
+  },
+  "byChannelSummary": {
+    "message": "Wo diese Nachrichten liegen"
+  },
+  "byChannelHint": {
+    "message": "Nimm den Haken bei einem Kanal weg, um dort alles in Ruhe zu lassen, auch in seinen Threads."
+  },
+  "channelUnnamed": {
+    "message": "ein Kanal ohne Namen"
+  },
+  "channelTally": {
+    "message": "$PICKED$ von $TOTAL$",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "Diese Nachricht in Discord öffnen"
   },
@@ -911,6 +936,9 @@
   },
   "reasonUneditable": {
     "message": "Discord erlaubt es nicht, diese Art von Nachricht zu ändern"
+  },
+  "reasonAlreadyGone": {
+    "message": "Diese Nachricht war schon weg, es gab also nichts zu überschreiben"
   },
   "durationUnderMinute": {
     "message": "unter einer Minute"

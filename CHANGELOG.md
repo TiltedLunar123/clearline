@@ -1,5 +1,113 @@
 # Changelog
 
+## 1.6.0
+
+A bug sweep, and one thing the review screen could not do.
+
+### Added
+
+- The review step says which channels your results came from, and one tick keeps
+  a whole channel out of the run. The table draws three hundred rows at a time,
+  and the sets it is drawing them out of are routinely in the thousands, so
+  until now there were only two choices that could reach the rest: all of them,
+  or none of them. Keeping #introductions out of a server-wide sweep meant
+  hunting down every one of its rows by hand, and most of those rows were behind
+  a Show more that had to be pressed a dozen times before they existed to be
+  pressed at all. This one works on the whole result set (a thread counts as the
+  channel it hangs off), and it undoes the same way the header checkbox does.
+- The search panel stays on screen when you leave the step you started it from.
+  Going back to the picker while a search pages is allowed and always has been,
+  and it used to take the counter, the elapsed time, the reason for a wait and
+  the only Stop button away with it, so the search carried on with no way to
+  abandon it short of closing the tab.
+
+### Fixed
+
+- A search could stop early and report the part it had as the whole of it.
+  Discord returns each hit wrapped in its neighbours, and a hit deleted since it
+  was indexed comes back as those neighbours alone. Clearline counted the ones
+  it could use rather than the blocks it was served, so one such block in a page
+  of twenty-five read as the end of the results. So the search stopped there and
+  said it had finished. The run that followed then touched a fraction of what
+  was asked for, and one such block in the first page of a sixty-message account
+  was enough to lose thirty-five of them.
+- Another tab can no longer take the queue from a tab that is in the middle of a
+  run without asking. There is a connection the app page opens to say it exists,
+  and the browser closes it when the page goes. It also closes it after a few
+  idle minutes, which during a run that takes hours is most of the time. The
+  page never opened it again, so the background came to believe no app tab was
+  alive at all: a second tab then claimed the queue in silence and the run
+  stopped. The prompt that makes a takeover deliberate could not appear, because
+  by then nothing knew there was anything to take over.
+- The toolbar button opens the app again after its tab has been navigated away
+  from. The same connection was being read as "no answer yet" when it meant "the
+  only app tab has gone", so clicking the toolbar focused whatever that tab was
+  showing and opened nothing, for the rest of the browser session.
+- The action cannot be changed underneath a run. Every control on that screen
+  was read once, when Start was pressed, and then left live, so clicking a
+  different action mid-run rebuilt the whole sentence above the button: the
+  screen described an overwrite while the job went on deleting, and Start lit up
+  again. Worse is what came after. Stopping a run and then carrying on with what
+  it never reached sent the rest out under whichever action was checked by
+  then, so a run agreed to as an overwrite could finish as a delete.
+- A new search takes the last run's report down with it. Reaching the filters by
+  the Back buttons and searching from there left the report standing, so the Act
+  step opened on "Finished. 2,980 messages handled." above a set that was all
+  still there. Its buttons were live too: carrying on would have thrown away the
+  search that had just finished, and keeping the report wrote the old run's
+  numbers into a file headed with the new selection.
+- The step rail can reach a finished report. Leaving the Act step put it behind
+  a step the rail would not reopen, so one misclick left the only account of an
+  irreversible run in the page with nothing able to show it, while the prompt
+  about losing it went on asking.
+- Closing the tab during a search now asks first, the way closing it during a
+  run and closing it over an unsaved report already did. Paging a whole server
+  takes minutes, and there is nowhere those results exist except that page.
+- Spared rows are legible. They were faded to four tenths, which puts the
+  message at 2.6:1 and the date and channel beside it at 1.8:1, on the rows
+  somebody is reading closely to decide whether to put one back. The strike and
+  the recessed fill say the same thing without hiding the text.
+- Every secondary button has an outline you can see. Back, Reconnect, Stop, Show
+  more, Undo, the three download buttons and everything on a run report were
+  outlined at 1.66:1 (the standard asks for 3:1), and that outline is the whole
+  of what says they are controls rather than captions.
+- The line saying Clearline is not Discord's is no longer faded to below the
+  contrast that ordinary text is owed. It is quiet because it is small, which is
+  quiet enough.
+- A saved file is named for the day the person saving it was having. The stamp
+  was UTC while every timestamp inside the file was local, so an evening export
+  west of Greenwich was filed under tomorrow and disagreed with its own first
+  line.
+- A run stopped by repeated failures no longer offers to redo the message it
+  stopped on. It was counted as a failure and left in the queue behind, so the
+  report said thirty were never reached and the button beside it offered
+  thirty-one.
+- Overwriting a message that has already been deleted is reported as what it is,
+  rather than as an overwrite that happened. Being rid of it is still a success
+  when being rid of it is what was asked for.
+- A spreadsheet formula hidden behind a leading space is neutralised in exported
+  CSV. Tab and carriage return were handled on the reasoning that spreadsheets
+  strip leading whitespace, and the ordinary space was left out of the same set.
+- A direct message is no longer labelled with a #. That belongs to a channel in a
+  server, and a conversation is not one.
+- Stopping a search says so and stays said. The reply already in flight used to
+  land a moment later and overwrite the message with a fresh count, so the
+  button read as ignored, and a wait note from one search could be left standing
+  over the next one.
+
+### Internal
+
+- The end to end suite builds what it is about to test. It copied whatever the
+  last build had left behind, so running it on its own tested the previous
+  version of everything changed since, and a defect planted to prove a check
+  could fail came back green.
+- The stylesheet is audited by the test suite. Every animation has to be
+  switched off by a selector identical to the one that starts it under reduced
+  motion, and every colour pair the app draws has to meet the contrast it owes
+  in both schemes. Nothing readable may be made quiet by fading it either. All
+  three of those have been wrong in a shipped release, and all three are the
+  kind of thing you cannot find by looking.
+
 ## 1.5.0
 
 A pass over the whole interface. What Clearline does has not changed, and no

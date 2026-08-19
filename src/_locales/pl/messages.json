@@ -324,6 +324,31 @@
   "includeThisMessage": {
     "message": "Uwzględnij tę wiadomość"
   },
+  "includeThisChannel": {
+    "message": "Uwzględnij ten kanał"
+  },
+  "byChannelSummary": {
+    "message": "Gdzie są te wiadomości"
+  },
+  "byChannelHint": {
+    "message": "Odznacz kanał, żeby nie ruszać niczego, co w nim napisałeś, razem z jego wątkami."
+  },
+  "channelUnnamed": {
+    "message": "kanał bez nazwy"
+  },
+  "channelTally": {
+    "message": "$PICKED$ z $TOTAL$",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "Otwórz tę wiadomość w Discordzie"
   },
@@ -911,6 +936,9 @@
   },
   "reasonUneditable": {
     "message": "Discord nie pozwala zmieniać tego rodzaju wiadomości"
+  },
+  "reasonAlreadyGone": {
+    "message": "Tej wiadomości już nie było, więc nie było czego nadpisać"
   },
   "durationUnderMinute": {
     "message": "poniżej minuty"

@@ -186,29 +186,6 @@
           <button id="search" class="primary" type="button" data-i18n="buttonSearch">Search</button>
         </div>
         <p class="status" id="filter-status" role="status" aria-live="polite"></p>
-        <!-- A whole-server search pages for minutes. It gets the same treatment
-             as the run for the same reason: it is a long wait that has to be
-             able to say it is still working, to someone who cannot see it. -->
-        <div class="progress hidden" id="search-progress">
-          <div
-            class="bar"
-            id="search-bar"
-            role="progressbar"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-            aria-label="Search progress"
-            data-i18n-attr="aria-label:searchProgressLabel"
-          >
-            <div class="fill" id="search-fill"></div>
-          </div>
-          <p class="counter" id="search-counter" data-i18n="searching">Searching...</p>
-          <p class="hint tight" id="search-elapsed"></p>
-          <p class="hint tight pace" id="search-pace"></p>
-          <button id="search-stop" class="ghost small" type="button" data-i18n="buttonStopSearch">
-            Stop and keep what I have
-          </button>
-        </div>
       </section>
 
       <!-- Step: review ------------------------------------------------------>
@@ -217,6 +194,29 @@
         <p class="hint" id="review-summary"></p>
 
         <div class="notice hidden" id="review-truncated"></div>
+
+        <!--
+          Where the messages actually are, and a way to spare a whole channel.
+
+          The table renders three hundred rows at a time out of a set that is
+          routinely thousands, so the only selections anybody could really make
+          were all and none: sparing #introductions out of a server-wide sweep
+          meant finding every one of its rows by hand, and most of them were
+          behind a Show more that had to be clicked a dozen times before they
+          existed to be clicked. This works on the whole result set instead of
+          on the rendered part of it, and it answers the question a person
+          arrives at this screen with, which is where all this came from.
+
+          Closed by default and hidden entirely for a direct message or a single
+          channel, where the answer is the sentence directly above it.
+        -->
+        <details class="channels hidden" id="channel-block">
+          <summary data-i18n="byChannelSummary">Where these messages are</summary>
+          <p class="hint tight" data-i18n="byChannelHint">
+            Untick a channel to leave everything you wrote in it alone, its threads included.
+          </p>
+          <ul id="channel-list"></ul>
+        </details>
 
         <div class="tablewrap" id="results-wrap">
           <table class="results">
@@ -241,10 +241,11 @@
         </div>
         <div class="actions left" id="results-actions">
           <button id="show-more" class="ghost small hidden" type="button">Show more</button>
-          <!-- The header checkbox replaces the whole selection in one click,
-               including when it is hit on the way to something else. -->
+          <!-- The header checkbox and the channel ticks each replace a large
+               part of the selection in one click, including when one is hit on
+               the way to something else. -->
           <button id="undo-pick" class="ghost small hidden" type="button" data-i18n="undoSelection">
-            Undo select all
+            Undo that
           </button>
         </div>
         <p class="hint tight" id="results-note"></p>
@@ -356,6 +357,42 @@
         </div>
 
         <div class="report hidden" id="run-report" tabindex="-1"></div>
+      </section>
+
+      <!--
+        A whole-server search pages for minutes. It gets the same treatment as
+        the run for the same reason: it is a long wait that has to be able to
+        say it is still working, to someone who cannot see it.
+
+        Outside every step section, which is where it belongs and is not where
+        it was. Nothing stops the user going Back to the picker while a search
+        pages, and that is deliberate, but it took this panel down with the
+        step it lived in: the counter, the elapsed time, the reason for a wait
+        and the only Stop button all went off screen while the search carried
+        on, so the one way to abandon it was to close the tab. A long operation
+        should be visible from wherever the person who started it is standing.
+      -->
+      <section class="card progress hidden" id="search-progress">
+        <div
+          class="bar"
+          id="search-bar"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          aria-label="Search progress"
+          data-i18n-attr="aria-label:searchProgressLabel"
+        >
+          <div class="fill" id="search-fill"></div>
+        </div>
+        <p class="counter" id="search-counter" data-i18n="searching">Searching...</p>
+        <p class="hint tight" id="search-elapsed"></p>
+        <p class="hint tight pace" id="search-pace"></p>
+        <div class="actions left">
+          <button id="search-stop" class="ghost small" type="button" data-i18n="buttonStopSearch">
+            Stop and keep what I have
+          </button>
+        </div>
       </section>
 
       <footer class="foot">

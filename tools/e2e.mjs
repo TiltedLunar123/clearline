@@ -28,6 +28,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { buildOnly } from './build.mjs';
 import { CDP, httpJson, launchWithExtension, mockApi, serveDir, shutdown, sleep, waitFor } from './cdp.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,6 +67,18 @@ function deriveExtensionId(der) {
  * fixture server lands on.
  */
 async function buildTestVariant() {
+  /*
+   * Built here rather than assumed to be current.
+   *
+   * This copies dist/chrome and drives whatever is in it, and nothing in this
+   * file put it there. `npm run all` builds first so the release gate was
+   * honest, but running the suite on its own drove the previous build of every
+   * file changed since: a mutation planted in src to prove a check could fail
+   * came back green, because the browser never saw it. A suite reporting on
+   * bytes nobody asked it to read is worse than no suite, and the build is
+   * under a second.
+   */
+  await buildOnly();
   const from = path.join(ROOT, 'dist', 'chrome');
   const to = path.join(ROOT, 'dist', 'e2e');
   await fs.rm(to, { recursive: true, force: true });
@@ -410,10 +423,31 @@ async function main() {
     const afterReopen = (await httpJson(PORT, '/json/list')).filter((t) =>
       (t.url || '').includes('/app/app.html')
     ).length;
-    check('spine', 'the toolbar still opens the app after its tab navigated away',
-      reopenedId !== strandedId && afterReopen === beforeReopen + 1,
-      `openApp returned ${reopenedId} (stranded tab was ${strandedId}); ` +
-        `app tabs went ${beforeReopen} -> ${afterReopen}`);
+    const liveAfter = await cdp.evaluate(sw, 'JSON.stringify(CL.background.liveAppTabs())');
+    check('spine', 'the toolbar never lands on the tab that navigated away',
+      reopenedId !== strandedId,
+      `openApp returned ${reopenedId}, and the stranded tab was ${strandedId}`);
+    /*
+     * Where it goes instead is "a tab that is running the app", not "a tab it
+     * just made".
+     *
+     * There is a real app tab open here, which is this suite's own, and opening
+     * a second beside it is not a harmless extra window: creating one seizes the
+     * remembered id on the way past, so the next connect broadcasts a supersede
+     * and the tab that was already there stands down, cancelling whatever run it
+     * was in the middle of. Reusing the live one is both the shorter answer and
+     * the one that cannot do that.
+     *
+     * The other branch, where nothing is running the app and a tab genuinely has
+     * to be made, is the pair of checks above: two toolbar clicks from a cold
+     * start opened exactly one tab between them.
+     */
+    check('spine', 'it goes to a tab that is running the app right now',
+      JSON.parse(liveAfter || '[]').indexOf(reopenedId) !== -1,
+      `openApp returned ${reopenedId}, and the live app tabs were ${liveAfter}`);
+    check('spine', 'and does not stack a second copy beside one already open',
+      afterReopen === beforeReopen,
+      `app tabs went ${beforeReopen} -> ${afterReopen}`);
 
     // And a genuine app tab is not told that stand-in owns the queue.
     await cdp.evaluate(
@@ -433,8 +467,13 @@ async function main() {
     // goes red the two ids are the same tab, and a cleanup that removed both
     // would throw and take the rest of the suite down with it, turning a clear
     // failure into a crash that says nothing.
+    // firstId is excluded by name as well as by the dedupe. openApp can now
+    // answer with a tab that is already running the app rather than a new one,
+    // and the one it is most likely to answer with is this suite's, so a
+    // cleanup list built from what it returned could close the tab every check
+    // after this one still needs.
     const cleanUp = [strandedId, reopenedId].filter(
-      (id, i, all) => typeof id === 'number' && all.indexOf(id) === i
+      (id, i, all) => typeof id === 'number' && id !== firstId && all.indexOf(id) === i
     );
     for (const id of cleanUp) {
       await cdp.evaluate(sw, `chrome.tabs.remove(${id}).then(() => true).catch(() => true)`);
@@ -1115,6 +1154,56 @@ async function main() {
     const startedAt = Date.now();
     await cdp.evaluate(ops.session, "document.getElementById('start').click()");
 
+    /*
+     * What the run was started with is frozen for the length of it.
+     *
+     * Every control on this screen was read once, when Start was pressed, and
+     * then left live. A click on a different action while the bar was moving
+     * rebuilt the whole pre-flight around it, so the screen described an
+     * overwrite while the job went on deleting, the line saying it could not be
+     * undone came and went, and Start lit up again because the pre-flight
+     * derives it from `state.ran`, which is still false mid-run.
+     *
+     * The lasting damage is one screen further on. Stop a run, take the offer to
+     * carry on with what it never reached, and the remainder goes out under
+     * whichever radio is checked by then. A run agreed to as an overwrite could
+     * finish as a delete.
+     *
+     * Driven the way the bug was reachable, which is a real click on the radio,
+     * and read back off the same pre-flight the user would be reading.
+     */
+    await sleep(1200);
+    const midRun = await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const radios = Array.from(document.querySelectorAll('input[name=action]'));
+        radios[2].click();
+        return JSON.stringify({
+          running: !!window.__clearline.state.job,
+          radios: radios.map(r => r.disabled),
+          stillDelete: (document.querySelector('input[name=action]:checked') || {}).value,
+          replacement: document.getElementById('replacement').disabled,
+          backup: document.getElementById('backup').disabled,
+          confirm: document.getElementById('confirm').disabled,
+          start: document.getElementById('start').disabled,
+          back: document.getElementById('run-back').disabled,
+          preflight: document.getElementById('preflight').textContent,
+        });
+      })()`
+    );
+    const during = midRun ? JSON.parse(midRun) : {};
+    check('operations', 'the action cannot be changed while the run is going',
+      during.running === true && during.radios.every(Boolean) && during.stillDelete === 'delete',
+      `mid-run form read ${midRun}`);
+    check('operations', 'nor the replacement text, the backup box or the typed count',
+      during.replacement === true && during.backup === true && during.confirm === true,
+      `mid-run form read ${midRun}`);
+    check('operations', 'and Start stays down rather than being handed back by a redraw',
+      during.start === true && during.back === true, `mid-run form read ${midRun}`);
+    check('operations', 'so the sentence above it still describes the run that is running',
+      /delete/i.test(during.preflight || '') && !/overwrite/i.test(during.preflight || ''),
+      `pre-flight read ${JSON.stringify(during.preflight)}`);
+
     const report = await waitFor(
       'the run to finish',
       async () => {
@@ -1137,6 +1226,21 @@ async function main() {
       'a message Discord refuses to delete was sent to the API anyway');
     check('operations', 'the run reports finishing', /Finished\. 6 messages handled/.test(report || ''),
       `report said ${JSON.stringify(report)}`);
+
+    const formAfterRun = await cdp.evaluate(
+      ops.session,
+      `JSON.stringify({
+        radios: Array.from(document.querySelectorAll('input[name=action]')).map(r => r.disabled),
+        replacement: document.getElementById('replacement').disabled,
+        backup: document.getElementById('backup').disabled,
+      })`
+    );
+    const released = formAfterRun ? JSON.parse(formAfterRun) : {};
+    check('operations', 'and hands the form back once it is over',
+      released.radios.every((d) => d === false) &&
+        released.replacement === false &&
+        released.backup === false,
+      `form after the run read ${formAfterRun}`);
 
     check('operations', 'deletes went oldest first',
       deleted.length === 6 && BigInt(deleted[0]) < BigInt(deleted[5]),
@@ -1262,6 +1366,71 @@ async function main() {
       carried.focusInRunStep === true,
       `focus left the run step: ${JSON.stringify(carried)}`);
 
+    /*
+     * A new search retires the last run's report.
+     *
+     * Three paths cleared it and the ordinary one did not: Start, the report's
+     * own Search again, and carrying on with a queue. Reaching Narrow the way
+     * the Back buttons and the rail reach it, and searching from there, left it
+     * standing, so the Act step opened on "Finished. 6 messages handled." above
+     * a pre-flight for a set that is all still there. Its buttons were live too:
+     * carrying on would have thrown away the search that had just finished and
+     * put the old queue back in its place, and keeping the report wrote the old
+     * run's numbers into a file headed with the new selection.
+     *
+     * Put back into the state that reaches it: a finished run, a report on
+     * screen, and then the Search button.
+     */
+    await cdp.evaluate(
+      ops.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.unsavedReport = true;
+        cl.state.ran = true;
+        document.getElementById('run-report').classList.remove('hidden');
+        cl.goTo('filter');
+      })()`
+    );
+    await sleep(150);
+    const beforeResearch = await cdp.evaluate(
+      ops.session,
+      "document.getElementById('run-report').classList.contains('hidden')"
+    );
+    await cdp.evaluate(ops.session, "document.getElementById('search').click()");
+    const researched = await waitFor(
+      'the second search to land',
+      async () =>
+        (await cdp.evaluate(
+          ops.session,
+          "!document.getElementById('step-review').classList.contains('hidden')"
+        )) === true
+          ? true
+          : null,
+      { timeout: 30000 }
+    ).catch(() => null);
+    const afterResearch = JSON.parse(
+      await cdp.evaluate(
+        ops.session,
+        `JSON.stringify({
+          reportHidden: document.getElementById('run-report').classList.contains('hidden'),
+          unsaved: window.__clearline.state.unsavedReport,
+          ran: window.__clearline.state.ran,
+        })`
+      )
+    );
+    check('operations', 'a search reaches the review step with the report still standing behind it',
+      beforeResearch === false && researched === true,
+      `report hidden before the search: ${beforeResearch}, landed: ${researched}`);
+    check('operations', 'and takes the last run’s report down with it',
+      afterResearch.reportHidden === true && afterResearch.ran === false,
+      `after the second search ${JSON.stringify(afterResearch)}`);
+    // Guarding something the user can no longer reach is worse than no prompt,
+    // and searching again is the same deliberate move as the report's own
+    // button, which has always dropped it on exactly these terms.
+    check('operations', 'so the unload prompt stops asking about it',
+      afterResearch.unsaved === false,
+      `after the second search ${JSON.stringify(afterResearch)}`);
+
     await closeTab(cdp, ops);
 
     /* ---------------- group: scope ---------------- */
@@ -1367,6 +1536,36 @@ async function main() {
     // the timing is made reliable.
     await cdp.evaluate(scopeTab.session, "document.getElementById('filter-back').click()");
     await sleep(150);
+
+    /*
+     * The search says it is still going, from wherever the user is standing.
+     *
+     * The panel used to live inside the Narrow step, so going Back took the
+     * counter, the elapsed time, the reason for a wait and the only Stop button
+     * off screen with it, while the search carried on paging. Going Back during
+     * a search is deliberate and is what the rest of this group is about, so the
+     * panel is what had to move: a long operation should be visible to the
+     * person who started it, and stoppable, wherever they have wandered to.
+     */
+    const whileAway = JSON.parse(
+      await cdp.evaluate(
+        scopeTab.session,
+        `JSON.stringify({
+          onWhere: !document.getElementById('step-where').classList.contains('hidden'),
+          panelVisible: document.getElementById('search-progress').offsetParent !== null,
+          stopVisible: document.getElementById('search-stop').offsetParent !== null,
+          stopDisabled: document.getElementById('search-stop').disabled,
+          counter: document.getElementById('search-counter').textContent,
+        })`
+      )
+    );
+    check('scope', 'a search that outlived its own step still says it is running',
+      whileAway.onWhere === true && whileAway.panelVisible === true,
+      `on where ${whileAway.onWhere}, panel visible ${whileAway.panelVisible}`);
+    check('scope', 'and its Stop button is still there to be pressed',
+      whileAway.stopVisible === true && whileAway.stopDisabled === false,
+      `stop visible ${whileAway.stopVisible}, disabled ${whileAway.stopDisabled}`);
+
     await cdp.evaluate(
       scopeTab.session,
       `(() => {
@@ -1590,6 +1789,136 @@ async function main() {
     check('big sets', 'appending rows keeps the row that was spared spared',
       secondPage.stillSpared === 1, `${secondPage.stillSpared} rows were marked spared`);
 
+    /* ---------------- group: by channel ---------------- */
+
+    /*
+     * Sparing a whole channel, on the whole result set.
+     *
+     * The table renders three hundred rows out of sets that are routinely
+     * thousands, so before this the only selections that could reach the rest
+     * were all and none: keeping #introductions out of a server-wide sweep meant
+     * finding every one of its rows by hand, most of them behind a Show more
+     * that had to be clicked a dozen times before they existed to be clicked.
+     * The checks below are all about the rows nobody can see, because those are
+     * the ones this is for and the ones a per-row implementation would miss.
+     *
+     * Driven on the tab above, which is already standing on four hundred rows
+     * that all came from one channel, so the first thing to establish is that a
+     * single channel gets no breakdown at all.
+     */
+    const oneChannel = await bigState(`{
+      blockHidden: document.getElementById('channel-block').classList.contains('hidden'),
+      rows: document.querySelectorAll('#channel-list li').length,
+    }`);
+    check('by channel', 'one channel is not a breakdown, so none is offered',
+      oneChannel.blockHidden === true && oneChannel.rows === 0,
+      `hidden ${oneChannel.blockHidden}, ${oneChannel.rows} rows`);
+
+    // Six hundred messages over three channels, deliberately more than twice the
+    // render limit so that most of every channel is off screen throughout.
+    await cdp.evaluate(
+      bigTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        const rooms = [['general', 300], ['random', 200], ['introductions', 100]];
+        const out = [];
+        let n = 0;
+        for (const [name, howMany] of rooms) {
+          for (let i = 0; i < howMany; i++) {
+            out.push({
+              id: String(910000000000000000n + BigInt(n++)),
+              channelId: 'c-' + name,
+              parentId: null,
+              guildId: '200000000000000000',
+              authorId: ${JSON.stringify(ACCOUNT.id)},
+              channelName: name,
+              type: 0, content: name + ' ' + i, attachments: [],
+              timestamp: '2024-03-01T12:00:00.000Z',
+            });
+          }
+        }
+        cl.state.results = out;
+        cl.state.excluded = new Set();
+        cl.state.shown = 0;
+        cl.renderReview();
+      })()`
+    );
+    await sleep(250);
+
+    const listed = await bigState(`{
+      blockHidden: document.getElementById('channel-block').classList.contains('hidden'),
+      names: Array.from(document.querySelectorAll('#channel-list .chname')).map(e => e.textContent),
+      counts: Array.from(document.querySelectorAll('#channel-list .chcount')).map(e => e.textContent),
+      rendered: document.querySelectorAll('#results-body tr').length,
+    }`);
+    check('by channel', 'several channels are listed, largest first',
+      listed.blockHidden === false &&
+        JSON.stringify(listed.names) === JSON.stringify(['#general', '#random', '#introductions']),
+      `listed ${JSON.stringify(listed.names)}`);
+    check('by channel', 'each one says how many of it is still in the run',
+      /300/.test(listed.counts[0] || '') && /100/.test(listed.counts[2] || ''),
+      `counts read ${JSON.stringify(listed.counts)}`);
+    check('by channel', 'and most of every channel is off screen, which is the point',
+      listed.rendered === 300, `${listed.rendered} rows rendered out of 600`);
+
+    // Untick the smallest, which is entirely past the render limit: not one of
+    // its hundred rows exists in the table to be clicked.
+    await cdp.evaluate(
+      bigTab.session,
+      "document.querySelectorAll('#channel-list input[type=checkbox]')[2].click()"
+    );
+    await sleep(250);
+    const spared = await bigState(`{
+      excluded: window.__clearline.state.excluded.size,
+      heading: document.getElementById('review-heading').textContent,
+      counts: Array.from(document.querySelectorAll('#channel-list .chcount')).map(e => e.textContent),
+      boxes: Array.from(document.querySelectorAll('#channel-list input[type=checkbox]'))
+        .map(b => b.indeterminate ? 'part' : b.checked ? 'on' : 'off'),
+      undoHidden: document.getElementById('undo-pick').classList.contains('hidden'),
+      renderedOff: document.querySelectorAll('#results-body tr.off').length,
+    }`);
+    check('by channel', 'unticking a channel spares every message in it, seen or not',
+      spared.excluded === 100, `${spared.excluded} messages were taken out of the run`);
+    check('by channel', 'the heading counts the whole set, not the rendered part of it',
+      /500/.test(spared.heading) && /600/.test(spared.heading),
+      `heading said ${JSON.stringify(spared.heading)}`);
+    check('by channel', 'the channel that was spared says so, and the others do not move',
+      JSON.stringify(spared.boxes) === JSON.stringify(['on', 'on', 'off']) &&
+        /300/.test(spared.counts[0] || ''),
+      `boxes ${JSON.stringify(spared.boxes)}, counts ${JSON.stringify(spared.counts)}`);
+    check('by channel', 'a tick worth hundreds of rows is offered back',
+      spared.undoHidden === false, 'undo was not offered');
+    // The rendered rows are all #general here, so none of them should have moved.
+    check('by channel', 'and it does not disturb the rows on screen',
+      spared.renderedOff === 0, `${spared.renderedOff} visible rows were struck through`);
+
+    await cdp.evaluate(bigTab.session, "document.getElementById('undo-pick').click()");
+    await sleep(250);
+    const restoredChannel = await bigState('window.__clearline.state.excluded.size');
+    check('by channel', 'undo puts a spared channel back',
+      restoredChannel === 0, `${restoredChannel} messages were still spared`);
+
+    // A row ticked by hand and a channel ticked afterwards have to agree, since
+    // both write to the one set the run is built from.
+    await cdp.evaluate(
+      bigTab.session,
+      `(() => {
+        document.querySelectorAll('#results-body input[type=checkbox]')[0].click();
+        document.querySelectorAll('#channel-list input[type=checkbox]')[1].click();
+      })()`
+    );
+    await sleep(250);
+    const mixed = await bigState(`{
+      excluded: window.__clearline.state.excluded.size,
+      boxes: Array.from(document.querySelectorAll('#channel-list input[type=checkbox]'))
+        .map(b => b.indeterminate ? 'part' : b.checked ? 'on' : 'off'),
+    }`);
+    check('by channel', 'a hand-picked row and a whole channel add up rather than replacing',
+      mixed.excluded === 201, `${mixed.excluded} spared, expected 200 plus the one row`);
+    check('by channel', 'and the channel holding that one row reads as partly in',
+      JSON.stringify(mixed.boxes) === JSON.stringify(['part', 'off', 'on']),
+      `boxes read ${JSON.stringify(mixed.boxes)}`);
+
     await closeTab(cdp, bigTab);
 
     /* ---------------- group: rail ---------------- */
@@ -1701,6 +2030,74 @@ async function main() {
       afterRun.where === false && afterRun.filter === false,
       `where/filter disabled: ${afterRun.where}/${afterRun.filter}`);
 
+    /*
+     * The one thing the rail is allowed to go forward to, and why.
+     *
+     * A run report is the only account of something that cannot be undone:
+     * which messages were left alone and why, which failed and with what, about
+     * messages that no longer exist to be looked at again. Leaving the Act step
+     * put it behind a section the rail would not reopen, because Act was now
+     * ahead of wherever the click landed. One misclick and the record was in the
+     * document with no control able to show it, while the unload prompt went on
+     * asking about something the user could not reach and so could not save.
+     *
+     * It costs nothing of the order that makes this wizard safe, which the
+     * second check here is about: Act opens on a report and a Save button, and
+     * Start is still down.
+     */
+    await cdp.evaluate(
+      railTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.ran = true;
+        cl.state.unsavedReport = true;
+        cl.goTo('where');
+      })()`
+    );
+    await sleep(150);
+    const strandedReport = await railState(railProbe);
+    check('rail', 'a report nothing else can reach is reachable',
+      strandedReport.run === false,
+      `run disabled: ${strandedReport.run}, from the where step`);
+    check('rail', 'and the steps between it and here stay closed off',
+      strandedReport.review === true && strandedReport.filter === true,
+      `review/filter disabled: ${strandedReport.review}/${strandedReport.filter}`);
+
+    await cdp.evaluate(railTab.session, `(() => {
+      for (const li of document.querySelectorAll('#rail li')) {
+        if (li.dataset.step === 'run') li.querySelector('.railbtn').click();
+      }
+    })()`);
+    await sleep(200);
+    const backAtReport = await railState(`{
+      onRun: !document.getElementById('step-run').classList.contains('hidden'),
+      start: document.getElementById('start').disabled,
+    }`);
+    check('rail', 'going there shows the report without re-arming the run',
+      backAtReport.onRun === true && backAtReport.start === true,
+      `on run ${backAtReport.onRun}, start disabled ${backAtReport.start}`);
+
+    // Saved, so there is nothing left to strand. The offer has to go with it,
+    // or the rail is simply open forwards from then on.
+    await cdp.evaluate(
+      railTab.session,
+      `(() => {
+        const cl = window.__clearline;
+        cl.state.unsavedReport = false;
+        cl.goTo('where');
+      })()`
+    );
+    await sleep(150);
+    const nothingToStrand = await railState(railProbe);
+    check('rail', 'and the offer goes away once the report has been kept',
+      nothingToStrand.run === true, `run disabled: ${nothingToStrand.run}`);
+
+    await cdp.evaluate(
+      railTab.session,
+      "(() => { window.__clearline.state.ran = false; window.__clearline.goTo('review'); })()"
+    );
+    await sleep(150);
+
     /* ---------------- group: nothing matched ---------------- */
 
     // A search that found nothing.
@@ -1805,6 +2202,19 @@ function report() {
 }
 
 main().catch((err) => {
+  // What had already passed, before whatever went wrong. A crash used to print
+  // a CDP stack and nothing else, which says nothing about where in a suite of
+  // two hundred checks the browser stopped answering, and the checks are only
+  // reported at the end so none of them had been printed either.
+  if (results.length) {
+    const last = results[results.length - 1];
+    console.error(
+      `\nCrashed after ${results.length} check(s). ` +
+        `The last one to run was "${last.group}: ${last.label}".`
+    );
+  } else {
+    console.error('\nCrashed before the first check ran.');
+  }
   console.error(err);
   process.exit(1);
 });

@@ -324,6 +324,31 @@
   "includeThisMessage": {
     "message": "このメッセージを対象にする"
   },
+  "includeThisChannel": {
+    "message": "このチャンネルを対象にする"
+  },
+  "byChannelSummary": {
+    "message": "これらのメッセージがある場所"
+  },
+  "byChannelHint": {
+    "message": "チャンネルのチェックを外すと、そこに書いたものはスレッドも含めてそのままになります。"
+  },
+  "channelUnnamed": {
+    "message": "名前のないチャンネル"
+  },
+  "channelTally": {
+    "message": "$TOTAL$ 件中 $PICKED$ 件",
+    "placeholders": {
+      "picked": {
+        "content": "$1",
+        "example": "412"
+      },
+      "total": {
+        "content": "$2",
+        "example": "480"
+      }
+    }
+  },
   "openInDiscord": {
     "message": "このメッセージを Discord で開く"
   },
@@ -911,6 +936,9 @@
   },
   "reasonUneditable": {
     "message": "Discord はこの種類のメッセージの変更を許可していません"
+  },
+  "reasonAlreadyGone": {
+    "message": "このメッセージはすでになくなっていたため、上書きするものがありませんでした"
   },
   "durationUnderMinute": {
     "message": "1 分未満"

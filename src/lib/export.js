@@ -77,11 +77,20 @@ CL.exporter = (function () {
    */
   function csvCell(value) {
     let s = cellText(value);
-    // Tab and carriage return belong in this set alongside the obvious four.
-    // Excel strips leading whitespace before deciding whether a cell is a
-    // formula, so "\t=cmd" evaluates while "=cmd" alone is what most guards
-    // check for.
-    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    /*
+     * Two tests, and the second is the one that was missing.
+     *
+     * Tab and carriage return are neutralised on sight, which is what this has
+     * always done and is left alone. The reason given for them, that a
+     * spreadsheet strips leading whitespace before deciding whether a cell is a
+     * formula, is right and was applied to two characters rather than to the
+     * idea: an ordinary space is whitespace too, so " =cmd|'/C calc'!A0" walked
+     * through a guard written against precisely that payload. Asking after the
+     * first character that is not whitespace covers every spelling of the gap,
+     * including several spaces, a space after a tab, and whatever else, while
+     * leaving a cell that merely begins with a space as it was written.
+     */
+    if (/^[\t\r]/.test(s) || /^\s*[=+\-@]/.test(s)) s = "'" + s;
     if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
@@ -357,6 +366,14 @@ CL.exporter = (function () {
    *
    * `tag` distinguishes one kind of file from another in a downloads folder
    * that will hold several of them from the same run.
+   *
+   * The stamp is the local clock, like every timestamp inside the documents and
+   * on the screen they were made from. It was UTC, which for most of the world
+   * means an export saved in the evening is filed under tomorrow: three files
+   * from one sitting sort into two days, and the date on the name disagrees with
+   * the date on the first line inside it. CSV and JSON still carry the exact
+   * instant in their contents, which is where software reads it; a filename is
+   * read by a person looking for the copy they saved last night.
    */
   function filenameFor(meta, ext, tag) {
     const m = meta || {};
@@ -374,13 +391,13 @@ CL.exporter = (function () {
       return String(n).padStart(2, '0');
     };
     const stamp =
-      d.getUTCFullYear() +
-      pad(d.getUTCMonth() + 1) +
-      pad(d.getUTCDate()) +
+      d.getFullYear() +
+      pad(d.getMonth() + 1) +
+      pad(d.getDate()) +
       '-' +
-      pad(d.getUTCHours()) +
-      pad(d.getUTCMinutes()) +
-      pad(d.getUTCSeconds());
+      pad(d.getHours()) +
+      pad(d.getMinutes()) +
+      pad(d.getSeconds());
 
     const bits = ['clearline'];
     if (tag) bits.push(String(tag));

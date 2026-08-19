@@ -8,7 +8,7 @@ Chrome and Firefox, MV3, no build dependencies and no third party code.
 
 > Not affiliated with, endorsed by, or connected to Discord Inc.
 
-![The review screen: 12 matched messages listed with timestamp, channel and text, each one checkable, above the save-a-copy panel](store/screenshots/4-review.png)
+![The review screen: a breakdown naming three channels with a tick and a count each, above 12 matched messages listed with timestamp, channel and text, every one of them checkable](store/screenshots/4-review.png)
 
 ## What it does
 
@@ -29,7 +29,10 @@ attachment, a link or an embed, and whether to leave pinned messages alone.
 ![The narrow screen with a contains box, date range, attachment and link filters, and a leave-pinned-alone checkbox](store/screenshots/3-narrow.png)
 
 **4. Review.** See the count and the actual messages before anything happens, and
-save a copy in HTML, JSON or CSV.
+save a copy in HTML, JSON or CSV. There is a breakdown saying which channels the
+results came from, and unticking one of them keeps everything you wrote in that
+channel out of the run (its threads too), whether or not those particular rows have
+been drawn on screen yet.
 
 **5. Act.** Delete them, overwrite the text and then delete them, or only overwrite
 the text. Watch it run, pause it, or stop it.

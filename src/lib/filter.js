@@ -191,6 +191,42 @@ CL.filter = (function () {
   }
 
   /**
+   * The result set split into the channels a person would say it came from.
+   *
+   * Grouped on the parent where there is one, for the same reason the channel
+   * predicate above accepts it: a message written in a thread carries the
+   * thread's id, and nobody thinks of a thread as somewhere separate from the
+   * channel it hangs off. Grouping on the raw channel id would scatter one
+   * evening in #general across a dozen one-message threads, which is worse than
+   * no grouping at all.
+   *
+   * Ordered by size, because the question this answers is "where are they", and
+   * the channel holding two thousand of them is the answer far more often than
+   * the one holding three. Ties fall back to the name so the order is stable
+   * between two renders of the same set.
+   */
+  function groupByChannel(messages) {
+    const groups = new Map();
+    for (const m of messages || []) {
+      if (!m) continue;
+      const key = String(m.parentId || m.channelId || '');
+      let group = groups.get(key);
+      if (!group) {
+        group = { key, name: m.channelName || '', ids: [] };
+        groups.set(key, group);
+      }
+      // Taken from whichever message in the group has one. A channel removed
+      // between loading the list and reading the results has no name to give,
+      // and one nameless message should not cost the group its label.
+      if (!group.name && m.channelName) group.name = m.channelName;
+      group.ids.push(String(m.id));
+    }
+    return Array.from(groups.values()).sort(
+      (a, b) => b.ids.length - a.ids.length || a.name.localeCompare(b.name)
+    );
+  }
+
+  /**
    * The local calendar day, not the UTC one. This string is shown back to the
    * user beside a count they are about to act on, so it has to name the same
    * day they picked in the date box.
@@ -255,6 +291,7 @@ CL.filter = (function () {
   return {
     compile,
     apply,
+    groupByChannel,
     describe,
     isEmpty,
     toWindow,
